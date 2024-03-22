@@ -208,7 +208,7 @@ public class ConfigsManager {
             for (String key : configuration.getKeys(false)) {
                 char character = charPerGlyph.getOrDefault(key, Character.MIN_VALUE);
                 if (character == Character.MIN_VALUE) {
-                    character = Utils.firstEmpty(charPerGlyph, 42000);
+                    character = Utils.firstEmpty(charPerGlyph, 42050);
                     charPerGlyph.put(key, character);
                 }
                 Glyph glyph = new Glyph(key, configuration.getConfigurationSection(key), character);
