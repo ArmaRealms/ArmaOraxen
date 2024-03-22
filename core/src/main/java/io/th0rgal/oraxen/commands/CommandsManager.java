@@ -4,6 +4,7 @@ import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.*;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
+import io.th0rgal.oraxen.compatibilities.provided.placeholderapi.PapiAliases;
 import io.th0rgal.oraxen.config.Message;
 import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.items.ItemUpdater;
@@ -105,9 +106,12 @@ public class CommandsManager {
                     ItemStack[] items = itemBuilder.buildArray(slots > 36 ? (amount = max * 36) : amount);
 
                     for (final Player target : targets) {
-                        Map<Integer, ItemStack> output = target.getInventory().addItem(items);
-                        for (ItemStack stack : output.values())
-                            target.getWorld().dropItem(target.getLocation(), stack);
+                        for (ItemStack item : items) {
+                            Map<Integer, ItemStack> output = target.getInventory().addItem(PapiAliases.setPlaceholders(target, item.clone()));
+                            for (ItemStack stack : output.values()) {
+                                target.getWorld().dropItem(target.getLocation(), stack);
+                            }
+                        }
                     }
 
                     if (targets.size() == 1)
@@ -138,8 +142,13 @@ public class CommandsManager {
                         Message.ITEM_NOT_FOUND.send(sender, AdventureUtils.tagResolver("item", itemID));
                         return;
                     }
-                    for (final Player target : targets)
-                        target.getInventory().addItem(ItemUpdater.updateItem(itemBuilder.build()));
+
+                    for (final Player target : targets) {
+                        Map<Integer, ItemStack> output = target.getInventory().addItem(PapiAliases.setPlaceholders(target, ItemUpdater.updateItem(itemBuilder.build()).clone()));
+                        for (ItemStack stack : output.values()) {
+                            target.getWorld().dropItem(target.getLocation(), stack);
+                        }
+                    }
 
                     if (targets.size() == 1)
                         Message.GIVE_PLAYER
@@ -164,9 +173,10 @@ public class CommandsManager {
                     final String itemID = (String) args.get(1);
                     if (!OraxenItems.exists(itemID)) {
                         Message.ITEM_NOT_FOUND.send(sender, AdventureUtils.tagResolver("item", itemID));
-                    } else for (final Player target : targets) for (ItemStack itemStack : target.getInventory().getContents())
-                        if (!ItemUtils.isEmpty(itemStack) && OraxenItems.getIdByItem(itemStack).equals(itemID))
-                            target.getInventory().remove(itemStack);
+                    } else for (final Player target : targets)
+                        for (ItemStack itemStack : target.getInventory().getContents())
+                            if (!ItemUtils.isEmpty(itemStack) && OraxenItems.getIdByItem(itemStack).equals(itemID))
+                                target.getInventory().remove(itemStack);
                 });
     }
 }

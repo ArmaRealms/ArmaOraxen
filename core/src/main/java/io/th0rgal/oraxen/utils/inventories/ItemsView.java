@@ -7,6 +7,7 @@ import dev.triumphteam.gui.guis.GuiItem;
 import dev.triumphteam.gui.guis.PaginatedGui;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
+import io.th0rgal.oraxen.compatibilities.provided.placeholderapi.PapiAliases;
 import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.items.ItemParser;
@@ -16,6 +17,7 @@ import io.th0rgal.oraxen.utils.Utils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 
@@ -103,7 +105,10 @@ public class ItemsView {
             if (itemStack == null || itemStack.getType().isAir()) continue;
 
             GuiItem guiItem = new GuiItem(itemStack);
-            guiItem.setAction(e -> e.getWhoClicked().getInventory().addItem(ItemUpdater.updateItem(guiItem.getItemStack())));
+            guiItem.setAction(e -> {
+                Player player = (Player) e.getWhoClicked();
+                player.getInventory().addItem(PapiAliases.setPlaceholders(player, ItemUpdater.updateItem(guiItem.getItemStack().clone())));
+            });
             gui.addItem(guiItem);
         }
 
