@@ -117,8 +117,8 @@ public class ItemUpdater implements Listener {
 
             // Add all enchantments from oldItem and add all from newItem aslong as it is not the same Enchantments
             for (Map.Entry<Enchantment, Integer> entry : oldMeta.getEnchants().entrySet())
-                itemMeta.addEnchant(entry.getKey(), entry.getValue(), true);
-            for (Map.Entry<Enchantment, Integer> entry : newMeta.getEnchants().entrySet().stream().filter(e -> !oldMeta.getEnchants().containsKey(e.getKey())).toList())
+                itemMeta.removeEnchant(entry.getKey());
+            for (Map.Entry<Enchantment, Integer> entry : newMeta.getEnchants().entrySet())
                 itemMeta.addEnchant(entry.getKey(), entry.getValue(), true);
 
             int cmd = newMeta.hasCustomModelData() ? newMeta.getCustomModelData() : oldMeta.hasCustomModelData() ? oldMeta.getCustomModelData() : 0;
