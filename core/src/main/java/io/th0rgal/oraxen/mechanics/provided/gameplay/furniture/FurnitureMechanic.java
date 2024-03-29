@@ -385,7 +385,7 @@ public class FurnitureMechanic extends Mechanic {
         } else item = placedItem;
         item.setAmount(1);
 
-        Entity baseEntity = EntityUtils.spawnEntity(correctedSpawnLocation(location, facing), entityClass, (e) -> setEntityData(e, yaw, item, facing));
+        Entity baseEntity = EntityUtils.spawnEntity(correctedSpawnLocation(location, facing), entityClass, e -> setEntityData(e, yaw, item, facing));
         if (this.isModelEngine() && PluginUtils.isEnabled("ModelEngine")) {
             spawnModelEngineFurniture(baseEntity);
         }
@@ -574,14 +574,12 @@ public class FurnitureMechanic extends Mechanic {
     }
 
     public static void setFurnitureItem(Entity entity, ItemStack item) {
-        switch (entity.getType()) {
-            case ITEM_FRAME, GLOW_ITEM_FRAME -> ((ItemFrame) entity).setItem(item, false);
-            case ARMOR_STAND -> ((ArmorStand) entity).getEquipment().setHelmet(item);
-            case ITEM_DISPLAY -> {
-                if (OraxenPlugin.supportsDisplayEntities) ((ItemDisplay) entity).setItemStack(item);
-            }
-            default -> {
-            }
+        if (entity instanceof ItemFrame itemFrame) {
+            itemFrame.setItem(item, false);
+        } else if (entity instanceof ArmorStand armorStand) {
+            armorStand.getEquipment().setHelmet(item);
+        } else if (entity instanceof ItemDisplay itemDisplay && OraxenPlugin.supportsDisplayEntities) {
+            itemDisplay.setItemStack(item);
         }
     }
 

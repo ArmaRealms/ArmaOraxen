@@ -153,36 +153,37 @@ public class Drop {
         ItemStack baseItem = OraxenItems.getItemById(sourceID).build();
         Location location = BlockHelpers.toBlockLocation(baseEntity.getLocation());
         ItemStack furnitureItem = FurnitureMechanic.getFurnitureItem(baseEntity);
-        ItemUtils.editItemMeta(furnitureItem, (itemMeta) -> {
+        ItemUtils.editItemMeta(furnitureItem, itemMeta -> {
             ItemMeta baseMeta = baseItem.getItemMeta();
             if (baseMeta != null && baseMeta.hasDisplayName())
                 itemMeta.setDisplayName(baseMeta.getDisplayName());
         });
 
         if (!canDrop(itemInHand) || !location.isWorldLoaded()) return;
-        assert location.getWorld() != null;
+        if (location.getWorld() == null) return;
 
-        if (silktouch && itemInHand.hasItemMeta() && itemInHand.getItemMeta().hasEnchant(Enchantment.SILK_TOUCH)) {
-            location.getWorld().dropItemNaturally(BlockHelpers.toCenterBlockLocation(location), baseItem);
-        } else {
-            // Drop all the items that aren't the furniture item
-            dropLoot(loots.stream().filter(loot ->
-                    !loot.getItemStack().equals(baseItem)).toList(), location, getFortuneMultiplier(itemInHand));
-            // Filter loots down to only the furniture item and drop the item in the actual Furniture to preseve color etc.
-            dropLoot(loots.stream()
-                    .filter(loot -> loot.getItemStack().equals(baseItem))
-                    .map(loot -> new Loot(sourceID, furnitureItem, loot.getProbability(), 1, loot.getMaxAmount()))
-                    .toList(), location, getFortuneMultiplier(itemInHand));
-        }
+        location.getWorld().dropItemNaturally(BlockHelpers.toCenterBlockLocation(location), furnitureItem);
+        // TODO: DISABLED FOR NOW
+//        if (silktouch && itemInHand.hasItemMeta() && itemInHand.getItemMeta().hasEnchant(Enchantment.SILK_TOUCH)) {
+//            location.getWorld().dropItemNaturally(BlockHelpers.toCenterBlockLocation(location), baseItem);
+//        } else {
+//            // Drop all the items that aren't the furniture item
+//            dropLoot(loots.stream().filter(loot ->
+//                    !loot.getItemStack().equals(baseItem)).toList(), location, getFortuneMultiplier(itemInHand));
+//            // Filter loots down to only the furniture item and drop the item in the actual Furniture to preseve color etc.
+//            dropLoot(loots.stream()
+//                    .filter(loot -> loot.getItemStack().equals(baseItem))
+//                    .map(loot -> new Loot(sourceID, furnitureItem, loot.getProbability(), 1, loot.getMaxAmount()))
+//                    .toList(), location, getFortuneMultiplier(itemInHand));
+//        }
     }
 
     private int getFortuneMultiplier(ItemStack itemInHand) {
         int fortuneMultiplier = 1;
         if (itemInHand != null) {
             ItemMeta itemMeta = itemInHand.getItemMeta();
-            if (itemMeta != null) {
-                if (fortune && itemMeta.hasEnchant(Enchantment.LOOT_BONUS_BLOCKS))
-                    fortuneMultiplier += ThreadLocalRandom.current().nextInt(itemMeta.getEnchantLevel(Enchantment.LOOT_BONUS_BLOCKS));
+            if (itemMeta != null && fortune && itemMeta.hasEnchant(Enchantment.LOOT_BONUS_BLOCKS)) {
+                fortuneMultiplier += ThreadLocalRandom.current().nextInt(itemMeta.getEnchantLevel(Enchantment.LOOT_BONUS_BLOCKS));
             }
         }
         return fortuneMultiplier;
