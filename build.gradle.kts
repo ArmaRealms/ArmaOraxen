@@ -195,7 +195,7 @@ tasks {
 
     compileJava.get().dependsOn(clean)
     build.get().dependsOn(shadowJar)
-    build.get().dependsOn(publishToMavenLocal)
+//    build.get().dependsOn(publishToMavenLocal)
 }
 
 bukkit {
