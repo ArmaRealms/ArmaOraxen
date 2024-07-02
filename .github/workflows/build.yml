@@ -30,4 +30,4 @@ jobs:
         uses: actions/upload-artifact@v4.3.1
         with:
           name: ArmaOraxen
-          path: core/build/libs/Oraxen-*.jar
+          path: core/build/libs/oraxen-*.jar

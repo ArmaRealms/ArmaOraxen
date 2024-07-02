@@ -178,7 +178,7 @@ tasks {
                 )
             )
         }
-        archiveFileName.set("Oraxen-${pluginVersion}.jar")
+        archiveFileName.set("oraxen-${pluginVersion}.jar")
         archiveClassifier.set("")
     }
 
@@ -231,7 +231,7 @@ if (pluginPath != null) {
             doLast {
                 println("Copied to plugin directory $pluginPath")
                 Path(pluginPath).listDirectoryEntries()
-                    .filter { it.fileName.toString().matches("Oraxen-.*.jar".toRegex()) }
+                    .filter { it.fileName.toString().matches("oraxen-.*.jar".toRegex()) }
                     .filterNot { it.fileName.toString().endsWith("$pluginVersion.jar") }
                     .forEach { delete(it) }
             }
