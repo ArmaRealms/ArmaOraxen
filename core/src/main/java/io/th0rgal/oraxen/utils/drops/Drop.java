@@ -183,8 +183,7 @@ public class Drop {
         int fortuneMultiplier = 1;
         if (itemInHand != null) {
             ItemMeta itemMeta = itemInHand.getItemMeta();
-            if (itemMeta != null && fortune && itemMeta.hasEnchant(Enchantment.LOOT_BONUS_BLOCKS)) {
-                if (EnchantmentWrapper.FORTUNE == null) return fortuneMultiplier;
+            if (itemMeta != null && fortune && itemMeta.hasEnchant(EnchantmentWrapper.FORTUNE)) {
                 fortuneMultiplier += ThreadLocalRandom.current().nextInt(itemMeta.getEnchantLevel(EnchantmentWrapper.FORTUNE));
             }
         }
