@@ -24,8 +24,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
       - name: Run chmod to make gradlew executable
         run: chmod +x ./gradlew
-      - name: Run Gradle Build
+      - name: Run Gradle Build for Core
         run: ./gradlew core:build
+      - name: Run Gradle Build for Plugin
+        run: ./gradlew build
       - name: Upload Plugin
         uses: actions/upload-artifact@v4.3.1
         with:
