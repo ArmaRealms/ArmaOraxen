@@ -155,8 +155,8 @@ tasks {
 
         archiveClassifier = null
         relocate("org.bstats", "io.th0rgal.oraxen.shaded.bstats")
+        relocate("com.jeff_media.customblockdata", "io.th0rgal.oraxen.shaded.jeff_media.customblockdata")
         //relocate("dev.triumphteam.gui", "io.th0rgal.oraxen.shaded.triumphteam.gui")
-        //relocate("com.jeff_media", "io.th0rgal.oraxen.shaded.jeff_media")
         //relocate("com.github.stefvanschie.inventoryframework", "io.th0rgal.oraxen.shaded.inventoryframework")
         //relocate("me.gabytm.util.actions", "io.th0rgal.oraxen.shaded.actions")
         //relocate("org.intellij.lang.annotations", "io.th0rgal.oraxen.shaded.intellij.annotations")
