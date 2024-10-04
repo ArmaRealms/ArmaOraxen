@@ -20,8 +20,8 @@ public class PapiAliases {
     }
 
     @NotNull
-    @Contract("_, _ -> param2")
-    public static ItemStack setPlaceholders(final Player player, @NotNull final ItemStack item) {
+    @Contract("_, _, _ -> param2")
+    public static ItemStack setPlaceholders(final Player player, @NotNull final ItemStack item, final boolean updateLore) {
 
         if (item.hasItemMeta()) {
             final ItemMeta meta = item.getItemMeta();
@@ -30,13 +30,15 @@ public class PapiAliases {
             if (meta.hasItemName()) {
                 meta.setItemName(setPlaceholders(player, meta.getItemName()));
             }
-            final List<String> itemLore = meta.getLore();
-            if (itemLore != null && !itemLore.isEmpty()) {
-                final List<String> lore = new ArrayList<>();
-                for (final var line : itemLore) {
-                    lore.add(setPlaceholders(player, line));
+            if (updateLore) {
+                final List<String> itemLore = meta.getLore();
+                if (itemLore != null && !itemLore.isEmpty()) {
+                    final List<String> lore = new ArrayList<>();
+                    for (final var line : itemLore) {
+                        lore.add(setPlaceholders(player, line));
+                    }
+                    meta.setLore(lore);
                 }
-                meta.setLore(lore);
             }
             item.setItemMeta(meta);
         }
