@@ -2,7 +2,6 @@ name: Build and Upload
 
 on:
   push:
-    branches: [ "dev/update" ]
   workflow_dispatch:
 
 permissions:

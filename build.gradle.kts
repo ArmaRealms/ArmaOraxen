@@ -180,7 +180,7 @@ tasks {
                 )
             )
         }
-        archiveFileName.set("oraxen-${pluginVersion}.jar")
+        archiveFileName.set("Oraxen-${pluginVersion}.jar")
         archiveClassifier.set("")
     }
 

@@ -1,5 +1,6 @@
 package io.th0rgal.oraxen.compatibilities.provided.placeholderapi;
 
+import io.th0rgal.oraxen.utils.VersionUtil;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -15,24 +16,32 @@ public class PapiAliases {
     private PapiAliases() {}
 
     @NotNull
-    public static String setPlaceholders(Player player, String text) {
+    public static String setPlaceholders(final Player player, final String text) {
         return PlaceholderAPI.setPlaceholders(player, text);
     }
 
     @NotNull
-    @Contract("_, _ -> param2")
-    public static ItemStack setPlaceholders(Player player, @NotNull ItemStack item) {
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
+    @Contract("_, _, _ -> param2")
+    public static ItemStack setPlaceholders(final Player player, @NotNull final ItemStack item, final boolean updateLore) {
+
+        if (item.hasItemMeta()) {
+            final ItemMeta meta = item.getItemMeta();
             if (meta.hasDisplayName())
                 meta.setDisplayName(setPlaceholders(player, meta.getDisplayName()));
-            List<String> itemLore = meta.getLore();
-            if (itemLore != null && !itemLore.isEmpty()) {
-                List<String> lore = new ArrayList<>();
-                for (var line : itemLore) {
-                    lore.add(setPlaceholders(player, line));
+            if (VersionUtil.atOrAbove("1.21")) {
+                if (meta.hasItemName()) {
+                    meta.setItemName(setPlaceholders(player, meta.getItemName()));
                 }
-                meta.setLore(lore);
+            }
+            if (updateLore) {
+                final List<String> itemLore = meta.getLore();
+                if (itemLore != null && !itemLore.isEmpty()) {
+                    final List<String> lore = new ArrayList<>();
+                    for (final var line : itemLore) {
+                        lore.add(setPlaceholders(player, line));
+                    }
+                    meta.setLore(lore);
+                }
             }
             item.setItemMeta(meta);
         }

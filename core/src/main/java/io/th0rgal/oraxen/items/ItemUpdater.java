@@ -4,11 +4,13 @@ import com.jeff_media.morepersistentdatatypes.DataType;
 import com.jeff_media.persistentdataserializer.PersistentDataSerializer;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
+import io.th0rgal.oraxen.compatibilities.provided.placeholderapi.PapiAliases;
 import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.nms.NMSHandlers;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.ItemUtils;
 import io.th0rgal.oraxen.utils.VersionUtil;
+import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -40,33 +42,33 @@ import static io.th0rgal.oraxen.items.ItemBuilder.UNSTACKABLE_KEY;
 public class ItemUpdater implements Listener {
 
     @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
+    public void onPlayerJoin(final PlayerJoinEvent event) {
         if (!Settings.UPDATE_ITEMS.toBool()) return;
 
-        PlayerInventory inventory = event.getPlayer().getInventory();
+        final PlayerInventory inventory = event.getPlayer().getInventory();
         for (int i = 0; i < inventory.getSize(); i++) {
-            ItemStack oldItem = inventory.getItem(i);
-            ItemStack newItem = ItemUpdater.updateItem(oldItem);
+            final ItemStack oldItem = inventory.getItem(i);
+            final ItemStack newItem = ItemUpdater.updateItem(oldItem);
             if (oldItem == null || oldItem.equals(newItem)) continue;
             inventory.setItem(i, newItem);
         }
     }
 
     @EventHandler
-    public void onPlayerPickUp(EntityPickupItemEvent event) {
+    public void onPlayerPickUp(final EntityPickupItemEvent event) {
         if (!Settings.UPDATE_ITEMS.toBool()) return;
         if (!(event.getEntity() instanceof Player)) return;
 
-        ItemStack oldItem = event.getItem().getItemStack();
-        ItemStack newItem = ItemUpdater.updateItem(oldItem);
+        final ItemStack oldItem = event.getItem().getItemStack();
+        final ItemStack newItem = ItemUpdater.updateItem(oldItem);
         if (oldItem.equals(newItem)) return;
         event.getItem().setItemStack(newItem);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
-    public void onItemEnchant(PrepareItemEnchantEvent event) {
-        String id = OraxenItems.getIdByItem(event.getItem());
-        ItemBuilder builder = OraxenItems.getItemById(id);
+    public void onItemEnchant(final PrepareItemEnchantEvent event) {
+        final String id = OraxenItems.getIdByItem(event.getItem());
+        final ItemBuilder builder = OraxenItems.getItemById(id);
         if (builder == null || !builder.hasOraxenMeta()) return;
 
         if (builder.getOraxenMeta().isDisableEnchanting()) {
@@ -75,11 +77,11 @@ public class ItemUpdater implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
-    public void onItemEnchant(PrepareAnvilEvent event) {
-        ItemStack item = event.getInventory().getItem(0);
-        ItemStack result = event.getResult();
-        String id = OraxenItems.getIdByItem(item);
-        ItemBuilder builder = OraxenItems.getItemById(id);
+    public void onItemEnchant(final PrepareAnvilEvent event) {
+        final ItemStack item = event.getInventory().getItem(0);
+        final ItemStack result = event.getResult();
+        final String id = OraxenItems.getIdByItem(item);
+        final ItemBuilder builder = OraxenItems.getItemById(id);
         if (builder == null || !builder.hasOraxenMeta()) return;
 
         if (builder.getOraxenMeta().isDisableEnchanting()) {
@@ -90,13 +92,13 @@ public class ItemUpdater implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onUseMaxDamageItem(BlockBreakEvent event) {
-        Player player = event.getPlayer();
-        ItemStack itemStack = player.getInventory().getItemInMainHand();
+    public void onUseMaxDamageItem(final BlockBreakEvent event) {
+        final Player player = event.getPlayer();
+        final ItemStack itemStack = player.getInventory().getItemInMainHand();
 
         if (!VersionUtil.atOrAbove("1.20.5") || player.getGameMode() == GameMode.CREATIVE) return;
         if (ItemUtils.isEmpty(itemStack) || ItemUtils.isTool(itemStack)) return;
-        if (!(itemStack.getItemMeta() instanceof Damageable damageable) || !damageable.hasMaxDamage()) return;
+        if (!(itemStack.getItemMeta() instanceof final Damageable damageable) || !damageable.hasMaxDamage()) return;
 
         Optional.ofNullable(OraxenItems.getBuilderByItem(itemStack)).ifPresent(i -> {
                 if (i.isDamagedOnBlockBreak()) itemStack.damage(1, player);
@@ -104,13 +106,13 @@ public class ItemUpdater implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onUseMaxDamageItem(EntityDamageByEntityEvent event) {
-        if (!VersionUtil.atOrAbove("1.20.5") || !(event.getDamager() instanceof LivingEntity entity)) return;
-        ItemStack itemStack = Optional.ofNullable(entity.getEquipment()).map(EntityEquipment::getItemInMainHand).orElse(null);
+    public void onUseMaxDamageItem(final EntityDamageByEntityEvent event) {
+        if (!VersionUtil.atOrAbove("1.20.5") || !(event.getDamager() instanceof final LivingEntity entity)) return;
+        final ItemStack itemStack = Optional.ofNullable(entity.getEquipment()).map(EntityEquipment::getItemInMainHand).orElse(null);
 
-        if (entity instanceof Player player && player.getGameMode() == GameMode.CREATIVE) return;
+        if (entity instanceof final Player player && player.getGameMode() == GameMode.CREATIVE) return;
         if (ItemUtils.isEmpty(itemStack) || ItemUtils.isTool(itemStack)) return;
-        if (!(itemStack.getItemMeta() instanceof Damageable damageable) || !damageable.hasMaxDamage()) return;
+        if (!(itemStack.getItemMeta() instanceof final Damageable damageable) || !damageable.hasMaxDamage()) return;
 
         Optional.ofNullable(OraxenItems.getBuilderByItem(itemStack)).ifPresent(i -> {
             if (i.isDamagedOnEntityHit()) itemStack.damage(1, entity);
@@ -119,19 +121,19 @@ public class ItemUpdater implements Listener {
 
     // Until Paper changes getReplacement to use food-component, this is the best way
     @EventHandler(ignoreCancelled = true)
-    public void onUseConvertedTo(PlayerItemConsumeEvent event) {
-        ItemStack itemStack = event.getItem();
+    public void onUseConvertedTo(final PlayerItemConsumeEvent event) {
+        final ItemStack itemStack = event.getItem();
         if (!VersionUtil.atOrAbove("1.21")) return;
         if (!itemStack.hasItemMeta() || !itemStack.getItemMeta().hasFood()) return;
-        ItemStack usingConvertsTo = itemStack.getItemMeta().getFood().getUsingConvertsTo();
+        final ItemStack usingConvertsTo = itemStack.getItemMeta().getFood().getUsingConvertsTo();
         if (usingConvertsTo == null || !itemStack.isSimilar(ItemUpdater.updateItem(usingConvertsTo))) return;
 
-        PlayerInventory inventory = event.getPlayer().getInventory();
+        final PlayerInventory inventory = event.getPlayer().getInventory();
         if (inventory.firstEmpty() == -1) event.setItem(event.getItem().add(usingConvertsTo.getAmount()));
         else Bukkit.getScheduler().runTask(OraxenPlugin.get(), () -> {
             for (int i = 0; i < inventory.getSize(); i++) {
-                ItemStack oldItem = inventory.getItem(i);
-                ItemStack newItem = ItemUpdater.updateItem(oldItem);
+                final ItemStack oldItem = inventory.getItem(i);
+                final ItemStack newItem = ItemUpdater.updateItem(oldItem);
                 if (!itemStack.isSimilar(newItem)) continue;
 
                 // Remove the item and add it to fix stacking
@@ -143,8 +145,8 @@ public class ItemUpdater implements Listener {
 
     private static final NamespacedKey IF_UUID = Objects.requireNonNull(NamespacedKey.fromString("oraxen:if-uuid"));
     private static final NamespacedKey MF_GUI = Objects.requireNonNull(NamespacedKey.fromString("oraxen:mf-gui"));
-    public static ItemStack updateItem(ItemStack oldItem) {
-        String id = OraxenItems.getIdByItem(oldItem);
+    public static ItemStack updateItem(final ItemStack oldItem) {
+        final String id = OraxenItems.getIdByItem(oldItem);
         if (id == null) return oldItem;
 
         // Oraxens Inventory adds a dumb PDC entry to items, this will remove them
@@ -154,31 +156,31 @@ public class ItemUpdater implements Listener {
             itemMeta.getPersistentDataContainer().remove(MF_GUI);
         });
 
-        Optional<ItemBuilder> optionalBuilder = OraxenItems.getOptionalItemById(id);
+        final Optional<ItemBuilder> optionalBuilder = OraxenItems.getOptionalItemById(id);
         if (optionalBuilder.isEmpty() || optionalBuilder.get().getOraxenMeta().isNoUpdate()) return oldItem;
-        ItemBuilder newItemBuilder = optionalBuilder.get();
+        final ItemBuilder newItemBuilder = optionalBuilder.get();
 
-        ItemStack newItem = NMSHandlers.getHandler() != null ? NMSHandlers.getHandler().copyItemNBTTags(oldItem, newItemBuilder.build()) : newItemBuilder.build();
+        final ItemStack newItem = NMSHandlers.getHandler() != null ? NMSHandlers.getHandler().copyItemNBTTags(oldItem, newItemBuilder.build()) : newItemBuilder.build();
         newItem.setAmount(oldItem.getAmount());
 
         ItemUtils.editItemMeta(newItem, itemMeta -> {
-            ItemMeta oldMeta = oldItem.getItemMeta();
-            ItemMeta newMeta = newItem.getItemMeta();
+            final ItemMeta oldMeta = oldItem.getItemMeta();
+            final ItemMeta newMeta = newItem.getItemMeta();
             if (oldMeta == null || newMeta == null) return;
-            PersistentDataContainer oldPdc = oldMeta.getPersistentDataContainer();
-            PersistentDataContainer itemPdc = itemMeta.getPersistentDataContainer();
+            final PersistentDataContainer oldPdc = oldMeta.getPersistentDataContainer();
+            final PersistentDataContainer itemPdc = itemMeta.getPersistentDataContainer();
 
             // Transfer over all PDC entries from oldItem to newItem
-            List<Map<?, ?>> oldPdcMap = PersistentDataSerializer.toMapList(oldPdc);
+            final List<Map<?, ?>> oldPdcMap = PersistentDataSerializer.toMapList(oldPdc);
             PersistentDataSerializer.fromMapList(oldPdcMap, itemPdc);
 
             // Add all enchantments from oldItem and add all from newItem aslong as it is not the same Enchantments
-            for (Map.Entry<Enchantment, Integer> entry : oldMeta.getEnchants().entrySet())
+            for (final Map.Entry<Enchantment, Integer> entry : oldMeta.getEnchants().entrySet())
                 itemMeta.removeEnchant(entry.getKey());
-            for (Map.Entry<Enchantment, Integer> entry : newMeta.getEnchants().entrySet())
+            for (final Map.Entry<Enchantment, Integer> entry : newMeta.getEnchants().entrySet())
                 itemMeta.addEnchant(entry.getKey(), entry.getValue(), true);
 
-            Integer cmd = newMeta.hasCustomModelData() ? (Integer) newMeta.getCustomModelData() : oldMeta.hasCustomModelData() ? (Integer) oldMeta.getCustomModelData() : null;
+            final Integer cmd = newMeta.hasCustomModelData() ? (Integer) newMeta.getCustomModelData() : oldMeta.hasCustomModelData() ? (Integer) oldMeta.getCustomModelData() : null;
             itemMeta.setCustomModelData(cmd);
 
             // If OraxenItem has no lore, we should assume that 3rd-party plugin has added lore
@@ -195,13 +197,13 @@ public class ItemUpdater implements Listener {
             else if (oldMeta.hasAttributeModifiers()) itemMeta.setAttributeModifiers(oldMeta.getAttributeModifiers());
 
             // Transfer over durability from old item
-            if (itemMeta instanceof Damageable damageable && oldMeta instanceof Damageable oldDmg) {
+            if (itemMeta instanceof final Damageable damageable && oldMeta instanceof final Damageable oldDmg) {
                 if (oldDmg.hasDamage()) damageable.setDamage(oldDmg.getDamage());
             }
 
             if (oldMeta.isUnbreakable()) itemMeta.setUnbreakable(true);
 
-            if (itemMeta instanceof LeatherArmorMeta leatherMeta && oldMeta instanceof LeatherArmorMeta oldLeatherMeta && newMeta instanceof LeatherArmorMeta newLeatherMeta) {
+            if (itemMeta instanceof final LeatherArmorMeta leatherMeta && oldMeta instanceof final LeatherArmorMeta oldLeatherMeta && newMeta instanceof final LeatherArmorMeta newLeatherMeta) {
                 // If it is not custom armor, keep color
                 if (oldItem.getType() == Material.LEATHER_HORSE_ARMOR) leatherMeta.setColor(oldLeatherMeta.getColor());
                 // If it is custom armor we use newLeatherMeta color, since the builder would have been altered
@@ -212,15 +214,15 @@ public class ItemUpdater implements Listener {
                 }
             }
 
-            if (itemMeta instanceof PotionMeta potionMeta && oldMeta instanceof PotionMeta oldPotionMeta) {
+            if (itemMeta instanceof final PotionMeta potionMeta && oldMeta instanceof final PotionMeta oldPotionMeta) {
                 potionMeta.setColor(oldPotionMeta.getColor());
             }
 
-            if (itemMeta instanceof MapMeta mapMeta && oldMeta instanceof MapMeta oldMapMeta) {
+            if (itemMeta instanceof final MapMeta mapMeta && oldMeta instanceof final MapMeta oldMapMeta) {
                 mapMeta.setColor(oldMapMeta.getColor());
             }
 
-            if (VersionUtil.atOrAbove("1.20") && itemMeta instanceof ArmorMeta armorMeta && oldMeta instanceof ArmorMeta oldArmorMeta) {
+            if (VersionUtil.atOrAbove("1.20") && itemMeta instanceof final ArmorMeta armorMeta && oldMeta instanceof final ArmorMeta oldArmorMeta) {
                 armorMeta.setTrim(oldArmorMeta.getTrim());
             }
 
@@ -251,7 +253,7 @@ public class ItemUpdater implements Listener {
             // On 1.20.5+ we use ItemName which is different from userchanged displaynames
             if (!VersionUtil.atOrAbove("1.20.5")) {
 
-                String oldDisplayName = oldMeta.hasDisplayName() ? AdventureUtils.parseLegacy(VersionUtil.isPaperServer() ? AdventureUtils.MINI_MESSAGE.serialize(oldMeta.displayName()) : AdventureUtils.parseLegacy(oldMeta.getDisplayName())) : null;
+                final String oldDisplayName = oldMeta.hasDisplayName() ? AdventureUtils.parseLegacy(VersionUtil.isPaperServer() ? AdventureUtils.MINI_MESSAGE.serialize(oldMeta.displayName()) : AdventureUtils.parseLegacy(oldMeta.getDisplayName())) : null;
                 String originalName = AdventureUtils.parseLegacy(oldPdc.getOrDefault(ORIGINAL_NAME_KEY, DataType.STRING, ""));
 
                 if (Settings.OVERRIDE_RENAMED_ITEMS.toBool()) {
@@ -287,6 +289,7 @@ public class ItemUpdater implements Listener {
             else itemPdc.set(UNSTACKABLE_KEY, DataType.UUID, UUID.randomUUID());
         });
 
+        PapiAliases.setPlaceholders(null, newItem, false);
         return newItem;
     }
 

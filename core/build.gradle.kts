@@ -51,7 +51,7 @@ publishing {
             }
 
             url = uri(publishData.getRepository())
-            name = "oraxen"
+            name = "Oraxen"
         }
     }
 }
