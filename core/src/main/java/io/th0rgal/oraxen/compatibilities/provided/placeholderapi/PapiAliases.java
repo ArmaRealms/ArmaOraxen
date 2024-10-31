@@ -1,5 +1,6 @@
 package io.th0rgal.oraxen.compatibilities.provided.placeholderapi;
 
+import io.th0rgal.oraxen.utils.VersionUtil;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -27,8 +28,10 @@ public class PapiAliases {
             final ItemMeta meta = item.getItemMeta();
             if (meta.hasDisplayName())
                 meta.setDisplayName(setPlaceholders(player, meta.getDisplayName()));
-            if (meta.hasItemName()) {
-                meta.setItemName(setPlaceholders(player, meta.getItemName()));
+            if (VersionUtil.atOrAbove("1.21")) {
+                if (meta.hasItemName()) {
+                    meta.setItemName(setPlaceholders(player, meta.getItemName()));
+                }
             }
             if (updateLore) {
                 final List<String> itemLore = meta.getLore();
