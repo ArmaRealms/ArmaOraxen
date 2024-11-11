@@ -10,7 +10,6 @@ import io.th0rgal.oraxen.nms.NMSHandlers;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.ItemUtils;
 import io.th0rgal.oraxen.utils.VersionUtil;
-import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -31,10 +30,19 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.inventory.meta.*;
+import org.bukkit.inventory.meta.ArmorMeta;
+import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
+import org.bukkit.inventory.meta.MapMeta;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 
 import static io.th0rgal.oraxen.items.ItemBuilder.ORIGINAL_NAME_KEY;
 import static io.th0rgal.oraxen.items.ItemBuilder.UNSTACKABLE_KEY;
@@ -101,13 +109,14 @@ public class ItemUpdater implements Listener {
         if (!(itemStack.getItemMeta() instanceof final Damageable damageable) || !damageable.hasMaxDamage()) return;
 
         Optional.ofNullable(OraxenItems.getBuilderByItem(itemStack)).ifPresent(i -> {
-                if (i.isDamagedOnBlockBreak()) itemStack.damage(1, player);
+            if (i.isDamagedOnBlockBreak()) itemStack.damage(1, player);
         });
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onUseMaxDamageItem(final EntityDamageByEntityEvent event) {
-        if (!VersionUtil.atOrAbove("1.20.5") || !(event.getDamager() instanceof final LivingEntity entity)) return;
+        if (!VersionUtil.atOrAbove("1.20.5") || VersionUtil.atOrAbove("1.21.2")) return;
+        if (!(event.getDamager() instanceof final LivingEntity entity)) return;
         final ItemStack itemStack = Optional.ofNullable(entity.getEquipment()).map(EntityEquipment::getItemInMainHand).orElse(null);
 
         if (entity instanceof final Player player && player.getGameMode() == GameMode.CREATIVE) return;
@@ -123,9 +132,9 @@ public class ItemUpdater implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onUseConvertedTo(final PlayerItemConsumeEvent event) {
         final ItemStack itemStack = event.getItem();
-        if (!VersionUtil.atOrAbove("1.21")) return;
-        if (!itemStack.hasItemMeta() || !itemStack.getItemMeta().hasFood()) return;
-        final ItemStack usingConvertsTo = itemStack.getItemMeta().getFood().getUsingConvertsTo();
+        final ItemMeta itemMeta = itemStack.getItemMeta();
+        if (!VersionUtil.atOrAbove("1.21") && itemMeta == null) return;
+        final ItemStack usingConvertsTo = ItemUtils.getUsingConvertsTo(itemMeta);
         if (usingConvertsTo == null || !itemStack.isSimilar(ItemUpdater.updateItem(usingConvertsTo))) return;
 
         final PlayerInventory inventory = event.getPlayer().getInventory();
@@ -145,6 +154,7 @@ public class ItemUpdater implements Listener {
 
     private static final NamespacedKey IF_UUID = Objects.requireNonNull(NamespacedKey.fromString("oraxen:if-uuid"));
     private static final NamespacedKey MF_GUI = Objects.requireNonNull(NamespacedKey.fromString("oraxen:mf-gui"));
+
     public static ItemStack updateItem(final ItemStack oldItem) {
         final String id = OraxenItems.getIdByItem(oldItem);
         if (id == null) return oldItem;
@@ -206,8 +216,8 @@ public class ItemUpdater implements Listener {
             if (itemMeta instanceof final LeatherArmorMeta leatherMeta && oldMeta instanceof final LeatherArmorMeta oldLeatherMeta && newMeta instanceof final LeatherArmorMeta newLeatherMeta) {
                 // If it is not custom armor, keep color
                 if (oldItem.getType() == Material.LEATHER_HORSE_ARMOR) leatherMeta.setColor(oldLeatherMeta.getColor());
-                // If it is custom armor we use newLeatherMeta color, since the builder would have been altered
-                // in the process of creating the shader images. Then we just save the builder to update the config
+                    // If it is custom armor we use newLeatherMeta color, since the builder would have been altered
+                    // in the process of creating the shader images. Then we just save the builder to update the config
                 else {
                     leatherMeta.setColor(newLeatherMeta.getColor());
                     newItemBuilder.save();
@@ -230,8 +240,10 @@ public class ItemUpdater implements Listener {
                 if (newMeta.hasFood()) itemMeta.setFood(newMeta.getFood());
                 else if (oldMeta.hasFood()) itemMeta.setFood(oldMeta.getFood());
 
-                if (newMeta.hasEnchantmentGlintOverride()) itemMeta.setEnchantmentGlintOverride(newMeta.getEnchantmentGlintOverride());
-                else if (oldMeta.hasEnchantmentGlintOverride()) itemMeta.setEnchantmentGlintOverride(oldMeta.getEnchantmentGlintOverride());
+                if (newMeta.hasEnchantmentGlintOverride())
+                    itemMeta.setEnchantmentGlintOverride(newMeta.getEnchantmentGlintOverride());
+                else if (oldMeta.hasEnchantmentGlintOverride())
+                    itemMeta.setEnchantmentGlintOverride(oldMeta.getEnchantmentGlintOverride());
 
                 if (newMeta.hasMaxStackSize()) itemMeta.setMaxStackSize(newMeta.getMaxStackSize());
                 else if (oldMeta.hasMaxStackSize()) itemMeta.setMaxStackSize(oldMeta.getMaxStackSize());
@@ -248,6 +260,32 @@ public class ItemUpdater implements Listener {
             if (VersionUtil.atOrAbove("1.21")) {
                 if (newMeta.hasJukeboxPlayable()) itemMeta.setJukeboxPlayable(newMeta.getJukeboxPlayable());
                 else if (oldMeta.hasJukeboxPlayable()) itemMeta.setJukeboxPlayable(oldMeta.getJukeboxPlayable());
+            }
+
+            if (VersionUtil.atOrAbove("1.21.2")) {
+                if (newMeta.hasEquippable()) itemMeta.setEquippable(newMeta.getEquippable());
+                else if (oldMeta.hasEquippable()) itemMeta.setEquippable(newMeta.getEquippable());
+
+                if (newMeta.isGlider()) itemMeta.setGlider(true);
+                else if (oldMeta.isGlider()) itemMeta.setGlider(true);
+
+                if (newMeta.hasItemModel()) itemMeta.setItemModel(newMeta.getItemModel());
+                else if (oldMeta.hasItemModel()) itemMeta.setItemModel(oldMeta.getItemModel());
+
+                if (newMeta.hasUseCooldown()) itemMeta.setUseCooldown(newMeta.getUseCooldown());
+                else if (oldMeta.hasUseCooldown()) itemMeta.setUseCooldown(oldMeta.getUseCooldown());
+
+                if (newMeta.hasUseRemainder()) itemMeta.setUseRemainder(newMeta.getUseRemainder());
+                else if (oldMeta.hasUseRemainder()) itemMeta.setUseRemainder(oldMeta.getUseRemainder());
+
+                if (newMeta.hasDamageResistant()) itemMeta.setDamageResistant(newMeta.getDamageResistant());
+                else if (oldMeta.hasDamageResistant()) itemMeta.setDamageResistant(oldMeta.getDamageResistant());
+
+                if (newMeta.hasTooltipStyle()) itemMeta.setTooltipStyle(newMeta.getTooltipStyle());
+                else if (oldMeta.hasTooltipStyle()) itemMeta.setTooltipStyle(oldMeta.getTooltipStyle());
+
+                if (newMeta.hasEnchantable()) itemMeta.setEnchantable(newMeta.getEnchantable());
+                else if (oldMeta.hasEnchantable()) itemMeta.setEnchantable(oldMeta.getEnchantable());
             }
 
             // On 1.20.5+ we use ItemName which is different from userchanged displaynames
