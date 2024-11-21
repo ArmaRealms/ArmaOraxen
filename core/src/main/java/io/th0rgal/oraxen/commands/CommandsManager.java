@@ -1,7 +1,11 @@
 package io.th0rgal.oraxen.commands;
 
 import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.*;
+import dev.jorel.commandapi.arguments.ArgumentSuggestions;
+import dev.jorel.commandapi.arguments.EntitySelectorArgument;
+import dev.jorel.commandapi.arguments.GreedyStringArgument;
+import dev.jorel.commandapi.arguments.IntegerArgument;
+import dev.jorel.commandapi.arguments.TextArgument;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.compatibilities.provided.placeholderapi.PapiAliases;
@@ -108,8 +112,10 @@ public class CommandsManager {
                     for (final Player target : targets) {
                         for (final ItemStack item : items) {
                             final Map<Integer, ItemStack> output = target.getInventory().addItem(PapiAliases.setPlaceholders(target, item.clone(), true));
-                            for (final ItemStack stack : output.values()) {
-                                target.getWorld().dropItem(target.getLocation(), stack);
+                            if (!output.isEmpty()) {
+                                for (final ItemStack stack : output.values()) {
+                                    target.getWorld().dropItem(target.getLocation(), stack);
+                                }
                             }
                         }
                     }
@@ -145,8 +151,10 @@ public class CommandsManager {
 
                     for (final Player target : targets) {
                         final Map<Integer, ItemStack> output = target.getInventory().addItem(PapiAliases.setPlaceholders(target, ItemUpdater.updateItem(itemBuilder.build()).clone(), true));
-                        for (final ItemStack stack : output.values()) {
-                            target.getWorld().dropItem(target.getLocation(), stack);
+                        if (!output.isEmpty()) {
+                            for (final ItemStack stack : output.values()) {
+                                target.getWorld().dropItem(target.getLocation(), stack);
+                            }
                         }
                     }
 
