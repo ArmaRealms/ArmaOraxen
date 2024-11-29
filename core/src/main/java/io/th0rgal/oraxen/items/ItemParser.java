@@ -158,8 +158,10 @@ public class ItemParser {
         if (components.contains("fire_resistant")) item.setFireResistant(components.getBoolean("fire_resistant"));
         if (components.contains("hide_tooltip")) item.setHideToolTip(components.getBoolean("hide_tooltip"));
 
-        Optional.ofNullable(components.getConfigurationSection("food")).ifPresent(food ->NMSHandlers.getHandler().foodComponent(item, food));
-        Optional.ofNullable(components.getConfigurationSection("tool")).ifPresent(toolSection -> parseToolComponent(item, toolSection));
+        Optional.ofNullable(components.getConfigurationSection("food"))
+                .ifPresent(food -> NMSHandlers.getHandler().foodComponent(item, food));
+        Optional.ofNullable(components.getConfigurationSection("tool"))
+                .ifPresent(toolSection -> parseToolComponent(item, toolSection));
 
         if (!VersionUtil.atOrAbove("1.21")) return;
 
@@ -201,6 +203,9 @@ public class ItemParser {
         if (components.contains("glider")) item.setGlider(components.getBoolean("glider"));
 
         Optional.ofNullable(components.getConfigurationSection("consumable")).ifPresent(consumableSection -> NMSHandlers.getHandler().consumableComponent(item, consumableSection));
+
+        Optional.ofNullable(components.getConfigurationSection("consumable"))
+                .ifPresent(consumableSection -> NMSHandlers.getHandler().consumableComponent(item, consumableSection));
 
     }
 
@@ -294,9 +299,6 @@ public class ItemParser {
         item.setToolComponent(toolComponent);
     }
 
-    private void parseConsumableComponent(ItemBuilder item, @NotNull ConfigurationSection consumableSection) {
-    }
-
     private void parseEquippableComponent(ItemBuilder item, ConfigurationSection equippableSection) {
         EquippableComponent equippableComponent = new ItemStack(type).getItemMeta().getEquippable();
 
@@ -316,9 +318,12 @@ public class ItemParser {
         if (equippableSection.contains("dispensable")) equippableComponent.setDispensable(equippableSection.getBoolean("dispensable", true));
         if (equippableSection.contains("swappable")) equippableComponent.setSwappable(equippableSection.getBoolean("swappable", true));
 
-        Optional.ofNullable(equippableSection.getString("model", null)).map(NamespacedKey::fromString).ifPresent(equippableComponent::setModel);
-        Optional.ofNullable(equippableSection.getString("camera_overlay")).map(NamespacedKey::fromString).ifPresent(equippableComponent::setCameraOverlay);
-        Optional.ofNullable(equippableSection.getString("equip_sound")).map(Key::key).map(Registry.SOUNDS::get).ifPresent(equippableComponent::setEquipSound);
+        Optional.ofNullable(equippableSection.getString("model", null)).map(NamespacedKey::fromString)
+                .ifPresent(equippableComponent::setModel);
+        Optional.ofNullable(equippableSection.getString("camera_overlay")).map(NamespacedKey::fromString)
+                .ifPresent(equippableComponent::setCameraOverlay);
+        Optional.ofNullable(equippableSection.getString("equip_sound")).map(Key::key).map(Registry.SOUNDS::get)
+                .ifPresent(equippableComponent::setEquipSound);
 
         item.setEquippableComponent(equippableComponent);
     }
@@ -344,7 +349,6 @@ public class ItemParser {
         }
 
         if (section.contains("PotionEffects")) {
-            @SuppressWarnings("unchecked") // because this sections must always return a List<LinkedHashMap<String, ?>>
             List<LinkedHashMap<String, Object>> potionEffects = (List<LinkedHashMap<String, Object>>) section
                     .getList("PotionEffects");
             if (potionEffects == null) return;
@@ -369,7 +373,7 @@ public class ItemParser {
                     final Object persistentDataType = PersistentDataType.class
                             .getDeclaredField((String) attributeJson.get("type")).get(null);
                     item.addCustomTag(new NamespacedKey(keyContent[0], keyContent[1]),
-                            (PersistentDataType) persistentDataType,
+                            (PersistentDataType<Object, Object>) persistentDataType,
                             attributeJson.get("value"));
                 }
             } catch (IllegalAccessException | NoSuchFieldException e) {
@@ -378,16 +382,17 @@ public class ItemParser {
         }
 
         if (section.contains("AttributeModifiers")) {
-            @SuppressWarnings("unchecked") // because this sections must always return a List<LinkedHashMap<String, ?>>
-            List<LinkedHashMap<String, Object>> attributes = (List<LinkedHashMap<String, Object>>) section.getList("AttributeModifiers");
-            if (attributes != null) for (LinkedHashMap<String, Object> attributeJson : attributes) {
-                attributeJson.putIfAbsent("uuid", UUID.randomUUID().toString());
-                attributeJson.putIfAbsent("name", "oraxen:modifier");
-                attributeJson.putIfAbsent("key", "oraxen:modifier");
-                AttributeModifier attributeModifier = AttributeModifier.deserialize(attributeJson);
-                Attribute attribute = AttributeWrapper.fromString((String) attributeJson.get("attribute"));
-                item.addAttributeModifiers(attribute, attributeModifier);
-            }
+            List<LinkedHashMap<String, Object>> attributes = (List<LinkedHashMap<String, Object>>) section
+                    .getList("AttributeModifiers");
+            if (attributes != null)
+                for (LinkedHashMap<String, Object> attributeJson : attributes) {
+                    attributeJson.putIfAbsent("uuid", UUID.randomUUID().toString());
+                    attributeJson.putIfAbsent("name", "oraxen:modifier");
+                    attributeJson.putIfAbsent("key", "oraxen:modifier");
+                    AttributeModifier attributeModifier = AttributeModifier.deserialize(attributeJson);
+                    Attribute attribute = AttributeWrapper.fromString((String) attributeJson.get("attribute"));
+                    item.addAttributeModifiers(attribute, attributeModifier);
+                }
         }
 
         if (section.contains("Enchantments")) {
