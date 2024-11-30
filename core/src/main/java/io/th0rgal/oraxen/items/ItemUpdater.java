@@ -4,7 +4,6 @@ import com.jeff_media.morepersistentdatatypes.DataType;
 import com.jeff_media.persistentdataserializer.PersistentDataSerializer;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
-import io.th0rgal.oraxen.compatibilities.provided.placeholderapi.PapiAliases;
 import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.nms.NMSHandlers;
 import io.th0rgal.oraxen.utils.AdventureUtils;
@@ -319,7 +318,7 @@ public class ItemUpdater implements Listener {
             nmsHandler.consumableComponent(newItem, Optional.ofNullable(nmsHandler.consumableComponent(newItem)).orElse(nmsHandler.consumableComponent(oldItem)))
         );
 
-        PapiAliases.setPlaceholders(null, newItem, false);
+        io.th0rgal.oraxen.compatibilities.provided.placeholderapi.PapiAliases.setPlaceholders(null, newItem, false);
         return newItem;
     }
 

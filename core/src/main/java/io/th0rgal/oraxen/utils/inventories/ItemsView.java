@@ -5,7 +5,6 @@ import dev.triumphteam.gui.guis.GuiItem;
 import dev.triumphteam.gui.guis.PaginatedGui;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
-import io.th0rgal.oraxen.compatibilities.provided.placeholderapi.PapiAliases;
 import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.items.ItemUpdater;
@@ -99,11 +98,10 @@ public class ItemsView {
             if (builder == null) continue;
             final ItemStack itemStack = builder.build();
             if (ItemUtils.isEmpty(itemStack)) continue;
-
             final GuiItem guiItem = new GuiItem(itemStack);
             guiItem.setAction(e -> {
                 final Player player = (Player) e.getWhoClicked();
-                player.getInventory().addItem(PapiAliases.setPlaceholders(player, ItemUpdater.updateItem(guiItem.getItemStack().clone()), true));
+                player.getInventory().addItem(io.th0rgal.oraxen.compatibilities.provided.placeholderapi.PapiAliases.setPlaceholders(player, ItemUpdater.updateItem(guiItem.getItemStack().clone()), true));
             });
             gui.addItem(guiItem);
         }
