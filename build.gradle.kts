@@ -235,7 +235,7 @@ if (spigotPluginPath != null) {
             doLast {
                 println("Copied to plugin directory $spigotPluginPath")
                 Path(spigotPluginPath).listDirectoryEntries()
-                    .filter { it.fileName.toString().matches("oraxen-.*.jar".toRegex()) }
+                    .filter { it.fileName.toString().matches("Oraxen-.*.jar".toRegex()) }
                     .filterNot { it.fileName.toString().endsWith("$pluginVersion.jar") }
                     .forEach { delete(it) }
             }
