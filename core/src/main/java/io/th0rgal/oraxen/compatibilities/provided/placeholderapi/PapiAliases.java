@@ -31,11 +31,10 @@ public class PapiAliases {
             final ItemMeta meta = item.getItemMeta();
             if (meta.hasDisplayName())
                 meta.setDisplayName(setPlaceholders(player, meta.getDisplayName()));
-            if (VersionUtil.atOrAbove("1.21")) {
-                if (meta.hasItemName()) {
-                    meta.setItemName(setPlaceholders(player, meta.getItemName()));
-                }
+            if (VersionUtil.atOrAbove("1.21") && meta.hasItemName()) {
+                meta.setItemName(setPlaceholders(player, meta.getItemName()));
             }
+
             if (updateLore) {
                 final List<String> itemLore = meta.getLore();
                 if (itemLore != null && !itemLore.isEmpty()) {

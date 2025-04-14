@@ -1,4 +1,4 @@
-package io.th0rgal.oraxen.nms.v1_21_R2;
+package io.th0rgal.oraxen.nms.v1_21_R4;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -69,14 +69,13 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class NMSHandler implements io.th0rgal.oraxen.nms.NMSHandler {
 
     private final GlyphHandler glyphHandler;
 
     public NMSHandler() {
-        this.glyphHandler = new io.th0rgal.oraxen.nms.v1_21_R2.GlyphHandler();
+        this.glyphHandler = new io.th0rgal.oraxen.nms.v1_21_R4.GlyphHandler();
 
         // mineableWith tag handling
         NamespacedKey tagKey = NamespacedKey.fromString("mineable_with_key", OraxenPlugin.get());
@@ -119,7 +118,8 @@ public class NMSHandler implements io.th0rgal.oraxen.nms.NMSHandler {
         return VersionUtil.isPaperServer() && GlobalConfiguration.get().blockUpdates.disableNoteblockUpdates;
     }
 
-    @Override // TODO Fix this
+    @Override
+    /* This method copies custom NBT data from one item to another */
     public ItemStack copyItemNBTTags(@NotNull ItemStack oldItem, @NotNull ItemStack newItem) {
         net.minecraft.world.item.ItemStack newNmsItem = CraftItemStack.asNMSCopy(newItem);
         net.minecraft.world.item.ItemStack oldItemStack = CraftItemStack.asNMSCopy(oldItem);
@@ -135,7 +135,7 @@ public class NMSHandler implements io.th0rgal.oraxen.nms.NMSHandler {
         CompoundTag oldTag = oldData.copyTag();
         CompoundTag newTag = newData.copyTag();
 
-        for (String key : oldTag.getAllKeys()) {
+        for (String key : oldTag.keySet()) {
             if (vanillaKeys.contains(key))
                 continue;
             Tag value = oldTag.get(key);
@@ -256,7 +256,7 @@ public class NMSHandler implements io.th0rgal.oraxen.nms.NMSHandler {
      * 
      * @param item         The ItemBuilder to modify
      * @param componentKey The component key (e.g. "food", "tool", etc.)
-     * @param component    The component object or ConfigurationSection
+     * @param component    The component object
      * @return true if the component was successfully set
      */
     @Override
@@ -346,46 +346,60 @@ public class NMSHandler implements io.th0rgal.oraxen.nms.NMSHandler {
         }
     }
 
-    private void convertConfigToNBT(ConfigurationSection config, CompoundTag nbt) {
+    private void convertConfigToNBT(ConfigurationSection config, net.minecraft.nbt.CompoundTag nbt) {
         for (String key : config.getKeys(false)) {
             Object value = config.get(key);
             if (value instanceof ConfigurationSection section) {
-                CompoundTag compound = new CompoundTag();
-                convertConfigToNBT(section, compound);
-                nbt.put(key, compound);
+                handleConfigSectionValue(nbt, key, section);
             } else if (value instanceof Number number) {
-                if (value instanceof Integer)
-                    nbt.putInt(key, number.intValue());
-                else if (value instanceof Double)
-                    nbt.putDouble(key, number.doubleValue());
-                else if (value instanceof Float)
-                    nbt.putFloat(key, number.floatValue());
-                else if (value instanceof Long)
-                    nbt.putLong(key, number.longValue());
-                else if (value instanceof Byte)
-                    nbt.putByte(key, number.byteValue());
-                else if (value instanceof Short)
-                    nbt.putShort(key, number.shortValue());
-            } else if (value instanceof Boolean) {
-                nbt.putBoolean(key, (Boolean) value);
-            } else if (value instanceof String) {
-                nbt.putString(key, (String) value);
+                handleNumberValue(nbt, key, number);
+            } else if (value instanceof Boolean boolValue) {
+                nbt.putBoolean(key, boolValue);
+            } else if (value instanceof String stringValue) {
+                nbt.putString(key, stringValue);
             } else if (value instanceof List<?> list) {
-                if (!list.isEmpty()) {
-                    Object first = list.get(0);
-                    if (first instanceof String) {
-                        net.minecraft.nbt.ListTag stringList = new net.minecraft.nbt.ListTag();
-                        for (Object s : list) {
-                            stringList.add(net.minecraft.nbt.StringTag.valueOf(s.toString()));
-                        }
-                        nbt.put(key, stringList);
-                    } else if (first instanceof Integer) {
-                        nbt.putIntArray(key, list.stream().mapToInt(i -> (Integer) i).toArray());
-                    } else if (first instanceof Long) {
-                        nbt.putLongArray(key, list.stream().mapToLong(l -> (Long) l).toArray());
-                    }
-                }
+                handleListValue(nbt, key, list);
             }
+        }
+    }
+
+    private void handleConfigSectionValue(net.minecraft.nbt.CompoundTag nbt, String key, ConfigurationSection section) {
+        net.minecraft.nbt.CompoundTag compound = new net.minecraft.nbt.CompoundTag();
+        convertConfigToNBT(section, compound);
+        nbt.put(key, compound);
+    }
+
+    private void handleNumberValue(net.minecraft.nbt.CompoundTag nbt, String key, Number number) {
+        if (number instanceof Integer)
+            nbt.putInt(key, number.intValue());
+        else if (number instanceof Double)
+            nbt.putDouble(key, number.doubleValue());
+        else if (number instanceof Float)
+            nbt.putFloat(key, number.floatValue());
+        else if (number instanceof Long)
+            nbt.putLong(key, number.longValue());
+        else if (number instanceof Byte)
+            nbt.putByte(key, number.byteValue());
+        else if (number instanceof Short)
+            nbt.putShort(key, number.shortValue());
+    }
+
+    private void handleListValue(net.minecraft.nbt.CompoundTag nbt, String key, List<?> list) {
+        if (list.isEmpty()) {
+            return;
+        }
+
+        Object first = list.get(0);
+        if (first instanceof String) {
+            net.minecraft.nbt.ListTag stringList = new net.minecraft.nbt.ListTag();
+            for (Object s : list) {
+                stringList.add(net.minecraft.nbt.StringTag.valueOf(s.toString()));
+            }
+            nbt.put(key, stringList);
+        } else if (first instanceof Integer) {
+            nbt.putIntArray(key, list.stream().mapToInt(i -> (Integer) i).toArray());
+        } else if (first instanceof Long) {
+            nbt.putLongArray(key, list.stream().mapToLong(l -> (Long) l).toArray());
         }
     }
 
@@ -393,9 +407,16 @@ public class NMSHandler implements io.th0rgal.oraxen.nms.NMSHandler {
     @Override
     public void foodComponent(ItemBuilder item, ConfigurationSection foodSection) {
         FoodComponent foodComponent = new ItemStack(item.getType()).getItemMeta().getFood();
-        foodComponent.setNutrition(foodSection.getInt("nutrition"));
-        foodComponent.setSaturation((float) foodSection.getDouble("saturation", 0.0));
-        foodComponent.setCanAlwaysEat(foodSection.getBoolean("can_always_eat"));
+
+        // Ensure nutrition is non-negative
+        int nutrition = Math.max(foodSection.getInt("nutrition"), 0);
+        foodComponent.setNutrition(nutrition);
+
+        // Ensure saturation is non-negative
+        float saturation = Math.max((float) foodSection.getDouble("saturation", 0.0), 0f);
+        foodComponent.setSaturation(saturation);
+
+        foodComponent.setCanAlwaysEat(foodSection.getBoolean("can_always_eat", false));
 
         item.setFoodComponent(foodComponent);
     }
@@ -403,88 +424,122 @@ public class NMSHandler implements io.th0rgal.oraxen.nms.NMSHandler {
     @SuppressWarnings("UnstableApiUsage")
     @Override
     public void consumableComponent(ItemBuilder item, ConfigurationSection section) {
-
         Consumable.Builder consumable = Consumable.builder();
-        Consumable template = Optional.ofNullable(
-                CraftItemStack.asNMSCopy(new ItemStack(item.getType())).getComponents().get(DataComponents.CONSUMABLE))
+        Consumable template = Optional.ofNullable(CraftItemStack.asNMSCopy(new ItemStack(item.getType()))
+                .getComponents().get(DataComponents.CONSUMABLE))
                 .orElse(Consumable.builder().build());
 
+        // Basic properties
         consumable.consumeSeconds((float) section.getDouble("consume_seconds", template.consumeSeconds()));
-        consumable.animation(
-                Optional.ofNullable(EnumUtils.getEnum(ItemUseAnimation.class, section.getString("animation")))
-                        .orElse(template.animation()));
-        consumable.hasConsumeParticles(section.getBoolean("consume_particles", template.hasConsumeParticles()));
-        consumable.sound(Optional.ofNullable(section.getString("sound"))
-                .map(s -> Holder.direct(new SoundEvent(ResourceLocation.parse(s), Optional.empty())))
-                .orElse(template.sound()));
+        consumable.animation(Optional.ofNullable(EnumUtils.getEnum(ItemUseAnimation.class,
+                section.getString("animation", "").toUpperCase()))
+                .orElse(template.animation()));
+        consumable.hasConsumeParticles(section.getBoolean("has_consume_particles", template.hasConsumeParticles()));
 
-        List<Map<?, ?>> effectsMap = section.getMapList("effects");
-        if (effectsMap.isEmpty())
-            for (ConsumeEffect effect : template.onConsumeEffects())
-                consumable.onConsume(effect);
-        else
+        // Sound handling
+        String soundId = section.getString("sound");
+        if (soundId != null) {
+            ResourceLocation soundLocation = ResourceLocation.parse(soundId);
+            consumable.sound(Holder.direct(new SoundEvent(soundLocation, Optional.empty())));
+        } else {
+            consumable.sound(template.sound());
+        }
+
+        // Effects handling
+        List<Map<?, ?>> effectsMap = section.getMapList("on_consume_effects");
+        if (effectsMap.isEmpty()) {
+            template.onConsumeEffects().forEach(consumable::onConsume);
+        } else {
             for (Map<?, ?> effectSection : effectsMap) {
-                String type = Optional.ofNullable(effectSection.get("type")).map(Object::toString).orElse("");
-                if (type.equals("APPLY_EFFECTS")
-                        && effectSection.getOrDefault("effects", null) instanceof Map<?, ?> effects) {
-                    for (Map.Entry<String, LinkedHashMap<String, Object>> effectMap : effects.entrySet().stream()
-                            .map(o -> (Map.Entry<String, LinkedHashMap<String, Object>>) o)
-                            .collect(Collectors.toSet())) {
-                        LinkedHashMap<String, Object> applyEffectSection = effectMap.getValue();
+                String type = Optional.ofNullable(effectSection.get("type"))
+                        .map(Object::toString)
+                        .orElse("");
 
-                        BuiltInRegistries.MOB_EFFECT.getOptional(ResourceLocation.parse(effectMap.getKey()))
-                                .map(BuiltInRegistries.MOB_EFFECT::wrapAsHolder)
-                                .ifPresentOrElse(mobEffect -> {
-                                    int duration = Optional.ofNullable(applyEffectSection.get("duration"))
-                                            .map(s -> Integer.parseInt(s.toString())).orElse(1) * 20;
-                                    int amplifier = Optional.ofNullable(applyEffectSection.get("amplifier"))
-                                            .map(s -> Integer.parseInt(s.toString())).orElse(0);
-                                    boolean ambient = Optional.ofNullable(applyEffectSection.get("ambient"))
-                                            .map(s -> Boolean.parseBoolean(s.toString())).orElse(true);
-                                    boolean particles = Optional.ofNullable(applyEffectSection.get("show_particles"))
-                                            .map(s -> Boolean.parseBoolean(s.toString())).orElse(true);
-                                    boolean icon = Optional.ofNullable(applyEffectSection.get("show_icon"))
-                                            .map(s -> Boolean.parseBoolean(s.toString())).orElse(true);
-                                    float probability = Optional.ofNullable(applyEffectSection.get("amplifier"))
-                                            .map(s -> Float.parseFloat(s.toString())).orElse(0f);
-                                    MobEffectInstance instance = new MobEffectInstance(mobEffect, duration, amplifier,
-                                            ambient, particles, icon);
-
-                                    consumable.onConsume(new ApplyStatusEffectsConsumeEffect(instance, probability));
-                                }, () -> Logs.logError(
-                                        "Invalid potion effect: " + effectMap.getKey() + ", in consumable-property!"));
+                switch (type.toLowerCase()) {
+                    case "apply_effects" -> handleApplyEffects(consumable, effectSection);
+                    case "remove_effects" -> handleRemoveEffects(consumable, effectSection);
+                    case "clear_all_effects" -> consumable.onConsume(new ClearAllStatusEffectsConsumeEffect());
+                    case "teleport_randomly" -> {
+                        float diameter = Optional.ofNullable(effectSection.get("diameter"))
+                                .map(d -> Float.parseFloat(d.toString()))
+                                .orElse(16f);
+                        consumable.onConsume(new TeleportRandomlyConsumeEffect(diameter));
                     }
-                } else if (type.equals("REMOVE_EFFECTS")
-                        && effectSection.getOrDefault("effects", null) instanceof ArrayList<?> effects) {
-                    List<Holder<MobEffect>> mobEffects = new ArrayList<>();
-                    for (Object object : effects) {
-                        BuiltInRegistries.MOB_EFFECT.getOptional(ResourceLocation.parse(String.valueOf(object)))
-                                .map(BuiltInRegistries.MOB_EFFECT::wrapAsHolder)
-                                .ifPresent(mobEffects::add);
-                    }
-                    consumable.onConsume(new RemoveStatusEffectsConsumeEffect(HolderSet.direct(mobEffects)));
-                } else if (type.equals("CLEAR_ALL_EFFECTS")) {
-                    consumable.onConsume(new ClearAllStatusEffectsConsumeEffect());
-                } else if (type.equals("TELEPORT_RANDOMLY")) {
-                    float diameter = (effectSection.getOrDefault("diameter", null) instanceof Float d) ? d : 16f;
-                    consumable.onConsume(new TeleportRandomlyConsumeEffect(diameter));
-                } else if (type.equals("PLAY_SOUND")) {
-                    try {
-                        ResourceLocation soundKey = Optional.ofNullable(effectSection.get("sound"))
-                                .map(Objects::toString).map(ResourceLocation::parse)
-                                .orElse(template.sound().value().location());
-                        BuiltInRegistries.SOUND_EVENT.getOptional(soundKey)
-                                .map(BuiltInRegistries.SOUND_EVENT::wrapAsHolder)
-                                .map(PlaySoundConsumeEffect::new)
-                                .ifPresent(consumable::onConsume);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                } else
-                    Logs.logWarning("Invalid ConsumeEffect-Type " + type);
+                    case "play_sound" -> handlePlaySound(consumable, effectSection, template);
+                    default -> Logs.logWarning("Invalid ConsumeEffect-Type " + type);
+                }
             }
+        }
 
         item.setConsumableComponent(consumable.build());
+    }
+
+    private void handleApplyEffects(Consumable.Builder consumable, Map<?, ?> effectSection) {
+        if (!(effectSection.get("effects") instanceof Map<?, ?> effects))
+            return;
+
+        float probability = Optional.ofNullable(effectSection.get("probability"))
+                .map(p -> Float.parseFloat(p.toString()))
+                .orElse(1.0f);
+
+        for (Map.Entry<?, ?> entry : effects.entrySet()) {
+            String effectId = entry.getKey().toString();
+            Map<String, Object> effectData = (Map<String, Object>) entry.getValue();
+
+            BuiltInRegistries.MOB_EFFECT.getOptional(ResourceLocation.parse(effectId))
+                    .map(BuiltInRegistries.MOB_EFFECT::wrapAsHolder)
+                    .ifPresent(effect -> {
+                        int duration = Optional.ofNullable(effectData.get("duration"))
+                                .map(d -> Integer.parseInt(d.toString()) * 20)
+                                .orElse(20);
+                        int amplifier = Optional.ofNullable(effectData.get("amplifier"))
+                                .map(a -> Integer.parseInt(a.toString()))
+                                .orElse(0);
+                        boolean ambient = Optional.ofNullable(effectData.get("ambient"))
+                                .map(a -> Boolean.parseBoolean(a.toString()))
+                                .orElse(false);
+                        boolean particles = Optional.ofNullable(effectData.get("show_particles"))
+                                .map(p -> Boolean.parseBoolean(p.toString()))
+                                .orElse(true);
+                        boolean icon = Optional.ofNullable(effectData.get("show_icon"))
+                                .map(i -> Boolean.parseBoolean(i.toString()))
+                                .orElse(true);
+
+                        MobEffectInstance instance = new MobEffectInstance(
+                                effect, duration, amplifier, ambient, particles, icon);
+                        consumable.onConsume(new ApplyStatusEffectsConsumeEffect(instance, probability));
+                    });
+        }
+    }
+
+    private void handleRemoveEffects(Consumable.Builder consumable, Map<?, ?> effectSection) {
+        if (!(effectSection.get("effects") instanceof List<?> effects))
+            return;
+
+        List<Holder<MobEffect>> mobEffects = effects.stream()
+                .map(Object::toString)
+                .map(ResourceLocation::parse)
+                .map(BuiltInRegistries.MOB_EFFECT::getOptional)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(BuiltInRegistries.MOB_EFFECT::wrapAsHolder)
+                .toList();
+
+        if (!mobEffects.isEmpty()) {
+            consumable.onConsume(new RemoveStatusEffectsConsumeEffect(HolderSet.direct(mobEffects)));
+        }
+    }
+
+    private void handlePlaySound(Consumable.Builder consumable, Map<?, ?> effectSection, Consumable template) {
+        ResourceLocation soundKey = Optional.ofNullable(effectSection.get("sound"))
+                .map(Object::toString)
+                .map(ResourceLocation::parse)
+                .orElse(template.sound().value().location());
+
+        BuiltInRegistries.SOUND_EVENT.getOptional(soundKey)
+                .map(BuiltInRegistries.SOUND_EVENT::wrapAsHolder)
+                .map(PlaySoundConsumeEffect::new)
+                .ifPresent(consumable::onConsume);
     }
 
     @Override

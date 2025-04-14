@@ -9,8 +9,13 @@ import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
 import io.th0rgal.oraxen.mechanics.MechanicsManager;
+import io.th0rgal.oraxen.nms.NMSHandler;
 import io.th0rgal.oraxen.nms.NMSHandlers;
-import io.th0rgal.oraxen.utils.*;
+import io.th0rgal.oraxen.utils.AdventureUtils;
+import io.th0rgal.oraxen.utils.OraxenYaml;
+import io.th0rgal.oraxen.utils.PotionUtils;
+import io.th0rgal.oraxen.utils.Utils;
+import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import io.th0rgal.oraxen.utils.wrappers.AttributeWrapper;
 import net.Indyuce.mmoitems.MMOItems;
@@ -18,17 +23,18 @@ import net.kyori.adventure.key.Key;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Tag;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.damage.DamageType;
 import org.bukkit.enchantments.EnchantmentWrapper;
 import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemFlag;
-import org.bukkit.inventory.ItemRarity;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.components.EquippableComponent;
 import org.bukkit.inventory.meta.components.JukeboxPlayableComponent;
@@ -37,10 +43,16 @@ import org.bukkit.inventory.meta.components.UseCooldownComponent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.tag.DamageTypeTags;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 
 public class ItemParser {
@@ -86,7 +98,7 @@ public class ItemParser {
     }
 
     public boolean usesMMOItems() {
-        return crucibleItem == null && ecoItem == null  && mmoItem != null && mmoItem.build() != null;
+        return crucibleItem == null && ecoItem == null && mmoItem != null && mmoItem.build() != null;
     }
 
     public boolean usesCrucibleItems() {
@@ -114,29 +126,50 @@ public class ItemParser {
     }
 
     private ItemBuilder applyConfig(ItemBuilder item) {
-        if (section.contains("displayname")) {
-            if (VersionUtil.atOrAbove("1.20.5")) configUpdated = true;
-            else item.setDisplayName(section.getString("displayname", ""));
+        try {
+            if (section.contains("displayname")) {
+                if (VersionUtil.atOrAbove("1.20.5"))
+                    configUpdated = true;
+                else
+                    item.setDisplayName(section.getString("displayname", ""));
+            }
+
+            if (section.contains("customname")) {
+                if (!VersionUtil.atOrAbove("1.20.5"))
+                    configUpdated = true;
+                else
+                    item.setDisplayName(section.getString("customname", ""));
+            }
+
+            // if (section.contains("type"))
+            // item.setType(Material.getMaterial(section.getString("type", "PAPER")));
+            if (section.contains("lore"))
+                item.setLore(section.getStringList("lore").stream().map(AdventureUtils::parseMiniMessage).toList());
+            if (section.contains("unbreakable"))
+                item.setUnbreakable(section.getBoolean("unbreakable", false));
+            if (section.contains("unstackable"))
+                item.setUnstackable(section.getBoolean("unstackable", false));
+            if (section.contains("color"))
+                item.setColor(Utils.toColor(section.getString("color", "#FFFFFF")));
+            if (section.contains("trim_pattern"))
+                item.setTrimPattern(Key.key(section.getString("trim_pattern", "")));
+
+            parseDataComponents(item);
+            parseMiscOptions(item);
+            parseVanillaSections(item);
+            parseOraxenSections(item);
+            item.setOraxenMeta(oraxenMeta);
+            return item;
+        } catch (Exception e) {
+            String itemId = section != null ? section.getName() : "unknown";
+            Logs.logError("Error building item \"" + itemId + "\"");
+            Logs.logError(e.getMessage());
+            if (Settings.DEBUG.toBool()) {
+                e.printStackTrace();
+            }
+            // Still return the item to avoid NPE, even if it's not fully configured
+            return item;
         }
-
-        if (section.contains("customname")) {
-            if (!VersionUtil.atOrAbove("1.20.5")) configUpdated = true;
-            else item.setDisplayName(section.getString("customname", ""));
-        }
-
-        //if (section.contains("type")) item.setType(Material.getMaterial(section.getString("type", "PAPER")));
-        if (section.contains("lore")) item.setLore(section.getStringList("lore").stream().map(AdventureUtils::parseMiniMessage).toList());
-        if (section.contains("unbreakable")) item.setUnbreakable(section.getBoolean("unbreakable", false));
-        if (section.contains("unstackable")) item.setUnstackable(section.getBoolean("unstackable", false));
-        if (section.contains("color")) item.setColor(Utils.toColor(section.getString("color", "#FFFFFF")));
-        if (section.contains("trim_pattern")) item.setTrimPattern(Key.key(section.getString("trim_pattern", "")));
-
-        parseDataComponents(item);
-        parseMiscOptions(item);
-        parseVanillaSections(item);
-        parseOraxenSections(item);
-        item.setOraxenMeta(oraxenMeta);
-        return item;
     }
 
     private void parseDataComponents(ItemBuilder item) {
@@ -147,31 +180,82 @@ public class ItemParser {
         ConfigurationSection components = section.getConfigurationSection("Components");
         if (components == null || !VersionUtil.atOrAbove("1.20.5")) return;
 
-        if (components.contains("max_stack_size")) item.setMaxStackSize(Math.clamp(components.getInt("max_stack_size"), 1, 99));
+        // Handle legacy components for backward compatibility
+        handleLegacyComponents(item, components);
 
-        if (components.contains("enchantment_glint_override")) item.setEnchantmentGlindOverride(components.getBoolean("enchantment_glint_override"));
-        if (components.contains("durability")) {
-            item.setDamagedOnBlockBreak(components.getBoolean("durability.damage_block_break"));
-            item.setDamagedOnEntityHit(components.getBoolean("durability.damage_entity_hit"));
-            item.setDurability(Math.max(components.getInt("durability.value"), components.getInt("durability", 1)));
+        // Handle generic components
+        if (VersionUtil.atOrAbove("1.21.3")) {
+            for (String key : components.getKeys(false)) {
+                // Skip legacy components that are handled separately
+                if (isLegacyComponent(key))
+                    continue;
+
+                Object value = components.get(key);
+                if (value instanceof ConfigurationSection || value instanceof Map) {
+                    NMSHandlers.getHandler().setComponent(item, key, value);
+                }
+            }
         }
-        if (components.contains("rarity")) item.setRarity(ItemRarity.valueOf(components.getString("rarity")));
-        if (components.contains("fire_resistant")) item.setFireResistant(components.getBoolean("fire_resistant"));
-        if (components.contains("hide_tooltip")) item.setHideToolTip(components.getBoolean("hide_tooltip"));
+    }
 
-        Optional.ofNullable(components.getConfigurationSection("food"))
-                .ifPresent(food -> NMSHandlers.getHandler().foodComponent(item, food));
+    private void handleLegacyComponents(ItemBuilder item, ConfigurationSection components) {
+
+        if (components.contains("fire_resistant"))
+            item.setFireResistant(components.getBoolean("fire_resistant"));
+        if (components.contains("hide_tooltip"))
+            item.setHideToolTip(components.getBoolean("hide_tooltip"));
+
+        NMSHandler nmsHandler = NMSHandlers.getHandler();
+        if (nmsHandler == null) {
+            Logs.logWarning("NMSHandler is null - some components won't work properly");
+            if (Settings.DEBUG.toBool()) {
+                Logs.logError("Item parsing: " + (section != null ? section.getName() : "unknown section"));
+                new Exception("NMSHandler is null").printStackTrace();
+            }
+        } else {
+            Optional.ofNullable(components.getConfigurationSection("food"));
+        }
+
         Optional.ofNullable(components.getConfigurationSection("tool"))
                 .ifPresent(toolSection -> parseToolComponent(item, toolSection));
 
         if (!VersionUtil.atOrAbove("1.21")) return;
 
         ConfigurationSection jukeboxSection = components.getConfigurationSection("jukebox_playable");
-        if (jukeboxSection != null) {
-            JukeboxPlayableComponent jukeboxPlayable = new ItemStack(Material.MUSIC_DISC_CREATOR).getItemMeta().getJukeboxPlayable();
-            jukeboxPlayable.setShowInTooltip(jukeboxSection.getBoolean("show_in_tooltip"));
-            jukeboxPlayable.setSongKey(NamespacedKey.fromString(jukeboxSection.getString("song_key", "")));
-            item.setJukeboxPlayable(jukeboxPlayable);
+        if (jukeboxSection != null && VersionUtil.isPaperServer()) {
+            try {
+                JukeboxPlayableComponent jukeboxPlayable = new ItemStack(Material.MUSIC_DISC_CREATOR).getItemMeta()
+                        .getJukeboxPlayable();
+
+                try {
+                    jukeboxPlayable.setShowInTooltip(jukeboxSection.getBoolean("show_in_tooltip"));
+                } catch (NoSuchMethodError e) {
+                    Logs.logWarning(
+                            "Error setting jukebox show_in_tooltip: This method is not available in your server version");
+                    if (Settings.DEBUG.toBool()) {
+                        e.printStackTrace();
+                    }
+                }
+
+                try {
+                    jukeboxPlayable.setSongKey(NamespacedKey.fromString(jukeboxSection.getString("song_key", "")));
+                } catch (NoSuchMethodError e) {
+                    Logs.logWarning(
+                            "Error setting jukebox song_key: This method is not available in your server version");
+                    if (Settings.DEBUG.toBool()) {
+                        e.printStackTrace();
+                    }
+                }
+
+                item.setJukeboxPlayable(jukeboxPlayable);
+            } catch (Exception e) {
+                Logs.logWarning("Failed to create JukeboxPlayableComponent for item: " + section.getName());
+                if (Settings.DEBUG.toBool()) {
+                    e.printStackTrace();
+                }
+            }
+        } else if (jukeboxSection != null) {
+            Logs.logInfo("JukeboxPlayableComponent is only supported on Paper servers. Skipping this component.");
         }
 
         if (!VersionUtil.atOrAbove("1.21.2")) return;
@@ -179,30 +263,52 @@ public class ItemParser {
                 .ifPresent(equippable -> parseEquippableComponent(item, equippable));
 
         Optional.ofNullable(components.getConfigurationSection("use_cooldown")).ifPresent((cooldownSection) -> {
-            UseCooldownComponent useCooldownComponent = new ItemStack(Material.PAPER).getItemMeta().getUseCooldown();
-            String group = Optional.ofNullable(cooldownSection.getString("group")).orElse("oraxen:" + OraxenItems.getIdByItem(item));
-            if (!group.isEmpty()) useCooldownComponent.setCooldownGroup(NamespacedKey.fromString(group));
-            useCooldownComponent.setCooldownSeconds((float) Math.max(cooldownSection.getDouble("seconds", 1.0), 0f));
-            item.setUseCooldownComponent(useCooldownComponent);
+            try {
+                UseCooldownComponent useCooldownComponent = new ItemStack(Material.PAPER).getItemMeta()
+                        .getUseCooldown();
+                String group = Optional.ofNullable(cooldownSection.getString("group"))
+                        .orElse("oraxen:" + OraxenItems.getIdByItem(item));
+                if (!group.isEmpty())
+                    useCooldownComponent.setCooldownGroup(NamespacedKey.fromString(group));
+                useCooldownComponent
+                        .setCooldownSeconds((float) Math.max(cooldownSection.getDouble("seconds", 1.0), 0f));
+                item.setUseCooldownComponent(useCooldownComponent);
+            } catch (NoSuchMethodError | Exception e) {
+                Logs.logWarning(
+                        "Error setting UseCooldownComponent: This component is not available in your server version");
+                if (Settings.DEBUG.toBool()) {
+                    e.printStackTrace();
+                }
+            }
         });
 
-        Optional.ofNullable(components.getConfigurationSection("use_remainder")).ifPresent(useRemainder -> parseUseRemainderComponent(item, useRemainder));
-        Optional.ofNullable(components.getString("damage_resistant")).map(NamespacedKey::fromString).ifPresent(damageResistantKey ->
-                item.setDamageResistant(Bukkit.getTag(DamageTypeTags.REGISTRY_DAMAGE_TYPES, damageResistantKey, DamageType.class))
-        );
+        Optional.ofNullable(components.getConfigurationSection("use_remainder"))
+                .ifPresent(useRemainder -> parseUseRemainderComponent(item, useRemainder));
 
         Optional.ofNullable(components.getString("tooltip_style")).map(NamespacedKey::fromString)
                 .ifPresent(item::setTooltipStyle);
         Optional.ofNullable(components.getString("item_model")).map(NamespacedKey::fromString)
                 .ifPresent(item::setItemModel);
-        if (components.contains("enchantable"))
-            item.setEnchantable(components.getInt("enchantable"));
-        if (components.contains("glider"))
-            item.setGlider(components.getBoolean("glider"));
 
-        Optional.ofNullable(components.getConfigurationSection("consumable"))
-                .ifPresent(consumableSection -> NMSHandlers.getHandler().consumableComponent(item, consumableSection));
+        if (nmsHandler != null) {
+            Optional.ofNullable(components.getConfigurationSection("consumable"))
+                    .ifPresent(consumableSection -> nmsHandler.consumableComponent(item, consumableSection));
+        }
+    }
 
+    private boolean isLegacyComponent(String key) {
+        return key.equals("durability") ||
+                key.equals("fire_resistant") ||
+                key.equals("hide_tooltip") ||
+                key.equals("food") ||
+                key.equals("tool") ||
+                key.equals("jukebox_playable") ||
+                key.equals("equippable") ||
+                key.equals("use_cooldown") ||
+                key.equals("use_remainder") ||
+                key.equals("tooltip_style") ||
+                key.equals("item_model") ||
+                key.equals("consumable");
     }
 
     private void parseUseRemainderComponent(ItemBuilder item, @NotNull ConfigurationSection useRemainderSection) {
@@ -318,8 +424,19 @@ public class ItemParser {
                 .ifPresent(equippableComponent::setModel);
         Optional.ofNullable(equippableSection.getString("camera_overlay")).map(NamespacedKey::fromString)
                 .ifPresent(equippableComponent::setCameraOverlay);
-        Optional.ofNullable(equippableSection.getString("equip_sound")).map(Key::key).map(Registry.SOUNDS::get)
-                .ifPresent(equippableComponent::setEquipSound);
+
+        // Only use Registry.SOUNDS::get if we're running on Paper
+        if (VersionUtil.isPaperServer() && equippableSection.contains("equip_sound")) {
+            try {
+                Optional.ofNullable(equippableSection.getString("equip_sound"))
+                        .map(Key::key)
+                        .map(key -> org.bukkit.Registry.SOUNDS.get(key))
+                        .ifPresent(equippableComponent::setEquipSound);
+            } catch (NoSuchMethodError e) {
+                // This will catch errors on older server versions
+                Logs.logWarning("Error setting equip_sound: Your server version doesn't support this feature.");
+            }
+        }
 
         item.setEquippableComponent(equippableComponent);
     }
@@ -377,18 +494,30 @@ public class ItemParser {
             }
         }
 
-        if (section.contains("AttributeModifiers")) {
-            List<LinkedHashMap<String, Object>> attributes = (List<LinkedHashMap<String, Object>>) section
-                    .getList("AttributeModifiers");
-            if (attributes != null)
-                for (LinkedHashMap<String, Object> attributeJson : attributes) {
+        List<Map<String, Object>> attributes = (List<Map<String, Object>>) section.getList("AttributeModifiers");
+        if (attributes != null) {
+            for (Map<String, Object> attributeJson : attributes) {
+                try {
                     attributeJson.putIfAbsent("uuid", UUID.randomUUID().toString());
                     attributeJson.putIfAbsent("name", "oraxen:modifier");
                     attributeJson.putIfAbsent("key", "oraxen:modifier");
+
                     AttributeModifier attributeModifier = AttributeModifier.deserialize(attributeJson);
                     Attribute attribute = AttributeWrapper.fromString((String) attributeJson.get("attribute"));
-                    item.addAttributeModifiers(attribute, attributeModifier);
+
+                    if (attribute != null) {
+                        item.addAttributeModifiers(attribute, attributeModifier);
+                    } else {
+                        Logs.logWarning("Attribute not found for key: " + attributeJson.get("attribute") + " in item: "
+                                + section.getName());
+                    }
+                } catch (Exception e) {
+                    Logs.logWarning("Error parsing AttributeModifiers in " + section.getName());
+                    if (Settings.DEBUG.toBool()) {
+                        e.printStackTrace();
+                    }
                 }
+            }
         }
 
         if (section.contains("Enchantments")) {
