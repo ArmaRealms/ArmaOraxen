@@ -43,8 +43,9 @@ public class ConfigsManager {
     private File glyphsFolder;
     private File schematicsFolder;
     private File gesturesFolder;
+    private static final int DEFAULT_GLYPH_STARTING_CODE = 42050;
 
-    public ConfigsManager(JavaPlugin plugin) {
+    public ConfigsManager(final JavaPlugin plugin) {
         this.plugin = plugin;
         defaultMechanics = extractDefault("mechanics.yml");
         defaultSettings = extractDefault("settings.yml");
@@ -86,14 +87,14 @@ public class ConfigsManager {
         return schematicsFolder;
     }
 
-    private YamlConfiguration extractDefault(String source) {
-        InputStreamReader inputStreamReader = new InputStreamReader(plugin.getResource(source));
+    private YamlConfiguration extractDefault(final String source) {
+        final InputStreamReader inputStreamReader = new InputStreamReader(plugin.getResource(source));
         try {
             return OraxenYaml.loadConfiguration(inputStreamReader);
         } finally {
             try {
                 inputStreamReader.close();
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 Logs.logError("Failed to extract default file: " + source);
                 if (Settings.DEBUG.toBool()) e.printStackTrace();
             }
@@ -101,15 +102,15 @@ public class ConfigsManager {
     }
 
     public void validatesConfig() {
-        ResourcesManager tempManager = new ResourcesManager(OraxenPlugin.get());
+        final ResourcesManager tempManager = new ResourcesManager(OraxenPlugin.get());
         mechanics = validate(tempManager, "mechanics.yml", defaultMechanics);
         settings = validate(tempManager, "settings.yml", defaultSettings);
         font = validate(tempManager, "font.yml", defaultFont);
         hud = validate(tempManager, "hud.yml", defaultHud);
         sound = validate(tempManager, "sound.yml", defaultSound);
-        File languagesFolder = new File(plugin.getDataFolder(), "languages");
+        final File languagesFolder = new File(plugin.getDataFolder(), "languages");
         languagesFolder.mkdir();
-        String languageFile = "languages/" + settings.getString(Settings.PLUGIN_LANGUAGE.getPath()) + ".yml";
+        final String languageFile = "languages/" + settings.getString(Settings.PLUGIN_LANGUAGE.getPath()) + ".yml";
         language = validate(tempManager, languageFile, defaultLanguage);
 
         // check itemsFolder
@@ -147,11 +148,11 @@ public class ConfigsManager {
 
     }
 
-    private YamlConfiguration validate(ResourcesManager resourcesManager, String configName, YamlConfiguration defaultConfiguration) {
-        File configurationFile = resourcesManager.extractConfiguration(configName);
-        YamlConfiguration configuration = OraxenYaml.loadConfiguration(configurationFile);
+    private YamlConfiguration validate(final ResourcesManager resourcesManager, final String configName, final YamlConfiguration defaultConfiguration) {
+        final File configurationFile = resourcesManager.extractConfiguration(configName);
+        final YamlConfiguration configuration = OraxenYaml.loadConfiguration(configurationFile);
         boolean updated = false;
-        for (String key : defaultConfiguration.getKeys(true)) {
+        for (final String key : defaultConfiguration.getKeys(true)) {
             if (!skippedYamlKeys.stream().filter(key::startsWith).toList().isEmpty()) continue;
             if (configuration.get(key) == null) {
                 updated = true;
@@ -160,7 +161,7 @@ public class ConfigsManager {
             }
         }
 
-        for (String key : configuration.getKeys(false)) if (removedYamlKeys.contains(key)) {
+        for (final String key : configuration.getKeys(false)) if (removedYamlKeys.contains(key)) {
                 updated = true;
                 Message.REMOVING_CONFIG.log(AdventureUtils.tagResolver("option", key));
                 configuration.set(key, null);
@@ -169,7 +170,7 @@ public class ConfigsManager {
         if (updated)
             try {
                 configuration.save(configurationFile);
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 Logs.logError("Failed to save updated configuration file: " + configurationFile.getName());
                 if (Settings.DEBUG.toBool()) e.printStackTrace();
             }
@@ -189,31 +190,31 @@ public class ConfigsManager {
             );
 
     public Collection<Glyph> parseGlyphConfigs() {
-        List<File> glyphFiles = getGlyphFiles();
-        List<Glyph> output = new ArrayList<>();
-        Map<String, Character> charPerGlyph = new HashMap<>();
-        for (File file : glyphFiles) {
-            YamlConfiguration configuration = OraxenYaml.loadConfiguration(file);
-            for (String key : configuration.getKeys(false)) {
-                ConfigurationSection glyphSection = configuration.getConfigurationSection(key);
+        final List<File> glyphFiles = getGlyphFiles();
+        final List<Glyph> output = new ArrayList<>();
+        final Map<String, Character> charPerGlyph = new HashMap<>();
+        for (final File file : glyphFiles) {
+            final YamlConfiguration configuration = OraxenYaml.loadConfiguration(file);
+            for (final String key : configuration.getKeys(false)) {
+                final ConfigurationSection glyphSection = configuration.getConfigurationSection(key);
                 if (glyphSection == null) continue;
-                String characterString = glyphSection.getString("char", "");
-                char character = !characterString.isBlank() ? characterString.charAt(0) : Character.MIN_VALUE;
+                final String characterString = glyphSection.getString("char", "");
+                final char character = !characterString.isBlank() ? characterString.charAt(0) : Character.MIN_VALUE;
                 if (character != Character.MIN_VALUE)
                     charPerGlyph.put(key, character);
             }
         }
 
-        for (File file : glyphFiles) {
-            YamlConfiguration configuration = OraxenYaml.loadConfiguration(file);
+        for (final File file : glyphFiles) {
+            final YamlConfiguration configuration = OraxenYaml.loadConfiguration(file);
             boolean fileChanged = false;
-            for (String key : configuration.getKeys(false)) {
+            for (final String key : configuration.getKeys(false)) {
                 char character = charPerGlyph.getOrDefault(key, Character.MIN_VALUE);
                 if (character == Character.MIN_VALUE) {
-                    character = Utils.firstEmpty(charPerGlyph, 42050);
+                    character = Utils.firstEmpty(charPerGlyph, DEFAULT_GLYPH_STARTING_CODE);
                     charPerGlyph.put(key, character);
                 }
-                Glyph glyph = new Glyph(key, configuration.getConfigurationSection(key), character);
+                final Glyph glyph = new Glyph(key, configuration.getConfigurationSection(key), character);
                 if (glyph.isFileChanged())
                     fileChanged = true;
                 glyph.verifyGlyph(output);
@@ -222,7 +223,7 @@ public class ConfigsManager {
             if (fileChanged && !Settings.DISABLE_AUTOMATIC_GLYPH_CODE.toBool()) {
                 try {
                     configuration.save(file);
-                } catch (IOException e) {
+                } catch (final IOException e) {
                     Logs.logWarning("Failed to save updated glyph file: " + file.getName());
                     if (Settings.DEBUG.toBool()) e.printStackTrace();
                 }
@@ -232,27 +233,27 @@ public class ConfigsManager {
     }
 
     public Map<File, Map<String, ItemBuilder>> parseItemConfig() {
-        Map<File, Map<String, ItemBuilder>> parseMap = new LinkedHashMap<>();
-        ItemBuilder errorItem = new ItemParser(Settings.ERROR_ITEM.toConfigSection()).buildItem();
-        for (File file : getItemFiles()) parseMap.put(file, parseItemConfig(file, errorItem));
+        final Map<File, Map<String, ItemBuilder>> parseMap = new LinkedHashMap<>();
+        final ItemBuilder errorItem = new ItemParser(Settings.ERROR_ITEM.toConfigSection()).buildItem();
+        for (final File file : getItemFiles()) parseMap.put(file, parseItemConfig(file, errorItem));
         return parseMap;
     }
 
     public void assignAllUsedModelDatas() {
-        Map<Material, Map<Integer, String>> assignedModelDatas = new HashMap<>();
-        for (File file : getItemFiles()) {
+        final Map<Material, Map<Integer, String>> assignedModelDatas = new HashMap<>();
+        for (final File file : getItemFiles()) {
             if (!file.exists()) continue;
-            YamlConfiguration configuration = OraxenYaml.loadConfiguration(file);
+            final YamlConfiguration configuration = OraxenYaml.loadConfiguration(file);
             boolean fileChanged = false;
 
-            for (String key : configuration.getKeys(false)) {
-                ConfigurationSection itemSection = configuration.getConfigurationSection(key);
+            for (final String key : configuration.getKeys(false)) {
+                final ConfigurationSection itemSection = configuration.getConfigurationSection(key);
                 if (itemSection == null) continue;
-                ConfigurationSection packSection = itemSection.getConfigurationSection("Pack");
-                Material material = Material.getMaterial(itemSection.getString("material", ""));
+                final ConfigurationSection packSection = itemSection.getConfigurationSection("Pack");
+                final Material material = Material.getMaterial(itemSection.getString("material", ""));
                 if (packSection == null || material == null) continue;
-                int modelData = packSection.getInt("custom_model_data", -1);
-                String model = getItemModelFromConfigurationSection(packSection);
+                final int modelData = packSection.getInt("custom_model_data", -1);
+                final String model = getItemModelFromConfigurationSection(packSection);
                 if (modelData == -1) continue;
                 if (assignedModelDatas.containsKey(material) && assignedModelDatas.get(material).containsKey(modelData)) {
                     if (assignedModelDatas.get(material).get(modelData).equals(model)) continue;
@@ -276,24 +277,24 @@ public class ConfigsManager {
 
             if (fileChanged) try {
                 configuration.save(file);
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 e.printStackTrace();
             }
         }
     }
 
     public void parseAllItemTemplates() {
-        for (File file : getItemFiles()) {
+        for (final File file : getItemFiles()) {
             if (file == null || !file.exists()) continue;
-            YamlConfiguration configuration = OraxenYaml.loadConfiguration(file);
-            for (String key : configuration.getKeys(false)) {
-                ConfigurationSection itemSection = configuration.getConfigurationSection(key);
+            final YamlConfiguration configuration = OraxenYaml.loadConfiguration(file);
+            for (final String key : configuration.getKeys(false)) {
+                final ConfigurationSection itemSection = configuration.getConfigurationSection(key);
                 if (itemSection != null && itemSection.isBoolean("template")) ItemTemplate.register(itemSection);
             }
         }
     }
 
-    private String getItemModelFromConfigurationSection(ConfigurationSection packSection) {
+    private String getItemModelFromConfigurationSection(final ConfigurationSection packSection) {
         String model = packSection.getString("model", "");
         if (model.isEmpty() && packSection.getBoolean("generate_model", false)) {
             model = packSection.getParent().getName();
@@ -301,24 +302,24 @@ public class ConfigsManager {
         return model;
     }
 
-    public Map<String, ItemBuilder> parseItemConfig(File itemFile, ItemBuilder errorItem) {
-        YamlConfiguration config = OraxenYaml.loadConfiguration(itemFile);
-        Map<String, ItemParser> parseMap = new LinkedHashMap<>();
+    public Map<String, ItemBuilder> parseItemConfig(final File itemFile, final ItemBuilder errorItem) {
+        final YamlConfiguration config = OraxenYaml.loadConfiguration(itemFile);
+        final Map<String, ItemParser> parseMap = new LinkedHashMap<>();
 
-        for (String itemKey : config.getKeys(false)) {
-            ConfigurationSection itemSection = config.getConfigurationSection(itemKey);
+        for (final String itemKey : config.getKeys(false)) {
+            final ConfigurationSection itemSection = config.getConfigurationSection(itemKey);
             if (itemSection == null || ItemTemplate.isTemplate(itemKey)) continue;
             parseMap.put(itemKey, new ItemParser(itemSection));
         }
         boolean configUpdated = false;
         // because we must have parse all the items before building them to be able to
         // use available models
-        Map<String, ItemBuilder> map = new LinkedHashMap<>();
-        for (Map.Entry<String, ItemParser> entry : parseMap.entrySet()) {
-            ItemParser itemParser = entry.getValue();
+        final Map<String, ItemBuilder> map = new LinkedHashMap<>();
+        for (final Map.Entry<String, ItemParser> entry : parseMap.entrySet()) {
+            final ItemParser itemParser = entry.getValue();
             try {
                 map.put(entry.getKey(), itemParser.buildItem());
-            } catch (Exception e) {
+            } catch (final Exception e) {
                 map.put(entry.getKey(), errorItem);
                 Logs.logError("ERROR BUILDING ITEM \"" + entry.getKey() + "\"");
                 if (Settings.DEBUG.toBool()) e.printStackTrace();
@@ -336,11 +337,11 @@ public class ConfigsManager {
 
             try {
                 FileUtils.writeStringToFile(itemFile, content, StandardCharsets.UTF_8);
-            } catch (Exception e) {
+            } catch (final Exception e) {
                 if (Settings.DEBUG.toBool()) e.printStackTrace();
                 try {
                     config.save(itemFile);
-                } catch (Exception e1) {
+                } catch (final Exception e1) {
                     if (Settings.DEBUG.toBool()) e1.printStackTrace();
                 }
             }

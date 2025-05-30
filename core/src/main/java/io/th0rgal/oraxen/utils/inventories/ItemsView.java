@@ -40,13 +40,13 @@ public class ItemsView {
                 .map(this::getGuiItemSlot)
                 .map(GuiItemSlot::slot)
                 .max(Comparator.naturalOrder())
-                .map(slot -> Math.max(slot, files.keySet().size() - 1))
-                .orElse(files.keySet().size() - 1);
+                .map(slot -> Math.max(slot, files.size() - 1))
+                .orElse(files.size() - 1);
         final GuiItem emptyGuiItem = new GuiItem(Material.AIR);
         final List<GuiItem> guiItems = new ArrayList<>(Collections.nCopies(highestUsedSlot + 1, emptyGuiItem));
 
         for (final Map.Entry<File, PaginatedGui> entry : files.entrySet()) {
-            final int slot = getGuiItemSlot(entry.getKey()).slot();
+            final int slot = getGuiItemSlot(entry.getKey()).slot;
             if (slot == -1) continue;
             guiItems.set(slot, new GuiItem(getGuiItemSlot(entry.getKey()).itemStack, e -> entry.getValue().open(e.getWhoClicked())));
         }
