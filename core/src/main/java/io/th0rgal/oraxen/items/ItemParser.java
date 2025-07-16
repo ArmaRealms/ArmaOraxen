@@ -26,11 +26,13 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.Tag;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.enchantments.EnchantmentWrapper;
 import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.EquipmentSlot;
@@ -77,7 +79,8 @@ public class ItemParser {
         final ConfigurationSection mmoSection = section.getConfigurationSection("mmoitem");
         final ConfigurationSection ecoItemSection = section.getConfigurationSection("ecoitem");
         if (crucibleSection != null) crucibleItem = new WrappedCrucibleItem(crucibleSection);
-        else if (section.isString("crucible_id")) crucibleItem = new WrappedCrucibleItem(section.getString("crucible_id"));
+        else if (section.isString("crucible_id"))
+            crucibleItem = new WrappedCrucibleItem(section.getString("crucible_id"));
         else if (ecoItemSection != null) ecoItem = new WrappedEcoItem(ecoItemSection);
         else if (section.isString("ecoitem_id")) ecoItem = new WrappedEcoItem(section.getString("ecoitem_id"));
         else if (mmoSection != null) mmoItem = new WrappedMMOItem(mmoSection);
@@ -172,7 +175,8 @@ public class ItemParser {
 
     private void parseDataComponents(final ItemBuilder item) {
         final ConfigurationSection section = mergeWithTemplateSection();
-        if (section.contains("itemname") && VersionUtil.atOrAbove("1.20.5")) item.setItemName(section.getString("itemname"));
+        if (section.contains("itemname") && VersionUtil.atOrAbove("1.20.5"))
+            item.setItemName(section.getString("itemname"));
         else if (section.contains("displayname")) item.setDisplayName(section.getString("displayname"));
 
         final ConfigurationSection components = section.getConfigurationSection("Components");
@@ -418,10 +422,14 @@ public class ItemParser {
         }
 
         final List<EntityType> entityTypes = equippableSection.getStringList("allowed_entity_types").stream().map(e -> EnumUtils.getEnum(EntityType.class, e)).toList();
-        if (equippableSection.contains("allowed_entity_types")) equippableComponent.setAllowedEntities(entityTypes.isEmpty() ? null : entityTypes);
-        if (equippableSection.contains("damage_on_hurt")) equippableComponent.setDamageOnHurt(equippableSection.getBoolean("damage_on_hurt", true));
-        if (equippableSection.contains("dispensable")) equippableComponent.setDispensable(equippableSection.getBoolean("dispensable", true));
-        if (equippableSection.contains("swappable")) equippableComponent.setSwappable(equippableSection.getBoolean("swappable", true));
+        if (equippableSection.contains("allowed_entity_types"))
+            equippableComponent.setAllowedEntities(entityTypes.isEmpty() ? null : entityTypes);
+        if (equippableSection.contains("damage_on_hurt"))
+            equippableComponent.setDamageOnHurt(equippableSection.getBoolean("damage_on_hurt", true));
+        if (equippableSection.contains("dispensable"))
+            equippableComponent.setDispensable(equippableSection.getBoolean("dispensable", true));
+        if (equippableSection.contains("swappable"))
+            equippableComponent.setSwappable(equippableSection.getBoolean("swappable", true));
 
         Optional.ofNullable(equippableSection.getString("model", null)).map(NamespacedKey::fromString)
                 .ifPresent(equippableComponent::setModel);
@@ -525,9 +533,32 @@ public class ItemParser {
 
         if (section.contains("Enchantments")) {
             final ConfigurationSection enchantSection = section.getConfigurationSection("Enchantments");
-            if (enchantSection != null) for (final String enchant : enchantSection.getKeys(false))
-                item.addEnchant(EnchantmentWrapper.getByKey(NamespacedKey.minecraft(enchant)),
-                        enchantSection.getInt(enchant));
+            if (enchantSection != null) {
+                for (final String enchant : enchantSection.getKeys(false)) {
+                    final int level = enchantSection.getInt(enchant, 1);
+                    final NamespacedKey namespacedKey = NamespacedKey.fromString(enchant);
+                    if (namespacedKey == null) {
+                        Logs.logWarning("Invalid enchantment key: " + enchant + " in item: " + section.getName());
+                        continue;
+                    }
+                    // Use legacy Enchantment for versions below 1.21
+                    if (!VersionUtil.atOrAbove("1.21")) {
+                        final Enchantment enchantment = EnchantmentWrapper.getByKey(namespacedKey);
+                        if (enchantment == null) {
+                            Logs.logWarning("Enchantment not found for key: " + enchant + " in item: " + section.getName());
+                            continue;
+                        }
+                        item.addEnchant(enchantment, level);
+                    } else {
+                        final Enchantment enchantment = Registry.ENCHANTMENT.get(namespacedKey);
+                        if (enchantment == null) {
+                            Logs.logWarning("Enchantment not found for key: " + enchant + " in item: " + section.getName());
+                        } else {
+                            item.addEnchant(enchantment, level);
+                        }
+                    }
+                }
+            }
         }
     }
 
