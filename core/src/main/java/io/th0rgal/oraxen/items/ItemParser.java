@@ -543,7 +543,12 @@ public class ItemParser {
                     }
                     // Use legacy Enchantment for versions below 1.21
                     if (!VersionUtil.atOrAbove("1.21")) {
-                        item.addEnchant(EnchantmentWrapper.getByKey(namespacedKey), level);
+                        final Enchantment enchantment = EnchantmentWrapper.getByKey(namespacedKey);
+                        if (enchantment == null) {
+                            Logs.logWarning("Enchantment not found for key: " + enchant + " in item: " + section.getName());
+                            continue;
+                        }
+                        item.addEnchant(enchantment, level);
                     } else {
                         final Enchantment enchantment = Registry.ENCHANTMENT.get(namespacedKey);
                         if (enchantment == null) {
