@@ -441,7 +441,7 @@ public class ItemParser {
             try {
                 Optional.ofNullable(equippableSection.getString("equip_sound"))
                         .map(Key::key)
-                        .map(key -> org.bukkit.Registry.SOUNDS.get(key))
+                        .map(Registry.SOUNDS::get)
                         .ifPresent(equippableComponent::setEquipSound);
             } catch (final NoSuchMethodError e) {
                 // This will catch errors on older server versions
