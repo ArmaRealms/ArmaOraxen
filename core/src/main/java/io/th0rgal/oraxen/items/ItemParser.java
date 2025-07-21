@@ -421,18 +421,19 @@ public class ItemParser {
             return;
         }
 
-        final List<EntityType> entityTypes = equippableSection.getStringList("allowed_entity_types").stream()
-                .map(e -> EnumUtils.getEnum(EntityType.class, e))
-                .toList();
-        equippableComponent.setAllowedEntities(entityTypes.isEmpty() ? null : entityTypes);
-        equippableComponent.setDamageOnHurt(equippableSection.getBoolean("damage_on_hurt", true));
-        equippableComponent.setDispensable(equippableSection.getBoolean("dispensable", true));
-        equippableComponent.setSwappable(equippableSection.getBoolean("swappable", true));
-        Optional.ofNullable(equippableSection.getString("model", null))
-                .map(NamespacedKey::fromString)
+        final List<EntityType> entityTypes = equippableSection.getStringList("allowed_entity_types").stream().map(e -> EnumUtils.getEnum(EntityType.class, e)).toList();
+        if (equippableSection.contains("allowed_entity_types"))
+            equippableComponent.setAllowedEntities(entityTypes.isEmpty() ? null : entityTypes);
+        if (equippableSection.contains("damage_on_hurt"))
+            equippableComponent.setDamageOnHurt(equippableSection.getBoolean("damage_on_hurt", true));
+        if (equippableSection.contains("dispensable"))
+            equippableComponent.setDispensable(equippableSection.getBoolean("dispensable", true));
+        if (equippableSection.contains("swappable"))
+            equippableComponent.setSwappable(equippableSection.getBoolean("swappable", true));
+
+        Optional.ofNullable(equippableSection.getString("model", null)).map(NamespacedKey::fromString)
                 .ifPresent(equippableComponent::setModel);
-        Optional.ofNullable(equippableSection.getString("camera_overlay"))
-                .map(NamespacedKey::fromString)
+        Optional.ofNullable(equippableSection.getString("camera_overlay")).map(NamespacedKey::fromString)
                 .ifPresent(equippableComponent::setCameraOverlay);
 
         // Only use Registry.SOUNDS::get if we're running on Paper
@@ -440,7 +441,7 @@ public class ItemParser {
             try {
                 Optional.ofNullable(equippableSection.getString("equip_sound"))
                         .map(Key::key)
-                        .map(Registry.SOUNDS::get)
+                        .map(key -> org.bukkit.Registry.SOUNDS.get(key))
                         .ifPresent(equippableComponent::setEquipSound);
             } catch (final NoSuchMethodError e) {
                 // This will catch errors on older server versions
@@ -462,7 +463,7 @@ public class ItemParser {
         oraxenMeta.setExcludedFromCommands(section.getBoolean("excludeFromCommands", false));
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "deprecation"})
     private void parseVanillaSections(final ItemBuilder item) {
         final ConfigurationSection section = mergeWithTemplateSection();
         if (section.contains("ItemFlags")) {
