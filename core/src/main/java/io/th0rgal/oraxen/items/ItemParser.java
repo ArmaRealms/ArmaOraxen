@@ -533,30 +533,25 @@ public class ItemParser {
 
         if (section.contains("Enchantments")) {
             final ConfigurationSection enchantSection = section.getConfigurationSection("Enchantments");
-            if (enchantSection != null) {
-                for (final String enchant : enchantSection.getKeys(false)) {
-                    final int level = enchantSection.getInt(enchant, 1);
-                    final NamespacedKey namespacedKey = NamespacedKey.fromString(enchant);
-                    if (namespacedKey == null) {
-                        Logs.logWarning("Invalid enchantment key: " + enchant + " in item: " + section.getName());
-                        continue;
-                    }
-                    // Use legacy Enchantment for versions below 1.21
-                    if (!VersionUtil.atOrAbove("1.21")) {
-                        final Enchantment enchantment = EnchantmentWrapper.getByKey(namespacedKey);
-                        if (enchantment == null) {
-                            Logs.logWarning("Enchantment not found for key: " + enchant + " in item: " + section.getName());
-                            continue;
-                        }
-                        item.addEnchant(enchantment, level);
-                    } else {
-                        final Enchantment enchantment = Registry.ENCHANTMENT.get(namespacedKey);
-                        if (enchantment == null) {
-                            Logs.logWarning("Enchantment not found for key: " + enchant + " in item: " + section.getName());
-                        } else {
-                            item.addEnchant(enchantment, level);
-                        }
-                    }
+            if (enchantSection == null) return;
+            for (final String enchant : enchantSection.getKeys(false)) {
+                final int level = enchantSection.getInt(enchant, 1);
+                final NamespacedKey namespacedKey = NamespacedKey.fromString(enchant);
+                if (namespacedKey == null) {
+                    Logs.logWarning("Invalid enchantment key: " + enchant + " in item: " + section.getName());
+                    continue;
+                }
+                // Use legacy Enchantment for versions below 1.21
+                final Enchantment enchantment;
+                if (!VersionUtil.atOrAbove("1.21")) {
+                    enchantment = EnchantmentWrapper.getByKey(namespacedKey);
+                } else {
+                    enchantment = Registry.ENCHANTMENT.get(namespacedKey);
+                }
+                if (enchantment == null) {
+                    Logs.logWarning("Enchantment not found for key: " + enchant + " in item: " + section.getName());
+                } else {
+                    item.addEnchant(enchantment, level);
                 }
             }
         }
