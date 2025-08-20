@@ -147,7 +147,7 @@ tasks {
         downloadPlugins {
             url("https://github.com/dmulloy2/ProtocolLib/releases/download/5.4.0/ProtocolLib.jar")
         }
-        minecraftVersion("1.20.4")
+        minecraftVersion("1.21.8")
     }
 
     shadowJar {

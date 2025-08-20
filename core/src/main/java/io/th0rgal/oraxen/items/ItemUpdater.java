@@ -338,7 +338,6 @@ public class ItemUpdater implements Listener {
                 nmsHandler.consumableComponent(newItem, Optional.ofNullable(nmsHandler.consumableComponent(newItem)).orElse(nmsHandler.consumableComponent(oldItem)))
         );
 
-        io.th0rgal.oraxen.compatibilities.provided.placeholderapi.PapiAliases.setPlaceholders(null, newItem, false);
         return newItem;
     }
 
