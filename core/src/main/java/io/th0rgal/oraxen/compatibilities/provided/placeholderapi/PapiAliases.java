@@ -15,32 +15,25 @@ public class PapiAliases {
     }
 
     @NotNull
-    public static String setPlaceholders(final String text) {
-        return PlaceholderAPI.setPlaceholders(null, text);
-    }
-
-    @NotNull
     public static String setPlaceholders(final Player player, final String text) {
         return PlaceholderAPI.setPlaceholders(player, text);
     }
 
     @NotNull
-    public static List<String> setPlaceholders(final Player player, final List<String> text) {
-        return PlaceholderAPI.setPlaceholders(player, text);
+    public static String setPlaceholders(final String text) {
+        return PlaceholderAPI.setPlaceholders(null, text);
     }
 
     @NotNull
-    @Contract("_, _, _ -> param2")
-    public static ItemStack setPlaceholders(final Player player, @NotNull final ItemStack item, final boolean updateLore) {
+    @Contract("_, _ -> param2")
+    public static ItemStack updateLore(final Player player, @NotNull final ItemStack item) {
         if (item.hasItemMeta()) {
-            if (updateLore) {
-                final ItemMeta meta = item.getItemMeta();
-                final List<String> itemLore = meta.getLore();
-                if (itemLore != null && !itemLore.isEmpty()) {
-                    meta.setLore(setPlaceholders(player, itemLore));
-                }
-                item.setItemMeta(meta);
+            final ItemMeta meta = item.getItemMeta();
+            final List<String> itemLore = meta.getLore();
+            if (itemLore != null && !itemLore.isEmpty()) {
+                meta.setLore(PlaceholderAPI.setPlaceholders(player, itemLore));
             }
+            item.setItemMeta(meta);
         }
         return item;
     }
