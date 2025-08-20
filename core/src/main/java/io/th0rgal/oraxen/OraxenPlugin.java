@@ -66,7 +66,7 @@ public class OraxenPlugin extends JavaPlugin {
     public static JarFile getJarFile() {
         try {
             return new JarFile(oraxen.getFile());
-        } catch (IOException e) {
+        } catch (final IOException e) {
             return null;
         }
     }
@@ -105,6 +105,7 @@ public class OraxenPlugin extends JavaPlugin {
         hudManager = new HudManager(configsManager);
         fontManager = new FontManager(configsManager);
         soundManager = new SoundManager(configsManager.getSound());
+        CompatibilitiesManager.enableNativeCompatibilities();
         OraxenItems.loadItems();
         fontManager.registerEvents();
         fontManager.verifyRequired(); // Verify the required glyph is there
@@ -121,9 +122,8 @@ public class OraxenPlugin extends JavaPlugin {
         postLoading();
         try {
             Message.PLUGIN_LOADED.log(AdventureUtils.tagResolver("os", OS.getOs().getPlatformName()));
-        } catch (Exception ignore) {
+        } catch (final Exception ignore) {
         }
-        CompatibilitiesManager.enableNativeCompatibilities();
         if (VersionUtil.isCompiled())
             NoticeUtils.compileNotice();
         if (VersionUtil.isLeaked())
@@ -140,7 +140,7 @@ public class OraxenPlugin extends JavaPlugin {
     public void onDisable() {
         HandlerList.unregisterAll(this);
         FurnitureFactory.unregisterEvolution();
-        for (Player player : Bukkit.getOnlinePlayers())
+        for (final Player player : Bukkit.getOnlinePlayers())
             if (GlyphHandlers.isNms())
                 NMSHandlers.getHandler().glyphHandler().uninject(player);
 
