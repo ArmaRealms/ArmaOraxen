@@ -5,6 +5,7 @@ import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.compatibilities.provided.ecoitems.WrappedEcoItem;
 import io.th0rgal.oraxen.compatibilities.provided.mmoitems.WrappedMMOItem;
 import io.th0rgal.oraxen.compatibilities.provided.mythiccrucible.WrappedCrucibleItem;
+import io.th0rgal.oraxen.compatibilities.provided.placeholderapi.PapiAliases;
 import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
@@ -175,9 +176,11 @@ public class ItemParser {
 
     private void parseDataComponents(final ItemBuilder item) {
         final ConfigurationSection section = mergeWithTemplateSection();
-        if (section.contains("itemname") && VersionUtil.atOrAbove("1.20.5"))
-            item.setItemName(section.getString("itemname"));
-        else if (section.contains("displayname")) item.setDisplayName(section.getString("displayname"));
+        if (section.contains("itemname") && VersionUtil.atOrAbove("1.20.5")) {
+            item.setItemName(PapiAliases.setPlaceholders(section.getString("itemname")));
+        } else if (section.contains("displayname")) {
+            item.setDisplayName(PapiAliases.setPlaceholders(section.getString("displayname")));
+        }
 
         final ConfigurationSection components = section.getConfigurationSection("Components");
         if (components == null || !VersionUtil.atOrAbove("1.20.5")) return;
