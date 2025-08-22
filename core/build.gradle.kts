@@ -8,7 +8,6 @@ plugins {
 
 val pluginVersion = project.property("pluginVersion") as String
 tasks {
-    //publish.get().dependsOn(shadowJar)
     shadowJar.get().archiveFileName.set("oraxen-${pluginVersion}.jar")
     build.get().dependsOn(shadowJar)
 }
@@ -34,7 +33,6 @@ publishing {
             version = publishData.getVersion()
 
             from(components["java"])
-            //artifact(tasks.shadowJar.get().apply { archiveClassifier.set("") })
         }
     }
 

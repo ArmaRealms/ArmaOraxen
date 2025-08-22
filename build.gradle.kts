@@ -6,9 +6,8 @@ import kotlin.io.path.listDirectoryEntries
 
 plugins {
     id("java")
-    //id("com.github.johnrengelman.shadow") version "8.1.1"
     id("xyz.jpenilla.run-paper") version "2.3.1"
-    id("net.minecrell.plugin-yml.bukkit") version "0.6.0" // Generates plugin.yml
+    id("net.minecrell.plugin-yml.bukkit") version "0.6.0"
     id("io.papermc.paperweight.userdev") version "2.0.0-beta.17" apply false
     id("io.github.goooler.shadow") version "8.1.8"
 }
@@ -27,10 +26,6 @@ val SUPPORTED_VERSIONS: List<NMSVersion> = listOf(
     "v1_21_R5" toNms "1.21.8-R0.1-SNAPSHOT" // also for 1.21.7
 )
 
-val compiled = (project.findProperty("oraxen_compiled")?.toString() ?: "true").toBoolean()
-val pluginPath = project.findProperty("oraxen_plugin_path")?.toString()
-val devPluginPath = project.findProperty("oraxen_dev_plugin_path")?.toString()
-val foliaPluginPath = project.findProperty("oraxen_folia_plugin_path")?.toString()
 val spigotPluginPath = project.findProperty("oraxen_spigot_plugin_path")?.toString()
 val pluginVersion: String by project
 val commandApiVersion = "10.1.2"
@@ -107,7 +102,6 @@ allprojects {
         implementation("com.jeff-media:persistent-data-serializer:1.0")
         implementation("org.jetbrains:annotations:24.1.0") { isTransitive = false }
         implementation("dev.triumphteam:triumph-gui:3.1.13-SNAPSHOT") { exclude("net.kyori") }
-
         implementation("me.gabytm.util:actions-spigot:$actionsVersion") { exclude(group = "com.google.guava") }
     }
 }
