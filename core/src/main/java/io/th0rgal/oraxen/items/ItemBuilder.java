@@ -11,15 +11,25 @@ import io.th0rgal.oraxen.compatibilities.provided.mythiccrucible.WrappedCrucible
 import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.nms.NMSHandler;
 import io.th0rgal.oraxen.nms.NMSHandlers;
-import io.th0rgal.oraxen.utils.*;
-import io.th0rgal.oraxen.utils.logs.Logs;
 import io.th0rgal.oraxen.utils.AdventureUtils;
+import io.th0rgal.oraxen.utils.OraxenYaml;
+import io.th0rgal.oraxen.utils.PotionUtils;
+import io.th0rgal.oraxen.utils.Utils;
 import io.th0rgal.oraxen.utils.VersionUtil;
+import io.th0rgal.oraxen.utils.logs.Logs;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.Color;
+import org.bukkit.DyeColor;
+import org.bukkit.FireworkEffect;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.Registry;
+import org.bukkit.Tag;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -29,8 +39,20 @@ import org.bukkit.entity.TropicalFish;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemRarity;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.*;
-import org.bukkit.inventory.meta.components.*;
+import org.bukkit.inventory.meta.ArmorMeta;
+import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.FireworkEffectMeta;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
+import org.bukkit.inventory.meta.MapMeta;
+import org.bukkit.inventory.meta.PotionMeta;
+import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.inventory.meta.TropicalFishBucketMeta;
+import org.bukkit.inventory.meta.components.EquippableComponent;
+import org.bukkit.inventory.meta.components.FoodComponent;
+import org.bukkit.inventory.meta.components.JukeboxPlayableComponent;
+import org.bukkit.inventory.meta.components.ToolComponent;
+import org.bukkit.inventory.meta.components.UseCooldownComponent;
 import org.bukkit.inventory.meta.trim.ArmorTrim;
 import org.bukkit.inventory.meta.trim.TrimMaterial;
 import org.bukkit.inventory.meta.trim.TrimPattern;
@@ -42,7 +64,15 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 
 @SuppressWarnings("ALL")
 public class ItemBuilder {
@@ -349,7 +379,7 @@ public class ItemBuilder {
      * Check if the ItemBuilder has color.
      *
      * @return true if the ItemBuilder has color that is not default
-     *         LeatherMetaColor
+     * LeatherMetaColor
      */
     public boolean hasColor() {
         return color != null && !color.equals(Bukkit.getItemFactory().getDefaultLeatherColor());
@@ -651,7 +681,7 @@ public class ItemBuilder {
     }
 
     public <T, Z> ItemBuilder setCustomTag(final NamespacedKey namespacedKey, final PersistentDataType<T, Z> dataType,
-            final Z data) {
+                                           final Z data) {
         persistentDataMap.put(new PersistentDataSpace(namespacedKey, dataType), data);
         return this;
     }
@@ -778,10 +808,15 @@ public class ItemBuilder {
             if (itemMeta instanceof Damageable damageable)
                 damageable.setMaxDamage(durability);
             if (hasItemName()) {
-                if (VersionUtil.isPaperServer())
-                    itemMeta.itemName(AdventureUtils.MINI_MESSAGE.deserialize(itemName));
-                else
+                if (VersionUtil.isPaperServer()) {
+                    Component display = AdventureUtils.MINI_MESSAGE.deserialize(this.itemName)
+                                    .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE);
+                    itemMeta.itemName(display);
+                    itemMeta.customName(display);
+                } else {
                     itemMeta.setItemName(itemName);
+                    itemMeta.setDisplayName(itemName);
+                }
             }
             if (hasMaxStackSize())
                 itemMeta.setMaxStackSize(maxStackSize);
@@ -1048,7 +1083,7 @@ public class ItemBuilder {
 
     /**
      * Sets a generic component on this item
-     * 
+     *
      * @param type      The component type (e.g. "food", "tool", etc.)
      * @param component The component object
      */
@@ -1058,7 +1093,7 @@ public class ItemBuilder {
 
     /**
      * Gets a generic component from this item
-     * 
+     *
      * @param type The component type
      * @return The component object, or null if not found
      */
@@ -1069,7 +1104,7 @@ public class ItemBuilder {
 
     /**
      * Checks if this item has a specific component
-     * 
+     *
      * @param type The component type
      * @return true if the component exists
      */
