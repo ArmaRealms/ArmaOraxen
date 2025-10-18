@@ -30,7 +30,7 @@ public class PredicatesGenerator {
         // parent
         json.addProperty("parent", getParent(material));
 
-        String vanillaTextureName = getVanillaTextureName(material, false);
+        final String vanillaTextureName = getVanillaTextureName(material, false);
 
         // textures
         final ItemMeta exampleMeta = new ItemStack(material).getItemMeta();
@@ -68,7 +68,7 @@ public class PredicatesGenerator {
                 json.add("display", JsonParser.parseString(Settings.SHIELD_DISPLAY.toString()).getAsJsonObject());
             }
             case BOW -> {
-                JsonObject pullingPredicate = new JsonObject();
+                final JsonObject pullingPredicate = new JsonObject();
                 pullingPredicate.addProperty("pulling", 1);
                 overrides.add(getOverride(JsonParser.parseString(pullingPredicate.toString()).getAsJsonObject(),
                         "item/bow_pulling_0"));
@@ -80,7 +80,7 @@ public class PredicatesGenerator {
                 json.add("display", JsonParser.parseString(Settings.BOW_DISPLAY.toString()).getAsJsonObject());
             }
             case CROSSBOW -> {
-                JsonObject pullingPredicate = new JsonObject();
+                final JsonObject pullingPredicate = new JsonObject();
                 pullingPredicate.addProperty("pulling", 1);
                 overrides.add(getOverride(JsonParser.parseString(pullingPredicate.toString()).getAsJsonObject(),
                         "item/crossbow_pulling_0"));
@@ -90,7 +90,7 @@ public class PredicatesGenerator {
                 pullingPredicate.addProperty("pull", 0.9);
                 overrides.add(getOverride(pullingPredicate, "item/crossbow_pulling_2"));
 
-                JsonObject chargedPredicate = new JsonObject();
+                final JsonObject chargedPredicate = new JsonObject();
                 chargedPredicate.addProperty("charged", 1);
                 overrides.add(getOverride(JsonParser.parseString(chargedPredicate.toString()).getAsJsonObject(),
                         "item/crossbow_arrow"));
@@ -101,7 +101,7 @@ public class PredicatesGenerator {
                 json.add("display", JsonParser.parseString(Settings.CROSSBOW_DISPLAY.toString()).getAsJsonObject());
             }
             case LIGHT -> {
-                JsonObject lightPredicate = new JsonObject();
+                final JsonObject lightPredicate = new JsonObject();
                 for (int i = 0; i < 16; i++) {
                     lightPredicate.addProperty("level", (float) i / 16);
                     overrides.add(getOverride(JsonParser.parseString(lightPredicate.toString()).getAsJsonObject(),
@@ -126,8 +126,8 @@ public class PredicatesGenerator {
         }
         if (material == Material.COMPASS || material == Material.CLOCK
                 || (VersionUtil.atOrAbove("1.19") && material == Material.RECOVERY_COMPASS)) {
-            String override = material == Material.CLOCK ? CLOCK_OVERRIDES : COMPASS_OVERRIDES;
-            JsonArray jsonArray = JsonParser
+            final String override = material == Material.CLOCK ? CLOCK_OVERRIDES : COMPASS_OVERRIDES;
+            final JsonArray jsonArray = JsonParser
                     .parseString(override.replace("X", material.name().toLowerCase(Locale.ROOT))).getAsJsonArray();
             for (int i = 0; i < jsonArray.size(); i++) {
                 overrides.add(jsonArray.get(i).getAsJsonObject());
@@ -136,11 +136,11 @@ public class PredicatesGenerator {
 
         // custom items
         for (final ItemBuilder item : items) {
-            OraxenMeta oraxenMeta = item.getOraxenMeta();
-            Integer customModelData = oraxenMeta.getCustomModelData();
+            final OraxenMeta oraxenMeta = item.getOraxenMeta();
+            final Integer customModelData = oraxenMeta.getCustomModelData();
 
             // Skip duplicate
-            JsonObject baseOverride = getOverride("custom_model_data", customModelData,
+            final JsonObject baseOverride = getOverride("custom_model_data", customModelData,
                     oraxenMeta.getGeneratedModelPath() + oraxenMeta.getModelName());
             if (overrides.contains(baseOverride))
                 continue;
@@ -170,11 +170,11 @@ public class PredicatesGenerator {
             if (oraxenMeta.hasPullingModels()) {
                 final List<String> pullingModels = oraxenMeta.getPullingModels();
                 for (int i = 0; i < pullingModels.size(); i++) {
-                    String pullingModel = pullingModels.get(i);
+                    final String pullingModel = pullingModels.get(i);
                     final JsonObject predicate = new JsonObject();
                     predicate.addProperty("pulling", 1);
                     // Round to nearest 0.X5 (0.0667 -> 0.65, 0.677 -> 0.7)
-                    float pull = Math.min(Utils.customRound((((float) (i + 1) / pullingModels.size())), 0.05f), 0.9f);
+                    final float pull = Math.min(Utils.customRound((((float) (i + 1) / pullingModels.size())), 0.05f), 0.9f);
                     // First pullingModel should always be used immediatly, thus pull: 0f
                     if (i != 0)
                         predicate.addProperty("pull", pull);
@@ -203,10 +203,10 @@ public class PredicatesGenerator {
         json.add("overrides", overrides);
     }
 
-    public static void generatePullingModels(OraxenMeta oraxenMeta) {
+    public static void generatePullingModels(final OraxenMeta oraxenMeta) {
         if (!oraxenMeta.hasPullingTextures())
             return;
-        for (String texture : oraxenMeta.getPullingTextures()) {
+        for (final String texture : oraxenMeta.getPullingTextures()) {
             final JsonObject json = new JsonObject();
             json.addProperty("parent", oraxenMeta.getParentModel());
             final JsonObject textureJson = new JsonObject();
@@ -217,7 +217,7 @@ public class PredicatesGenerator {
         }
     }
 
-    public static void generateChargedModels(OraxenMeta oraxenMeta) {
+    public static void generateChargedModels(final OraxenMeta oraxenMeta) {
         if (!oraxenMeta.hasChargedTexture())
             return;
         final JsonObject json = new JsonObject();
@@ -229,7 +229,7 @@ public class PredicatesGenerator {
                 Utils.getFileNameOnly(oraxenMeta.getChargedTexture()) + ".json", json.toString());
     }
 
-    public static void generateBlockingModels(OraxenMeta oraxenMeta) {
+    public static void generateBlockingModels(final OraxenMeta oraxenMeta) {
         if (!oraxenMeta.hasBlockingTexture())
             return;
         final JsonObject json = new JsonObject();
@@ -241,7 +241,7 @@ public class PredicatesGenerator {
                 Utils.getFileNameOnly(oraxenMeta.getBlockingTexture()) + ".json", json.toString());
     }
 
-    public static void generateFireworkModels(OraxenMeta oraxenMeta) {
+    public static void generateFireworkModels(final OraxenMeta oraxenMeta) {
         if (!oraxenMeta.hasFireworkTexture())
             return;
         final JsonObject json = new JsonObject();
@@ -253,7 +253,7 @@ public class PredicatesGenerator {
                 Utils.getFileNameOnly(oraxenMeta.getFireworkTexture()) + ".json", json.toString());
     }
 
-    public static void generateCastModels(OraxenMeta oraxenMeta) {
+    public static void generateCastModels(final OraxenMeta oraxenMeta) {
         if (!oraxenMeta.hasCastTexture())
             return;
         final JsonObject json = new JsonObject();
@@ -265,10 +265,10 @@ public class PredicatesGenerator {
                 Utils.getFileNameOnly(oraxenMeta.getCastTexture()) + ".json", json.toString());
     }
 
-    public static void generateDamageModels(OraxenMeta oraxenMeta) {
+    public static void generateDamageModels(final OraxenMeta oraxenMeta) {
         if (!oraxenMeta.hasDamagedTextures())
             return;
-        for (String texture : oraxenMeta.getDamagedTextures()) {
+        for (final String texture : oraxenMeta.getDamagedTextures()) {
             final JsonObject json = new JsonObject();
             json.addProperty("parent", oraxenMeta.getParentModel());
             final JsonObject textureJson = new JsonObject();
@@ -302,7 +302,7 @@ public class PredicatesGenerator {
     }
 
     public String getVanillaTextureName(final Material material, final boolean model) {
-        String materialName = material.toString().toLowerCase(Locale.ROOT);
+        final String materialName = material.toString().toLowerCase(Locale.ROOT);
         if (!model) {
             if (material == Material.COMPASS)
                 return "item/compass_16";
@@ -332,7 +332,7 @@ public class PredicatesGenerator {
     }
 
     private String getParent(final Material material) {
-        String materialName = material.name().toLowerCase(Locale.ROOT);
+        final String materialName = material.name().toLowerCase(Locale.ROOT);
         if (material == Material.SNOW)
             return "block/snow_height2";
         if (material == Material.FISHING_ROD || material == Material.WARPED_FUNGUS_ON_A_STICK
@@ -401,10 +401,10 @@ public class PredicatesGenerator {
         return "item/generated";
     }
 
-    private static boolean has2DBlockIcon(Material material) {
+    private static boolean has2DBlockIcon(final Material material) {
         if (material == Material.BARRIER || material == Material.STRUCTURE_VOID || material == Material.LIGHT)
             return true;
-        if (material == Material.IRON_BARS || material == Material.CHAIN)
+        if (material == Material.IRON_BARS || material == Material.IRON_CHAIN)
             return true;
         if (material == Material.SEA_PICKLE || material == Material.POINTED_DRIPSTONE || material == Material.BELL)
             return true;
