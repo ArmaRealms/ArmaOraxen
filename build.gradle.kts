@@ -6,10 +6,10 @@ import kotlin.io.path.listDirectoryEntries
 
 plugins {
     alias(oraxenLibs.plugins.java)
-    id("xyz.jpenilla.run-paper") version "3.0.2"
-    id("net.minecrell.plugin-yml.bukkit") version "0.6.0" // Generates plugin.yml
+    alias(oraxenLibs.plugins.runpaper)
     alias(oraxenLibs.plugins.userdev) apply false
-    id("com.gradleup.shadow") version "9.2.2"
+    alias(oraxenLibs.plugins.shadow)
+    id("net.minecrell.plugin-yml.bukkit") version "0.6.0" // Generates plugin.yml
 }
 
 class NMSVersion(val nmsVersion: String, val serverVersion: String)
@@ -36,6 +36,10 @@ val spigotPluginPath = project.findProperty("oraxen_spigot_plugin_path")?.toStri
 val pluginVersion: String by project
 group = "io.th0rgal"
 version = pluginVersion
+
+repositories {
+    mavenCentral()
+}
 
 allprojects {
     apply(plugin = "java")
@@ -245,4 +249,3 @@ if (spigotPluginPath != null) {
         named<DefaultTask>("build").get().dependsOn(copyJarTask)
     }
 }
-

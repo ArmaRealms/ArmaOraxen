@@ -1,8 +1,8 @@
 plugins {
     alias(oraxenLibs.plugins.java)
-    //id("io.papermc.paperweight.userdev") version "1.6.0"
-    id("maven-publish")
+    alias(oraxenLibs.plugins.userdev)
     alias(oraxenLibs.plugins.shadow)
+    id("maven-publish")
     id("org.ajoberstar.grgit.service") version "5.2.0"
 }
 
@@ -12,9 +12,8 @@ tasks {
     build.get().dependsOn(shadowJar)
 }
 
-
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.21.10-R0.1-SNAPSHOT")
+    paperweight.paperDevBundle("1.21.10-R0.1-SNAPSHOT")
     // libraries in plugin.yml > libraries
     compileOnly(oraxenLibs.bundles.libraries.bukkit) {
         exclude("org.jetbrains", "annotations")
@@ -114,3 +113,5 @@ class PublishData(private val project: Project) {
             name.plus(append).plus(if (appendCommit && addCommit) "-".plus(commitHash) else "")
     }
 }
+
+paperweight.reobfArtifactConfiguration = io.papermc.paperweight.userdev.ReobfArtifactConfiguration.MOJANG_PRODUCTION
