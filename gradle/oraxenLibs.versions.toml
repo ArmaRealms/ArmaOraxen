@@ -1,10 +1,15 @@
 [versions]
 # often changed version numbers
-adventure = "4.17.0"
-adventure-platform = "4.3.4"
+adventure = "4.25.0"
+adventure-platform = "4.4.1"
 commandapi = "11.0.0"
 
 actions = "1.0.0-SNAPSHOT"
+
+java = "21"
+runpaper = "3.0.2"
+shadow = "9.2.2"
+userdev = "2.0.0-beta.17"
 
 [libraries]
 
@@ -175,3 +180,9 @@ plugins = [
     "ecoitems",         # EcoÍtems
     "blocklocker",      # BlockLocker
 ]
+
+[plugins]
+java = { id = "java" }
+runpaper = { id = "xyz.jpenilla.run-paper", version.ref = "runpaper" }
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
+userdev = { id = "io.papermc.paperweight.userdev", version.ref = "userdev" }

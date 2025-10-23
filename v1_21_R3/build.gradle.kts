@@ -1,7 +1,7 @@
 plugins {
-    id("java")
-    id("io.papermc.paperweight.userdev") version "2.0.0-beta.17"
-    id("io.github.goooler.shadow") version "8.1.8"
+    alias(oraxenLibs.plugins.java)
+    alias(oraxenLibs.plugins.userdev)
+    alias(oraxenLibs.plugins.shadow)
 }
 
 dependencies {

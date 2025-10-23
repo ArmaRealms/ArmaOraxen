@@ -1,8 +1,8 @@
 plugins {
-    id("java")
+    alias(oraxenLibs.plugins.java)
     //id("io.papermc.paperweight.userdev") version "1.6.0"
     id("maven-publish")
-    id("io.github.goooler.shadow") version "8.1.8"
+    alias(oraxenLibs.plugins.shadow)
     id("org.ajoberstar.grgit.service") version "5.2.0"
 }
 

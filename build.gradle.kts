@@ -5,10 +5,10 @@ import kotlin.io.path.Path
 import kotlin.io.path.listDirectoryEntries
 
 plugins {
-    id("java")
+    alias(oraxenLibs.plugins.java)
     id("xyz.jpenilla.run-paper") version "3.0.2"
     id("net.minecrell.plugin-yml.bukkit") version "0.6.0" // Generates plugin.yml
-    id("io.papermc.paperweight.userdev") version "2.0.0-beta.17" apply false
+    alias(oraxenLibs.plugins.userdev) apply false
     id("com.gradleup.shadow") version "9.2.2"
 }
 
@@ -24,7 +24,7 @@ val SUPPORTED_VERSIONS: List<NMSVersion> = listOf(
     "v1_21_R2" toNms "1.21.3-R0.1-SNAPSHOT",
     "v1_21_R3" toNms "1.21.4-R0.1-SNAPSHOT",
     "v1_21_R4" toNms "1.21.5-R0.1-SNAPSHOT",
-    "v1_21_R5" toNms "1.21.8-R0.1-SNAPSHOT", // also for 1.21.7
+    "v1_21_R5" toNms "1.21.8-R0.1-SNAPSHOT",
     "v1_21_R6" toNms "1.21.10-R0.1-SNAPSHOT"
 )
 
