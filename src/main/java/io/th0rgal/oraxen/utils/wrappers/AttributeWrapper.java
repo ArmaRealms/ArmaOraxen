@@ -83,17 +83,17 @@ public class AttributeWrapper {
             : Registry.ATTRIBUTE.get(NamespacedKey.fromString("generic.tempt_range"));
 
     @Nullable
-    public static Attribute fromString(@NotNull String attribute) {
+    public static Attribute fromString(@NotNull final String attribute) {
         // First try direct Attribute enum lookup if we're on 1.21.2+
         if (VersionUtil.atOrAbove("1.21.2")) {
             try {
                 return Attribute.valueOf(attribute.toUpperCase(Locale.ENGLISH).replace(".", "_"));
-            } catch (IllegalArgumentException ignored) {
+            } catch (final IllegalArgumentException ignored) {
                 // Continue with other approaches
             }
         }
 
-        String attributeName = attribute.replace("GENERIC_", "").toLowerCase(Locale.ENGLISH);
+        final String attributeName = attribute.replace("GENERIC_", "").toLowerCase(Locale.ENGLISH);
 
         // Only use Registry if we're on Paper
         if (VersionUtil.isPaperServer()) {
@@ -103,31 +103,23 @@ public class AttributeWrapper {
                 } else {
                     return Registry.ATTRIBUTE.get(NamespacedKey.fromString("generic." + attributeName));
                 }
-            } catch (NoSuchMethodError e) {
+            } catch (final NoSuchMethodError e) {
                 // Registry.ATTRIBUTE.get not available on this server
             }
         }
 
         // Fallback to pre-defined constants
-        if (attributeName.equals("armor"))
-            return ARMOR;
-        if (attributeName.equals("armor_toughness"))
-            return ARMOR_TOUGHNESS;
-        if (attributeName.equals("attack_damage"))
-            return ATTACK_DAMAGE;
-        if (attributeName.equals("attack_knockback"))
-            return ATTACK_KNOCKBACK;
-        if (attributeName.equals("attack_speed"))
-            return ATTACK_SPEED;
-        if (attributeName.equals("knockback_resistance"))
-            return KNOCKBACK_RESISTANCE;
-        if (attributeName.equals("luck"))
-            return LUCK;
-        if (attributeName.equals("max_health"))
-            return MAX_HEALTH;
-        if (attributeName.equals("movement_speed"))
-            return MOVEMENT_SPEED;
-
-        return null;
+        return switch (attributeName) {
+            case "armor" -> ARMOR;
+            case "armor_toughness" -> ARMOR_TOUGHNESS;
+            case "attack_damage" -> ATTACK_DAMAGE;
+            case "attack_knockback" -> ATTACK_KNOCKBACK;
+            case "attack_speed" -> ATTACK_SPEED;
+            case "knockback_resistance" -> KNOCKBACK_RESISTANCE;
+            case "luck" -> LUCK;
+            case "max_health" -> MAX_HEALTH;
+            case "movement_speed" -> MOVEMENT_SPEED;
+            default -> null;
+        };
     }
 }
