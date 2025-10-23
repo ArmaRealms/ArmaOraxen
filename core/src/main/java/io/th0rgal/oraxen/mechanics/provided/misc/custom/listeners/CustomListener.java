@@ -17,13 +17,13 @@ public abstract class CustomListener implements Listener {
     protected final TimersFactory timers;
 
     protected final CustomEvent event;
-    protected final ClickAction clickAction;
+    protected final ClickAction action;
 
-    protected CustomListener(String itemID, long cooldown, CustomEvent event, ClickAction clickAction) {
+    protected CustomListener(final String itemID, final long cooldown, final CustomEvent event, final ClickAction action) {
         this.itemID = itemID;
         this.timers = new TimersFactory(cooldown * 50);
         this.event = event;
-        this.clickAction = clickAction;
+        this.action = action;
     }
 
     public void register() {
@@ -34,8 +34,8 @@ public abstract class CustomListener implements Listener {
         HandlerList.unregisterAll(this);
     }
 
-    public void perform(Player player, ItemStack itemStack) {
-        if (!clickAction.canRun(player)) return;
+    public void perform(final Player player, final ItemStack itemStack) {
+        if (!action.canRun(player)) return;
 
         final Timer playerTimer = timers.getTimer(player);
 
@@ -46,7 +46,7 @@ public abstract class CustomListener implements Listener {
 
         playerTimer.reset();
 
-        clickAction.performActions(player);
+        action.performActions(player);
 
         if (event.isOneUsage()) {
             itemStack.setAmount(itemStack.getAmount() - 1);
