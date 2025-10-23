@@ -1,6 +1,6 @@
 import java.text.SimpleDateFormat
 import java.time.Instant
-import java.util.*
+import java.util.Date
 
 plugins {
     alias(oraxenLibs.plugins.java)
@@ -88,7 +88,7 @@ dependencies {
         exclude("com.google.code.gson", "gson")
         exclude("net.kyori")
     }
-    compileOnly(files("/libs/compile/BSP.jar"))
+    compileOnly(files("/libs/BSP.jar"))
     // shaded dependencies
     implementation(oraxenLibs.bundles.libraries.shade) {
         exclude("com.google.code.gson", "gson")
