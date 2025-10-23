@@ -1,32 +1,14 @@
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.util.*
-import kotlin.io.path.Path
-import kotlin.io.path.listDirectoryEntries
 
 plugins {
     alias(oraxenLibs.plugins.java)
     alias(oraxenLibs.plugins.runpaper)
-    alias(oraxenLibs.plugins.userdev) apply false
+    alias(oraxenLibs.plugins.userdev)
     alias(oraxenLibs.plugins.shadow)
     id("net.minecrell.plugin-yml.bukkit") version "0.6.0" // Generates plugin.yml
 }
-
-class NMSVersion(val nmsVersion: String, val serverVersion: String)
-
-infix fun String.toNms(that: String): NMSVersion = NMSVersion(this, that)
-val SUPPORTED_VERSIONS: List<NMSVersion> = listOf(
-    "v1_20_R1" toNms "1.20.1-R0.1-SNAPSHOT",
-    "v1_20_R2" toNms "1.20.2-R0.1-SNAPSHOT",
-    "v1_20_R3" toNms "1.20.4-R0.1-SNAPSHOT",
-    "v1_20_R4" toNms "1.20.6-R0.1-SNAPSHOT",
-    "v1_21_R1" toNms "1.21.1-R0.1-SNAPSHOT",
-    "v1_21_R2" toNms "1.21.3-R0.1-SNAPSHOT",
-    "v1_21_R3" toNms "1.21.4-R0.1-SNAPSHOT",
-    "v1_21_R4" toNms "1.21.5-R0.1-SNAPSHOT",
-    "v1_21_R5" toNms "1.21.8-R0.1-SNAPSHOT",
-    "v1_21_R6" toNms "1.21.10-R0.1-SNAPSHOT"
-)
 
 val compiled = (project.findProperty("oraxen_compiled")?.toString() ?: "true").toBoolean()
 val pluginPath = project.findProperty("oraxen_plugin_path")?.toString()
@@ -34,74 +16,86 @@ val devPluginPath = project.findProperty("oraxen_dev_plugin_path")?.toString()
 val foliaPluginPath = project.findProperty("oraxen_folia_plugin_path")?.toString()
 val spigotPluginPath = project.findProperty("oraxen_spigot_plugin_path")?.toString()
 val pluginVersion: String by project
+
 group = "io.th0rgal"
 version = pluginVersion
 
 repositories {
+    maven("https://repo.papermc.io/repository/maven-public/") {
+        content {
+            includeGroup("io.papermc.paper") // Paper
+            // extra stuff required by paper
+            includeGroup("net.md-5")
+            includeGroup("com.mojang")
+        }
+    }
+    maven("https://libraries.minecraft.net/") {
+        content { includeGroup("net.minecraft") } // Minecraft repo (commodore)
+    }
+    maven("https://repo.extendedclip.com/content/repositories/placeholderapi/") {
+        content { includeGroup("me.clip") } // PlaceHolderAPI
+    }
+    maven("https://repo.triumphteam.dev/snapshots") {
+        content { includeGroup("me.gabytm.util") } // actions-code, actions-spigot
+    }
+    maven("https://mvn.lumine.io/repository/maven-public/") {
+        metadataSources { artifact() }
+        content {
+            includeModule("io.lumine", "MythicLib")
+            includeModule("io.lumine", "Mythic-Dist")
+            includeModule("io.lumine", "MythicCrucible-API")
+            includeGroup("com.ticxo.modelengine") // ModelEngine
+        }
+    }
+    maven("https://repo.oraxen.com/releases") {
+        content { includeGroup("io.th0rgal") } // protectionlib
+    }
+    maven("https://repo.oraxen.com/snapshots") {
+        content { includeGroup("io.th0rgal") }
+    }
+    maven("https://repo.auxilor.io/repository/maven-public/") {
+        content { includeGroup("com.willfp") } // EcoItems, eco, libreforge
+    }
+    maven("https://maven.enginehub.org/repo/") {
+        content { includeGroupAndSubgroups("com.sk89q.worldedit") } // world edit
+    }
+    maven("https://nexus.phoenixdevt.fr/repository/maven-public/") {
+        content {
+            includeModule("io.lumine", "MythicLib-dist")
+            includeGroup("net.Indyuce") // MMOItems
+        }
+    }
+    maven("https://repo.codemc.org/repository/maven-public/") {
+        content { includeGroup("nl.rutgerkok") } // BlockLocker
+    }
+    maven("https://repo.codemc.io/repository/maven-releases/") {
+        content { includeGroup("com.github.retrooper") }
+    }
     mavenCentral()
 }
 
-allprojects {
-    apply(plugin = "java")
-
-    repositories {
-        maven("https://repo.papermc.io/repository/maven-public/") {
-            content {
-                includeGroup("io.papermc.paper") // Paper
-                // extra stuff required by paper
-                includeGroup("net.md-5")
-                includeGroup("com.mojang")
-            }
-        }
-        maven("https://libraries.minecraft.net/") {
-            content { includeGroup("net.minecraft") } // Minecraft repo (commodore)
-        }
-        maven("https://repo.extendedclip.com/content/repositories/placeholderapi/") {
-            content { includeGroup("me.clip") } // PlaceHolderAPI
-        }
-        maven("https://repo.triumphteam.dev/snapshots") {
-            content { includeGroup("me.gabytm.util") } // actions-code, actions-spigot
-        }
-        maven("https://mvn.lumine.io/repository/maven-public/") {
-            metadataSources { artifact() }
-            content {
-                includeModule("io.lumine", "MythicLib")
-                includeModule("io.lumine", "Mythic-Dist")
-                includeModule("io.lumine", "MythicCrucible-API")
-                includeGroup("com.ticxo.modelengine") // ModelEngine
-            }
-        }
-        maven("https://repo.oraxen.com/releases") {
-            content { includeGroup("io.th0rgal") } // protectionlib
-        }
-        maven("https://repo.oraxen.com/snapshots") {
-            content { includeGroup("io.th0rgal") }
-        }
-        maven("https://repo.auxilor.io/repository/maven-public/") {
-            content { includeGroup("com.willfp") } // EcoItems, eco, libreforge
-        }
-        maven("https://maven.enginehub.org/repo/") {
-            content { includeGroupAndSubgroups("com.sk89q.worldedit") } // world edit
-        }
-        maven("https://nexus.phoenixdevt.fr/repository/maven-public/") {
-            content {
-                includeModule("io.lumine", "MythicLib-dist")
-                includeGroup("net.Indyuce") // MMOItems
-            }
-        }
-        maven("https://repo.codemc.org/repository/maven-public/") {
-            content { includeGroup("nl.rutgerkok") } // BlockLocker
-        }
-        maven("https://repo.codemc.io/repository/maven-releases/") {
-            content { includeGroup("com.github.retrooper") }
-        }
-        mavenCentral()
-    }
-}
-
 dependencies {
-    implementation(project(path = ":core"))
-    SUPPORTED_VERSIONS.forEach { implementation(project(path = ":${it.nmsVersion}", configuration = "reobf")) }
+    paperweight.paperDevBundle("1.21.10-R0.1-SNAPSHOT")
+    // libraries in plugin.yml > libraries
+    compileOnly(oraxenLibs.bundles.libraries.bukkit) {
+        exclude("org.jetbrains", "annotations")
+    }
+    // things that are included in minecraft but not exposed
+    compileOnly(oraxenLibs.bundles.libraries.included)
+    // Plugin dependencies
+    compileOnly(oraxenLibs.bundles.plugins) {
+        exclude("org.jetbrains", "annotations")
+        exclude("com.google.code.gson", "gson")
+        exclude("net.kyori")
+    }
+    compileOnly(files("/libs/compile/BSP.jar"))
+    // shaded dependencies
+    implementation(oraxenLibs.bundles.libraries.shade) {
+        exclude("com.google.code.gson", "gson")
+        exclude("net.kyori")
+        exclude(group = "com.google.guava")
+    }
+    implementation(oraxenLibs.commandapi.paper)
 }
 
 java {
@@ -154,8 +148,6 @@ tasks {
     }
 
     shadowJar {
-        SUPPORTED_VERSIONS.forEach { dependsOn(":${it.nmsVersion}:reobfJar") }
-
         archiveClassifier = null
         oraxenLibs.bundles.libraries.shade.get().forEach {
             val group = it.group!!
@@ -225,27 +217,4 @@ bukkit {
         default = net.minecrell.pluginyml.bukkit.BukkitPluginDescription.Permission.Default.TRUE
     }
     libraries = oraxenLibs.bundles.libraries.bukkit.get().map { it.toString() }
-}
-
-if (spigotPluginPath != null) {
-    tasks {
-        val defaultPath = findByName("reobfJar") ?: findByName("shadowJar") ?: findByName("jar")
-        // Define the main copy task
-        val copyJarTask = register<Copy>("copyJar") {
-            this.doNotTrackState("Overwrites the plugin jar to allow for easier reloading")
-            dependsOn(shadowJar, jar)
-            from(defaultPath)
-            into(spigotPluginPath)
-            doLast {
-                println("Copied to plugin directory $spigotPluginPath")
-                Path(spigotPluginPath).listDirectoryEntries()
-                    .filter { it.fileName.toString().matches("Oraxen-.*.jar".toRegex()) }
-                    .filterNot { it.fileName.toString().endsWith("$pluginVersion.jar") }
-                    .forEach { delete(it) }
-            }
-        }
-
-        // Make the build task depend on all individual copy tasks
-        named<DefaultTask>("build").get().dependsOn(copyJarTask)
-    }
 }
