@@ -9,14 +9,14 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Objects;
 
 public class EnchantmentWrapper {
-    private static Enchantment FORTUNE_VALUE;
-    public static final @NotNull Enchantment FORTUNE = Objects.requireNonNull(FORTUNE_VALUE);
-    private static Enchantment EFFICIENCY_VALUE;
-    public static final @NotNull Enchantment EFFICIENCY = Objects.requireNonNull(EFFICIENCY_VALUE);
-    private static Enchantment SILK_TOUCH_VALUE;
-    public static final @NotNull Enchantment SILK_TOUCH = Objects.requireNonNull(SILK_TOUCH_VALUE);
+    public static @NotNull Enchantment FORTUNE;
+    public static @NotNull Enchantment EFFICIENCY;
+    public static @NotNull Enchantment SILK_TOUCH;
 
     static {
+        Enchantment FORTUNE_VALUE;
+        Enchantment EFFICIENCY_VALUE;
+        Enchantment SILK_TOUCH_VALUE;
         try {
             if (VersionUtil.isPaperServer()) {
                 FORTUNE_VALUE = Registry.ENCHANTMENT.get(NamespacedKey.minecraft("fortune"));
@@ -28,11 +28,14 @@ public class EnchantmentWrapper {
                 EFFICIENCY_VALUE = Enchantment.getByKey(NamespacedKey.minecraft("efficiency"));
                 SILK_TOUCH_VALUE = Enchantment.getByKey(NamespacedKey.minecraft("silk_touch"));
             }
-        } catch (NoSuchMethodError e) {
+        } catch (final NoSuchMethodError e) {
             // Fallback if Registry.ENCHANTMENT is not available
             FORTUNE_VALUE = Enchantment.getByKey(NamespacedKey.minecraft("fortune"));
             EFFICIENCY_VALUE = Enchantment.getByKey(NamespacedKey.minecraft("efficiency"));
             SILK_TOUCH_VALUE = Enchantment.getByKey(NamespacedKey.minecraft("silk_touch"));
         }
+        FORTUNE = Objects.requireNonNull(FORTUNE_VALUE);
+        EFFICIENCY = Objects.requireNonNull(EFFICIENCY_VALUE);
+        SILK_TOUCH = Objects.requireNonNull(SILK_TOUCH_VALUE);
     }
 }
