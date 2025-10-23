@@ -34,6 +34,7 @@ dependencies {
         exclude("net.kyori")
         exclude(group = "com.google.guava")
     }
+    implementation(oraxenLibs.commandapi.paper)
 }
 
 java {

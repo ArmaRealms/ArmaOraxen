@@ -152,8 +152,6 @@ libraries-shade = [
     "bstats",
     "annotations",
     "triumph-gui",
-    "commandapi-spigot",
-    "commandapi-paper",
     "javax-json",
     "protectionlib",
     "inventoryframework",

@@ -1,6 +1,7 @@
 package io.th0rgal.oraxen;
 
 import dev.jorel.commandapi.CommandAPI;
+import dev.jorel.commandapi.CommandAPIConfig;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.api.events.OraxenItemsLoadedEvent;
 import io.th0rgal.oraxen.commands.CommandsManager;
@@ -41,7 +42,9 @@ import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 
@@ -83,7 +86,11 @@ public class OraxenPlugin extends JavaPlugin {
 
     @Override
     public void onLoad() {
-        CommandAPI.onLoad(BukkitWrapper.createCommandApiConfig(this));
+        getLogger().info("Loading Oraxen...");
+        final CommandAPIConfig<?> commandApiConfig = BukkitWrapper.createCommandApiConfig(this);
+        getLogger().info("Initializing CommandAPI...");
+        CommandAPI.onLoad(commandApiConfig);
+        getLogger().info("Oraxen loaded.");
     }
 
     @Override

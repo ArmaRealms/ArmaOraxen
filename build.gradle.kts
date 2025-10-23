@@ -6,7 +6,6 @@ import kotlin.io.path.listDirectoryEntries
 
 plugins {
     id("java")
-    //id("com.github.johnrengelman.shadow") version "8.1.1"
     id("xyz.jpenilla.run-paper") version "3.0.2"
     id("net.minecrell.plugin-yml.bukkit") version "0.6.0" // Generates plugin.yml
     id("io.papermc.paperweight.userdev") version "2.0.0-beta.17" apply false
@@ -38,8 +37,6 @@ val pluginVersion: String by project
 group = "io.th0rgal"
 version = pluginVersion
 
-
-
 allprojects {
     apply(plugin = "java")
 
@@ -58,7 +55,6 @@ allprojects {
         maven("https://repo.extendedclip.com/content/repositories/placeholderapi/") {
             content { includeGroup("me.clip") } // PlaceHolderAPI
         }
-//        maven("https://maven.elmakers.com/repository/") // EffectLib
         maven("https://repo.triumphteam.dev/snapshots") {
             content { includeGroup("me.gabytm.util") } // actions-code, actions-spigot
         }
@@ -158,7 +154,6 @@ tasks {
 
         archiveClassifier = null
         oraxenLibs.bundles.libraries.shade.get().forEach {
-            val plugin = it;
             val group = it.group!!
                 .replace("jeff-media", "jeff_media") // they use a different package than the group...
             val parts = group
@@ -176,6 +171,7 @@ tasks {
         relocate("org.intellij.lang.annotations", "io.th0rgal.oraxen.shaded.intellij.annotations")
         relocate("com.udojava.evalex", "io.th0rgal.oraxen.shaded.udojava.evalex")
         relocate("javax.json", "io.th0rgal.oraxen.shaded.javax.json")
+        relocate("dev.jorel.commandapi", "io.th0rgal.oraxen.shaded.commandapi")
 
         manifest {
             attributes(
