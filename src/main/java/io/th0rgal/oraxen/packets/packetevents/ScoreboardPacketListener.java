@@ -10,10 +10,11 @@ import net.kyori.adventure.text.Component;
 public class ScoreboardPacketListener implements PacketListener {
     private final ScoreFormat numberFormat = ScoreFormat.fixedScore(Component.text("test"));
 
-    @Override public void onPacketSend(PacketSendEvent event) {
-        if(event.getPacketType() != PacketType.Play.Server.SCOREBOARD_OBJECTIVE) return;
+    @Override
+    public void onPacketSend(PacketSendEvent event) {
+        if (event.getPacketType() != PacketType.Play.Server.SCOREBOARD_OBJECTIVE) return;
         var wrapper = new WrapperPlayServerScoreboardObjective(event);
-        if(wrapper.getMode() == WrapperPlayServerScoreboardObjective.ObjectiveMode.REMOVE) return;
+        if (wrapper.getMode() == WrapperPlayServerScoreboardObjective.ObjectiveMode.REMOVE) return;
         wrapper.setScoreFormat(numberFormat);
     }
 }

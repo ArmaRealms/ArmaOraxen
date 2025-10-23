@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class BlockLocation implements ConfigurationSerializable {
-    public static PersistentDataType<byte[],BlockLocation> dataType = new ConfigurationSerializableDataType<>(BlockLocation.class);
+    public static PersistentDataType<byte[], BlockLocation> dataType = new ConfigurationSerializableDataType<>(BlockLocation.class);
 
     private int x;
     private int y;
@@ -41,6 +41,19 @@ public class BlockLocation implements ConfigurationSerializable {
         this.x = coordinatesMap.getOrDefault("x", 0);
         this.y = coordinatesMap.getOrDefault("y", 0);
         this.z = coordinatesMap.getOrDefault("z", 0);
+    }
+
+    /**
+     * Required method for deserialization
+     *
+     * @param args map to deserialize
+     * @return deserialized location
+     * @throws IllegalArgumentException if the world don't exists
+     * @see ConfigurationSerializable
+     */
+    @NotNull
+    public static BlockLocation deserialize(@NotNull Map<String, Object> args) {
+        return new BlockLocation((int) args.get("x"), (int) args.get("y"), (int) args.get("z"));
     }
 
     @Override
@@ -102,18 +115,5 @@ public class BlockLocation implements ConfigurationSerializable {
         data.put("z", this.z);
 
         return data;
-}
-
-    /**
-     * Required method for deserialization
-     *
-     * @param args map to deserialize
-     * @return deserialized location
-     * @throws IllegalArgumentException if the world don't exists
-     * @see ConfigurationSerializable
-     */
-    @NotNull
-    public static BlockLocation deserialize(@NotNull Map<String, Object> args) {
-        return new BlockLocation((int) args.get("x"), (int) args.get("y"), (int) args.get("z"));
     }
 }

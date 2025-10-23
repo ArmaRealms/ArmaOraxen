@@ -17,16 +17,16 @@ import java.util.concurrent.ThreadLocalRandom;
 public class Loot {
 
     private final String sourceID;
-    private ItemStack itemStack;
     private final double probability;
     private final IntegerRange amount;
+    private ItemStack itemStack;
     private LinkedHashMap<String, Object> config;
 
     public Loot(LinkedHashMap<String, Object> config, String sourceID) {
         this.probability = Double.parseDouble(config.getOrDefault("probability", 1).toString());
         if (config.getOrDefault("amount", "") instanceof String amount && amount.contains("..")) {
             this.amount = Utils.parseToRange(amount);
-        } else this.amount = new IntegerRange(1,1);
+        } else this.amount = new IntegerRange(1, 1);
         this.config = config;
         this.sourceID = sourceID;
     }
@@ -34,7 +34,7 @@ public class Loot {
     public Loot(ItemStack itemStack, double probability) {
         this.itemStack = itemStack;
         this.probability = Math.min(1.0, probability);
-        this.amount = new IntegerRange(1,1);
+        this.amount = new IntegerRange(1, 1);
         this.sourceID = null;
     }
 

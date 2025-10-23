@@ -38,20 +38,32 @@ public class OraxenMeta {
     private boolean noUpdate = false;
     private boolean disableEnchanting = false;
 
-    public void setExcludedFromInventory(boolean excluded) {
-        this.excludedFromInventory = excluded;
+    public static String getModelPath(String model) {
+        String[] pathElements = model.split(":");
+        String path;
+        if (pathElements.length > 1)
+            path = "assets/" + pathElements[0] + "/models/" + pathElements[1];
+        else
+            path = "assets/minecraft/models/" + pathElements[0];
+        if (path.endsWith("/"))
+            path = path.substring(0, path.length() - 1);
+        return path;
     }
 
     public boolean isExcludedFromInventory() {
         return excludedFromInventory;
     }
 
-    public void setExcludedFromCommands(boolean excluded) {
-        this.excludedFromCommands = excluded;
+    public void setExcludedFromInventory(boolean excluded) {
+        this.excludedFromInventory = excluded;
     }
 
     public boolean isExcludedFromCommands() {
         return excludedFromCommands;
+    }
+
+    public void setExcludedFromCommands(boolean excluded) {
+        this.excludedFromCommands = excluded;
     }
 
     public void setPackInfos(ConfigurationSection section) {
@@ -137,8 +149,8 @@ public class OraxenMeta {
         ConfigurationSection parent = configSection.getParent();
         modelName = modelName != null ? modelName
                 : Settings.GENERATE_MODEL_BASED_ON_TEXTURE_PATH.toBool() && !textures.isEmpty() && parent != null
-                        ? Utils.getParentDirs(textures.stream().findFirst().get()) + parent.getName()
-                        : null;
+                ? Utils.getParentDirs(textures.stream().findFirst().get()) + parent.getName()
+                : null;
 
         if (modelName == null && configString.equals("model") && parent != null)
             return parent.getName();
@@ -152,14 +164,18 @@ public class OraxenMeta {
         return hasPackInfos;
     }
 
+    @Nullable
+    public Integer getCustomModelData() {
+        return customModelData;
+    }
+
     public OraxenMeta setCustomModelData(Integer customModelData) {
         this.customModelData = customModelData;
         return this;
     }
 
-    @Nullable
-    public Integer getCustomModelData() {
-        return customModelData;
+    public String getModelName() {
+        return modelName;
     }
 
     public OraxenMeta setModelName(String modelName) {
@@ -167,33 +183,8 @@ public class OraxenMeta {
         return this;
     }
 
-    public OraxenMeta setNoUpdate(boolean noUpdate) {
-        this.noUpdate = noUpdate;
-        return this;
-    }
-
-    public void setDisableEnchanting(boolean disableEnchanting) {
-        this.disableEnchanting = disableEnchanting;
-    }
-
-    public String getModelName() {
-        return modelName;
-    }
-
     public String getModelPath() {
         String[] pathElements = generatedModelPath.split(":");
-        String path;
-        if (pathElements.length > 1)
-            path = "assets/" + pathElements[0] + "/models/" + pathElements[1];
-        else
-            path = "assets/minecraft/models/" + pathElements[0];
-        if (path.endsWith("/"))
-            path = path.substring(0, path.length() - 1);
-        return path;
-    }
-
-    public static String getModelPath(String model) {
-        String[] pathElements = model.split(":");
         String path;
         if (pathElements.length > 1)
             path = "assets/" + pathElements[0] + "/models/" + pathElements[1];
@@ -334,8 +325,17 @@ public class OraxenMeta {
         return noUpdate;
     }
 
+    public OraxenMeta setNoUpdate(boolean noUpdate) {
+        this.noUpdate = noUpdate;
+        return this;
+    }
+
     public boolean isDisableEnchanting() {
         return disableEnchanting;
+    }
+
+    public void setDisableEnchanting(boolean disableEnchanting) {
+        this.disableEnchanting = disableEnchanting;
     }
 
 }

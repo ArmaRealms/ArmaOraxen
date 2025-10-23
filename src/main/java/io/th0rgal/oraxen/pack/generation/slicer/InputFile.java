@@ -3,8 +3,6 @@
 
 package io.th0rgal.oraxen.pack.generation.slicer;
 
-import io.th0rgal.oraxen.utils.logs.Logs;
-
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import javax.imageio.ImageIO;

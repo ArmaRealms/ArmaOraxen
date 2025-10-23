@@ -5,11 +5,19 @@ import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.utils.Utils;
 import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.protectionlib.ProtectionLib;
-import org.bukkit.*;
+import org.bukkit.Effect;
+import org.bukkit.GameMode;
+import org.bukkit.Material;
+import org.bukkit.Sound;
+import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Levelled;
-import org.bukkit.entity.*;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Horse;
+import org.bukkit.entity.Item;
+import org.bukkit.entity.Piglin;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -26,7 +34,11 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
-import org.bukkit.inventory.*;
+import org.bukkit.inventory.EntityEquipment;
+import org.bukkit.inventory.HorseInventory;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.Damageable;
 
 import java.util.Arrays;
@@ -45,7 +57,8 @@ public class MiscListener implements Listener {
     @EventHandler
     public void onHopperCompost(InventoryMoveItemEvent event) {
         Inventory source = event.getSource();
-        if (source.getType() != InventoryType.HOPPER || event.getDestination().getType() != InventoryType.COMPOSTER) return;
+        if (source.getType() != InventoryType.HOPPER || event.getDestination().getType() != InventoryType.COMPOSTER)
+            return;
         Block hopper = source.getLocation() != null ? source.getLocation().getBlock() : null;
         if (hopper == null || hopper.getType() != Material.HOPPER) return;
         Block composter = hopper.getRelative(BlockFace.DOWN);
@@ -192,7 +205,6 @@ public class MiscListener implements Listener {
             item = event.getCurrentItem();
         else return;
 
-
         MiscMechanic mechanic = MiscMechanicFactory.get().getMechanic(item);
         if (mechanic == null || !mechanic.isVanillaInteractionDisabled()) return;
         event.setCancelled(true);
@@ -251,7 +263,6 @@ public class MiscListener implements Listener {
     }
 
     private record PaperOnlyListeners(MiscMechanicFactory factory) implements Listener {
-
 
     }
 }

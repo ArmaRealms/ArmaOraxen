@@ -16,12 +16,12 @@ public class WateringMechanicFactory extends MechanicFactory {
         instance = this;
     }
 
+    public static WateringMechanicFactory get() {return instance;}
+
     @Override
     public Mechanic parse(ConfigurationSection itemMechanicConfiguration) {
         Mechanic mechanic = new WateringMechanic(this, itemMechanicConfiguration);
         addToImplemented(mechanic);
         return mechanic;
     }
-
-    public static WateringMechanicFactory get() { return instance; }
 }

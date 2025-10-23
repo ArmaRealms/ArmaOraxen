@@ -9,8 +9,8 @@ import java.text.DecimalFormat;
 public class Timer {
 
     public static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("##.##");
-    private long lastUsage = 0;
     private final long delay;
+    private long lastUsage = 0;
 
     Timer(long delay) {
         this.delay = delay;
@@ -19,7 +19,6 @@ public class Timer {
     Timer(int delay) {
         this.delay = delay;
     }
-
 
     public void reset() {
         lastUsage = System.currentTimeMillis();

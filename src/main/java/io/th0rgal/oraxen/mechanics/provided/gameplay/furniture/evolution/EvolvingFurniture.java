@@ -9,15 +9,15 @@ public class EvolvingFurniture {
     private final String currentStage;
     private final int delay;
     private final boolean isLightBoost;
-    private int minimumLightLevel;
-    private int lightBoostTick;
     private final boolean isRainBoost;
-    private int rainBoostTick;
     private final boolean isBoneMeal;
-    private int boneMealChance;
     private final String nextStage;
     private final int probability;
     private final Random random = new Random();
+    private int minimumLightLevel;
+    private int lightBoostTick;
+    private int rainBoostTick;
+    private int boneMealChance;
 
     public EvolvingFurniture(String itemID, ConfigurationSection plantSection) {
         currentStage = itemID;
@@ -50,9 +50,11 @@ public class EvolvingFurniture {
     public int getDelay() {
         return delay;
     }
+
     public boolean isLightBoosted() {
         return isLightBoost;
     }
+
     public int getMinimumLightLevel() {
         return minimumLightLevel;
     }
@@ -60,6 +62,7 @@ public class EvolvingFurniture {
     public int getLightBoostTick() {
         return lightBoostTick;
     }
+
     public boolean isRainBoosted() {
         return isRainBoost;
     }
@@ -67,9 +70,11 @@ public class EvolvingFurniture {
     public int getRainBoostTick() {
         return rainBoostTick;
     }
+
     public boolean isBoneMeal() {
         return isBoneMeal;
     }
+
     public int getBoneMealChance() {
         return boneMealChance;
     }

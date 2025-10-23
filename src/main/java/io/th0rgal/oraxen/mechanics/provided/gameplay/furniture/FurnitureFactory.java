@@ -16,12 +16,12 @@ public class FurnitureFactory extends MechanicFactory {
 
     public static FurnitureMechanic.FurnitureType defaultFurnitureType;
     public static FurnitureFactory instance;
+    private static EvolutionTask evolutionTask;
     public final List<String> toolTypes;
     public final int evolutionCheckDelay;
-    private boolean evolvingFurnitures;
-    private static EvolutionTask evolutionTask;
     public final boolean customSounds;
     public final boolean detectViabackwards;
+    private boolean evolvingFurnitures;
 
     public FurnitureFactory(ConfigurationSection section) {
         super(section);
@@ -40,7 +40,8 @@ public class FurnitureFactory extends MechanicFactory {
         instance = this;
         customSounds = OraxenPlugin.get().getConfigsManager().getMechanics().getConfigurationSection("custom_block_sounds").getBoolean("stringblock_and_furniture", true);
 
-        if (customSounds) MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new FurnitureSoundListener());
+        if (customSounds)
+            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new FurnitureSoundListener());
         detectViabackwards = OraxenPlugin.get().getConfigsManager().getMechanics().getConfigurationSection("furniture").getBoolean("detect_viabackwards", true);
         //TODO Fix this to not permanently and randomly break furniture
         //if (VersionUtil.isPaperServer()) MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new FurniturePaperListener());
@@ -50,13 +51,6 @@ public class FurnitureFactory extends MechanicFactory {
         if (mechanicSection.isSet("type")) return true;
         mechanicSection.set("type", defaultFurnitureType.toString());
         return false;
-    }
-
-    @Override
-    public Mechanic parse(ConfigurationSection itemMechanicConfiguration) {
-        Mechanic mechanic = new FurnitureMechanic(this, itemMechanicConfiguration);
-        addToImplemented(mechanic);
-        return mechanic;
     }
 
     public static boolean isEnabled() {
@@ -71,6 +65,18 @@ public class FurnitureFactory extends MechanicFactory {
         return evolutionTask;
     }
 
+    public static void unregisterEvolution() {
+        if (evolutionTask != null)
+            evolutionTask.cancel();
+    }
+
+    @Override
+    public Mechanic parse(ConfigurationSection itemMechanicConfiguration) {
+        Mechanic mechanic = new FurnitureMechanic(this, itemMechanicConfiguration);
+        addToImplemented(mechanic);
+        return mechanic;
+    }
+
     public void registerEvolution() {
         if (evolvingFurnitures)
             return;
@@ -80,11 +86,6 @@ public class FurnitureFactory extends MechanicFactory {
         BukkitTask task = evolutionTask.runTaskTimer(OraxenPlugin.get(), 0, evolutionCheckDelay);
         MechanicsManager.registerTask(getMechanicID(), task);
         evolvingFurnitures = true;
-    }
-
-    public static void unregisterEvolution() {
-        if (evolutionTask != null)
-            evolutionTask.cancel();
     }
 
     @Override

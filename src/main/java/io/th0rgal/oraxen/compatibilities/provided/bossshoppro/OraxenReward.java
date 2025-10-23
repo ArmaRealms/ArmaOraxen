@@ -15,12 +15,12 @@ import java.util.List;
 public class OraxenReward extends BSRewardType {
 
     @Override
-    public Object createObject(Object o, boolean forceFinalState) {
+    public Object createObject(final Object o, final boolean forceFinalState) {
         return OraxenItems.getItemStacksByName(InputReader.readStringListList(o));
     }
 
     @Override
-    public boolean validityCheck(String itemName, Object reward) {
+    public boolean validityCheck(final String itemName, final Object reward) {
         return true;
     }
 
@@ -31,15 +31,15 @@ public class OraxenReward extends BSRewardType {
 
     @Override
     @SuppressWarnings("unchecked")
-    public boolean canBuy(Player player, BSBuy bsBuy, boolean messageIfNoSuccess, Object reward,
-        ClickType clickType) {
+    public boolean canBuy(final Player player, final BSBuy bsBuy, final boolean messageIfNoSuccess, final Object reward,
+                          final ClickType clickType) {
         if (!ClassManager.manager.getSettings().getInventoryFullDropItems()) {
-            List<ItemStack> items = (List<ItemStack>) reward;
+            final List<ItemStack> items = (List<ItemStack>) reward;
             if (!ClassManager.manager.getItemStackChecker().hasFreeSpace(player, items)) {
                 if (messageIfNoSuccess) {
                     ClassManager.manager
-                        .getMessageHandler()
-                        .sendMessage("Main.InventoryFull", player, null, player, bsBuy.getShop(), null, bsBuy);
+                            .getMessageHandler()
+                            .sendMessage("Main.InventoryFull", player, null, player, bsBuy.getShop(), null, bsBuy);
                 }
                 return false;
             }
@@ -49,30 +49,30 @@ public class OraxenReward extends BSRewardType {
 
     @Override
     @SuppressWarnings("unchecked")
-    public void giveReward(Player player, BSBuy bsBuy, Object reward, ClickType clickType) {
-        List<ItemStack> itemStacks = (List<ItemStack>) reward;
+    public void giveReward(final Player player, final BSBuy bsBuy, final Object reward, final ClickType clickType) {
+        final List<ItemStack> itemStacks = (List<ItemStack>) reward;
 
         if (!(itemStacks.isEmpty())) {
-            for (ItemStack itemStack : itemStacks)
+            for (final ItemStack itemStack : itemStacks)
                 if (itemStack.getType() != Material.AIR)
                     ClassManager.manager
-                        .getItemStackCreator()
-                        .giveItem(player, bsBuy, itemStack, itemStack.getAmount(), true);
+                            .getItemStackCreator()
+                            .giveItem(player, bsBuy, itemStack, itemStack.getAmount(), true);
         }
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public String getDisplayReward(Player player, BSBuy bsBuy, Object reward, ClickType clickType) {
-        String itemsFormatted = ClassManager.manager
-            .getItemStackTranslator()
-            .getFriendlyText((List<ItemStack>) reward);
+    public String getDisplayReward(final Player player, final BSBuy bsBuy, final Object reward, final ClickType clickType) {
+        final String itemsFormatted = ClassManager.manager
+                .getItemStackTranslator()
+                .getFriendlyText((List<ItemStack>) reward);
         return ClassManager.manager.getMessageHandler().get("Display.Item").replace("%items%", itemsFormatted);
     }
 
     @Override
     public String[] createNames() {
-        return new String[] { "oraxen", "oraxen-item", "item-oraxen" };
+        return new String[]{"oraxen", "oraxen-item", "item-oraxen"};
     }
 
     @Override

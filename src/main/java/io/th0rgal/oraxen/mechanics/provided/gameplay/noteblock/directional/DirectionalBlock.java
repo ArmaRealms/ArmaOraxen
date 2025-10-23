@@ -37,49 +37,69 @@ public class DirectionalBlock {
         downBlock = directionalSection.getString("down_block");
 
     }
-    public boolean isParentBlock() { return parentBlock == null; }
-    public String getParentBlock() { return parentBlock; }
+
+    public boolean isParentBlock() {return parentBlock == null;}
+
+    public String getParentBlock() {return parentBlock;}
+
     public NoteBlockMechanic getParentMechanic() {
         if (parentBlock == null) return null;
         else return (NoteBlockMechanic) NoteBlockMechanicFactory.getInstance().getMechanic(parentBlock);
     }
 
-    public DirectionalType getDirectionalType() { return directionalType; }
-    public boolean isLog() { return directionalType == DirectionalType.LOG; }
-    public boolean isFurnace() { return directionalType == DirectionalType.FURNACE; }
-    public boolean isDropper() { return directionalType == DirectionalType.DROPPER; }
+    public DirectionalType getDirectionalType() {return directionalType;}
 
-    public String getYBlock() { return yBlock; }
-    public String getXBlock() { return xBlock; }
-    public String getZBlock() { return zBlock; }
+    public boolean isLog() {return directionalType == DirectionalType.LOG;}
 
-    public String getNorthBlock() { return northBlock; }
-    public String getSouthBlock() { return southBlock; }
-    public String getEastBlock() { return eastBlock; }
-    public String getWestBlock() { return westBlock; }
+    public boolean isFurnace() {return directionalType == DirectionalType.FURNACE;}
 
-    public String getUpBlock() { return upBlock; }
-    public String getDownBlock() { return downBlock; }
+    public boolean isDropper() {return directionalType == DirectionalType.DROPPER;}
 
-    public enum DirectionalType {
-        LOG, FURNACE, DROPPER
-    }
+    public String getYBlock() {return yBlock;}
+
+    public String getXBlock() {return xBlock;}
+
+    public String getZBlock() {return zBlock;}
+
+    public String getNorthBlock() {return northBlock;}
+
+    public String getSouthBlock() {return southBlock;}
+
+    public String getEastBlock() {return eastBlock;}
+
+    public String getWestBlock() {return westBlock;}
+
+    public String getUpBlock() {return upBlock;}
+
+    public String getDownBlock() {return downBlock;}
 
     public int getDirectionVariation(BlockFace face, Player player) {
         if (isLog()) {
             switch (face) {
-                case NORTH: case SOUTH: return getDirectionVariation(xBlock);
-                case EAST: case WEST: return getDirectionVariation(zBlock);
-                case UP: case DOWN: return getDirectionVariation(yBlock);
+                case NORTH:
+                case SOUTH:
+                    return getDirectionVariation(xBlock);
+                case EAST:
+                case WEST:
+                    return getDirectionVariation(zBlock);
+                case UP:
+                case DOWN:
+                    return getDirectionVariation(yBlock);
             }
         } else {
             switch (getRelativeFacing(player)) {
-                case NORTH: return getDirectionVariation(northBlock);
-                case SOUTH: return getDirectionVariation(southBlock);
-                case EAST: return getDirectionVariation(eastBlock);
-                case WEST: return getDirectionVariation(westBlock);
-                case UP: return getDirectionVariation(upBlock);
-                case DOWN: return getDirectionVariation(downBlock);
+                case NORTH:
+                    return getDirectionVariation(northBlock);
+                case SOUTH:
+                    return getDirectionVariation(southBlock);
+                case EAST:
+                    return getDirectionVariation(eastBlock);
+                case WEST:
+                    return getDirectionVariation(westBlock);
+                case UP:
+                    return getDirectionVariation(upBlock);
+                case DOWN:
+                    return getDirectionVariation(downBlock);
             }
         }
         return 0;
@@ -110,5 +130,9 @@ public class DirectionalBlock {
 
     public String getDirectionalModel(NoteBlockMechanic mechanic) {
         return mechanic.getSection().getString("model");
+    }
+
+    public enum DirectionalType {
+        LOG, FURNACE, DROPPER
     }
 }

@@ -22,10 +22,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ConfigsManager {
 
+    private static final int DEFAULT_GLYPH_STARTING_CODE = 42050;
     private final JavaPlugin plugin;
     private final YamlConfiguration defaultMechanics;
     private final YamlConfiguration defaultSettings;
@@ -33,6 +39,16 @@ public class ConfigsManager {
     private final YamlConfiguration defaultSound;
     private final YamlConfiguration defaultLanguage;
     private final YamlConfiguration defaultHud;
+    // Skip optional keys and subkeys
+    private final List<String> skippedYamlKeys =
+            List.of(
+                    "oraxen_inventory.menu_layout",
+                    "Misc.armor_equip_event_bypass"
+            );
+    private final List<String> removedYamlKeys =
+            List.of(
+                    "armorpotioneffects"
+            );
     private YamlConfiguration mechanics;
     private YamlConfiguration settings;
     private YamlConfiguration font;
@@ -43,7 +59,6 @@ public class ConfigsManager {
     private File glyphsFolder;
     private File schematicsFolder;
     private File gesturesFolder;
-    private static final int DEFAULT_GLYPH_STARTING_CODE = 42050;
 
     public ConfigsManager(final JavaPlugin plugin) {
         this.plugin = plugin;
@@ -161,11 +176,12 @@ public class ConfigsManager {
             }
         }
 
-        for (final String key : configuration.getKeys(false)) if (removedYamlKeys.contains(key)) {
+        for (final String key : configuration.getKeys(false))
+            if (removedYamlKeys.contains(key)) {
                 updated = true;
                 Message.REMOVING_CONFIG.log(AdventureUtils.tagResolver("option", key));
                 configuration.set(key, null);
-        }
+            }
 
         if (updated)
             try {
@@ -176,18 +192,6 @@ public class ConfigsManager {
             }
         return configuration;
     }
-
-    // Skip optional keys and subkeys
-    private final List<String> skippedYamlKeys =
-            List.of(
-                    "oraxen_inventory.menu_layout",
-                    "Misc.armor_equip_event_bypass"
-            );
-
-    private final List<String> removedYamlKeys =
-            List.of(
-                    "armorpotioneffects"
-            );
 
     public Collection<Glyph> parseGlyphConfigs() {
         final List<File> glyphFiles = getGlyphFiles();

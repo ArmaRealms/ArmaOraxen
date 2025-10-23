@@ -9,7 +9,13 @@ import io.th0rgal.oraxen.mechanics.provided.gameplay.stringblock.StringBlockMech
 import io.th0rgal.oraxen.utils.BlockHelpers;
 import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
 import io.th0rgal.protectionlib.ProtectionLib;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.GameEvent;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Sound;
+import org.bukkit.SoundCategory;
+import org.bukkit.SoundGroup;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
@@ -30,7 +36,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static io.th0rgal.oraxen.utils.BlockHelpers.isLoaded;
-import static io.th0rgal.oraxen.utils.blocksounds.BlockSounds.*;
+import static io.th0rgal.oraxen.utils.blocksounds.BlockSounds.VANILLA_BREAK_PITCH;
+import static io.th0rgal.oraxen.utils.blocksounds.BlockSounds.VANILLA_BREAK_VOLUME;
+import static io.th0rgal.oraxen.utils.blocksounds.BlockSounds.VANILLA_FALL_PITCH;
+import static io.th0rgal.oraxen.utils.blocksounds.BlockSounds.VANILLA_FALL_VOLUME;
+import static io.th0rgal.oraxen.utils.blocksounds.BlockSounds.VANILLA_HIT_PITCH;
+import static io.th0rgal.oraxen.utils.blocksounds.BlockSounds.VANILLA_HIT_VOLUME;
+import static io.th0rgal.oraxen.utils.blocksounds.BlockSounds.VANILLA_PLACE_PITCH;
+import static io.th0rgal.oraxen.utils.blocksounds.BlockSounds.VANILLA_PLACE_VOLUME;
+import static io.th0rgal.oraxen.utils.blocksounds.BlockSounds.VANILLA_STEP_PITCH;
+import static io.th0rgal.oraxen.utils.blocksounds.BlockSounds.VANILLA_STEP_VOLUME;
+import static io.th0rgal.oraxen.utils.blocksounds.BlockSounds.VANILLA_STONE_BREAK;
+import static io.th0rgal.oraxen.utils.blocksounds.BlockSounds.VANILLA_STONE_FALL;
+import static io.th0rgal.oraxen.utils.blocksounds.BlockSounds.VANILLA_STONE_HIT;
+import static io.th0rgal.oraxen.utils.blocksounds.BlockSounds.VANILLA_STONE_PLACE;
+import static io.th0rgal.oraxen.utils.blocksounds.BlockSounds.VANILLA_STONE_STEP;
 
 public class FurnitureSoundListener implements Listener {
 
@@ -67,7 +87,8 @@ public class FurnitureSoundListener implements Listener {
             breakerPlaySound.remove(location);
         }
 
-        if (OraxenBlocks.isOraxenStringBlock(block) || block.getType() == Material.TRIPWIRE && mechanicBelow != null && mechanicBelow.isTall()) return;
+        if (OraxenBlocks.isOraxenStringBlock(block) || block.getType() == Material.TRIPWIRE && mechanicBelow != null && mechanicBelow.isTall())
+            return;
         if (block.getBlockData().getSoundGroup().getBreakSound() != Sound.BLOCK_STONE_BREAK) return;
         if (OraxenFurniture.isFurniture(block) && block.getType() == Material.BARRIER || block.isEmpty()) return;
 
@@ -113,7 +134,8 @@ public class FurnitureSoundListener implements Listener {
         SoundGroup soundGroup = blockStandingOn.getBlockData().getSoundGroup();
 
         if (soundGroup.getStepSound() != Sound.BLOCK_STONE_STEP) return;
-        if (gameEvent == GameEvent.HIT_GROUND && cause != null && cause.getCause() != EntityDamageEvent.DamageCause.FALL) return;
+        if (gameEvent == GameEvent.HIT_GROUND && cause != null && cause.getCause() != EntityDamageEvent.DamageCause.FALL)
+            return;
         if (blockStandingOn.getType() == Material.TRIPWIRE) return;
         FurnitureMechanic mechanic = OraxenFurniture.getFurnitureMechanic(blockStandingOn);
 

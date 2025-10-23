@@ -12,10 +12,19 @@ import io.th0rgal.oraxen.mechanics.provided.gameplay.storage.StorageMechanic;
 import io.th0rgal.oraxen.utils.BlockHelpers;
 import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.drops.Drop;
-import org.bukkit.*;
+import org.bukkit.GameEvent;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Rotation;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.entity.*;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Interaction;
+import org.bukkit.entity.ItemFrame;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
@@ -23,11 +32,18 @@ import org.bukkit.util.BoundingBox;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureMechanic.*;
+import static io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureMechanic.BARRIER_KEY;
+import static io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureMechanic.EVOLUTION_KEY;
+import static io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureMechanic.FURNITURE_KEY;
+import static io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureMechanic.SEAT_KEY;
 import static io.th0rgal.oraxen.mechanics.provided.gameplay.storage.StorageMechanic.PERSONAL_STORAGE_KEY;
 import static io.th0rgal.oraxen.mechanics.provided.gameplay.storage.StorageMechanic.STORAGE_KEY;
 import static io.th0rgal.oraxen.utils.MusicDiscHelpers.MUSIC_DISC_KEY;
@@ -84,9 +100,10 @@ public class OraxenFurniture {
 
     /**
      * Places Furniture at a given location
-     * @param location The location to place the Furniture
-     * @param itemID The itemID of the Furniture to place
-     * @param rotation The rotation of the Furniture
+     *
+     * @param location  The location to place the Furniture
+     * @param itemID    The itemID of the Furniture to place
+     * @param rotation  The rotation of the Furniture
      * @param blockFace The blockFace of the Furniture
      * @return The Furniture entity that was placed, or null if the Furniture could not be placed
      */
@@ -97,9 +114,10 @@ public class OraxenFurniture {
 
     /**
      * Places Furniture at a given location
-     * @param location The location to place the Furniture
-     * @param itemID The itemID of the Furniture to place
-     * @param yaw The yaw of the Furniture
+     *
+     * @param location  The location to place the Furniture
+     * @param itemID    The itemID of the Furniture to place
+     * @param yaw       The yaw of the Furniture
      * @param blockFace The blockFace of the Furniture
      * @return The Furniture entity that was placed, or null if the Furniture could not be placed
      */
@@ -112,9 +130,10 @@ public class OraxenFurniture {
 
     /**
      * Places Furniture at a given location
-     * @param location The location to place the Furniture
-     * @param itemID The itemID of the Furniture to place
-     * @param rotation The rotation of the Furniture
+     *
+     * @param location  The location to place the Furniture
+     * @param itemID    The itemID of the Furniture to place
+     * @param rotation  The rotation of the Furniture
      * @param blockFace The blockFace of the Furniture
      * @return true if the Furniture was placed, false otherwise
      * @deprecated Use {@link #place(String, Location, Rotation, BlockFace)} instead
@@ -168,7 +187,8 @@ public class OraxenFurniture {
             if (storage != null && (storage.isStorage() || storage.isShulker()))
                 storage.dropStorageContent(mechanic, baseEntity);
 
-            if (VersionUtil.isPaperServer()) baseEntity.getWorld().sendGameEvent(player, GameEvent.BLOCK_DESTROY, baseEntity.getLocation().toVector());
+            if (VersionUtil.isPaperServer())
+                baseEntity.getWorld().sendGameEvent(player, GameEvent.BLOCK_DESTROY, baseEntity.getLocation().toVector());
         }
 
         if (mechanic.hasBarriers())
@@ -212,7 +232,8 @@ public class OraxenFurniture {
             StorageMechanic storage = mechanic.getStorage();
             if (storage != null && (storage.isStorage() || storage.isShulker()))
                 storage.dropStorageContent(mechanic, baseEntity);
-            if (VersionUtil.isPaperServer()) baseEntity.getWorld().sendGameEvent(player, GameEvent.BLOCK_DESTROY, baseEntity.getLocation().toVector());
+            if (VersionUtil.isPaperServer())
+                baseEntity.getWorld().sendGameEvent(player, GameEvent.BLOCK_DESTROY, baseEntity.getLocation().toVector());
         }
 
         // Check if the mechanic or the baseEntity has barriers tied to it

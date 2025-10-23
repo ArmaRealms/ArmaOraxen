@@ -28,8 +28,16 @@ import org.bukkit.persistence.PersistentDataType;
 
 import javax.annotation.Nullable;
 import java.io.File;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -181,7 +189,7 @@ public class OraxenItems {
 
     public static List<ItemStack> getItemStacksByName(final List<List<String>> lists) {
         return lists.stream().flatMap(list -> {
-            final ItemStack[] itemStack = new ItemStack[] { new ItemStack(Material.AIR) };
+            final ItemStack[] itemStack = new ItemStack[]{new ItemStack(Material.AIR)};
             list.stream().map(line -> line.split(":")).forEach(param -> {
                 switch (param[0].toLowerCase(Locale.ROOT)) {
                     case "type" -> {

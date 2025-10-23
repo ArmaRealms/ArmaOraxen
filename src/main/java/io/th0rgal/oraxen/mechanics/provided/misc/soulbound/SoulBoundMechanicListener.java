@@ -51,12 +51,12 @@ public class SoulBoundMechanicListener implements Listener {
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
         PersistentDataContainer pdc = player.getPersistentDataContainer();
-        if(!pdc.has(SoulBoundMechanic.NAMESPACED_KEY, DataType.ITEM_STACK_ARRAY))
+        if (!pdc.has(SoulBoundMechanic.NAMESPACED_KEY, DataType.ITEM_STACK_ARRAY))
             return;
 
         ItemStack[] items = pdc.getOrDefault(SoulBoundMechanic.NAMESPACED_KEY, DataType.ITEM_STACK_ARRAY, new ItemStack[0]);
         Collection<ItemStack> remainingItems = player.getInventory().addItem(items).values();
-        for(final ItemStack item : remainingItems) {
+        for (final ItemStack item : remainingItems) {
             player.getWorld().dropItem(player.getLocation(), item);
         }
 

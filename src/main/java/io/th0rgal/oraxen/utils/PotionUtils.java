@@ -8,8 +8,6 @@ import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
 
-import io.th0rgal.oraxen.utils.logs.Logs;
-
 import javax.annotation.Nullable;
 
 public class PotionUtils {
@@ -18,7 +16,7 @@ public class PotionUtils {
         return getEffectType(effect, null);
     }
 
-    @SuppressWarnings({ "deprecation" })
+    @SuppressWarnings({"deprecation"})
     @Nullable
     public static PotionEffectType getEffectType(String effect, String legacyEffect) {
         if (effect == null || effect.isEmpty())

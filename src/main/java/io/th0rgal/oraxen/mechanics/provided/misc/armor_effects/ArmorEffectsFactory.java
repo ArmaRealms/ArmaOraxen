@@ -10,8 +10,8 @@ import org.bukkit.scheduler.BukkitTask;
 public class ArmorEffectsFactory extends MechanicFactory {
 
     private static ArmorEffectsFactory instance;
-    private ArmorEffectsTask armorEffectTask;
     private final int delay;
+    private ArmorEffectsTask armorEffectTask;
 
     public ArmorEffectsFactory(ConfigurationSection section) {
         super(section);

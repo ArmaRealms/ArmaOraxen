@@ -1,6 +1,10 @@
 package io.th0rgal.oraxen.pack.generation;
 
-import com.google.gson.*;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.api.events.OraxenPackGeneratedEvent;
@@ -15,7 +19,13 @@ import io.th0rgal.oraxen.pack.upload.UploadManager;
 import io.th0rgal.oraxen.sound.CustomSound;
 import io.th0rgal.oraxen.sound.JukeboxDatapack;
 import io.th0rgal.oraxen.sound.SoundManager;
-import io.th0rgal.oraxen.utils.*;
+import io.th0rgal.oraxen.utils.AdventureUtils;
+import io.th0rgal.oraxen.utils.EventUtils;
+import io.th0rgal.oraxen.utils.PluginUtils;
+import io.th0rgal.oraxen.utils.Utils;
+import io.th0rgal.oraxen.utils.VersionUtil;
+import io.th0rgal.oraxen.utils.VirtualFile;
+import io.th0rgal.oraxen.utils.ZipUtils;
 import io.th0rgal.oraxen.utils.customarmor.ComponentArmorModels;
 import io.th0rgal.oraxen.utils.customarmor.CustomArmorType;
 import io.th0rgal.oraxen.utils.customarmor.ShaderArmorTextures;
@@ -29,10 +39,25 @@ import org.bukkit.configuration.ConfigurationSection;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -40,18 +65,180 @@ import java.util.zip.ZipInputStream;
 
 public class ResourcePack {
 
-    private final Map<String, Collection<Consumer<File>>> packModifiers;
+    private static final File packFolder = new File(OraxenPlugin.get().getDataFolder(), "pack");
+    private static final Set<String> availableLanguageCodes = new HashSet<>(Arrays.asList(
+            "af_za", "ar_sa", "ast_es", "az_az", "ba_ru",
+            "bar", "be_by", "bg_bg", "br_fr", "brb", "bs_ba", "ca_es", "cs_cz",
+            "cy_gb", "da_dk", "de_at", "de_ch", "de_de", "el_gr", "en_au", "en_ca",
+            "en_gb", "en_nz", "en_pt", "en_ud", "en_us", "enp", "enws", "eo_uy",
+            "es_ar", "es_cl", "es_ec", "es_es", "es_mx", "es_uy", "es_ve", "esan",
+            "et_ee", "eu_es", "fa_ir", "fi_fi", "fil_ph", "fo_fo", "fr_ca", "fr_fr",
+            "fra_de", "fur_it", "fy_nl", "ga_ie", "gd_gb", "gl_es", "haw_us", "he_il",
+            "hi_in", "hr_hr", "hu_hu", "hy_am", "id_id", "ig_ng", "io_en", "is_is",
+            "isv", "it_it", "ja_jp", "jbo_en", "ka_ge", "kk_kz", "kn_in", "ko_kr",
+            "ksh", "kw_gb", "la_la", "lb_lu", "li_li", "lmo", "lol_us", "lt_lt",
+            "lv_lv", "lzh", "mk_mk", "mn_mn", "ms_my", "mt_mt", "nah", "nds_de",
+            "nl_be", "nl_nl", "nn_no", "no_no", "oc_fr", "ovd", "pl_pl", "pt_br",
+            "pt_pt", "qya_aa", "ro_ro", "rpr", "ru_ru", "ry_ua", "se_no", "sk_sk",
+            "sl_si", "so_so", "sq_al", "sr_sp", "sv_se", "sxu", "szl", "ta_in",
+            "th_th", "tl_ph", "tlh_aa", "tok", "tr_tr", "tt_ru", "uk_ua", "val_es",
+            "vec_it", "vi_vn", "yi_de", "yo_ng", "zh_cn", "zh_hk", "zh_tw", "zlm_arab"));
     private static Map<String, VirtualFile> outputFiles;
+    private final Map<String, Collection<Consumer<File>>> packModifiers;
+    private final File pack = new File(packFolder, packFolder.getName() + ".zip");
+    private final boolean extractAssets = !new File(packFolder, "assets").exists();
+    private final boolean extractModels = !new File(packFolder, "models").exists();
+    private final boolean extractFonts = !new File(packFolder, "font").exists();
+    private final boolean extractOptifine = !new File(packFolder, "optifine").exists();
+    private final boolean extractLang = !new File(packFolder, "lang").exists();
+    private final boolean extractTextures = !new File(packFolder, "textures").exists();
+    private final boolean extractSounds = !new File(packFolder, "sounds").exists();
     private ShaderArmorTextures shaderArmorTextures;
     private TrimArmorDatapack trimArmorDatapack;
     private ComponentArmorModels componentArmorModels;
-    private static final File packFolder = new File(OraxenPlugin.get().getDataFolder(), "pack");
-    private final File pack = new File(packFolder, packFolder.getName() + ".zip");
-
     public ResourcePack() {
         // we use maps to avoid duplicate
         packModifiers = new HashMap<>();
         outputFiles = new HashMap<>();
+    }
+
+    private static Set<String> verifyPackFormatting(List<VirtualFile> output) {
+        Logs.logInfo("Verifying formatting for textures and models...");
+        Set<VirtualFile> textures = new HashSet<>();
+        Set<String> texturePaths = new HashSet<>();
+        Set<String> mcmeta = new HashSet<>();
+        Set<VirtualFile> models = new HashSet<>();
+        Set<VirtualFile> malformedTextures = new HashSet<>();
+        Set<VirtualFile> malformedModels = new HashSet<>();
+        for (VirtualFile virtualFile : output) {
+            String path = virtualFile.getPath();
+            if (path.matches("assets/.*/models/.*.json"))
+                models.add(virtualFile);
+            else if (path.matches("assets/.*/textures/.*.png.mcmeta"))
+                mcmeta.add(path);
+            else if (path.matches("assets/.*/textures/.*.png")) {
+                textures.add(virtualFile);
+                texturePaths.add(path);
+            }
+        }
+
+        if (models.isEmpty() && !textures.isEmpty())
+            return Collections.emptySet();
+
+        for (VirtualFile model : models) {
+            if (!model.getPath().matches("[a-z0-9/._-]+")) {
+                Logs.logWarning("Found invalid model at <blue>" + model.getPath());
+                Logs.logError("Model-paths must only contain characters [a-z0-9/._-]");
+                malformedModels.add(model);
+            }
+
+            String content;
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            InputStream inputStream = model.getInputStream();
+            try {
+                inputStream.transferTo(baos);
+                content = baos.toString(StandardCharsets.UTF_8);
+                baos.close();
+                inputStream.reset();
+                inputStream.close();
+            } catch (IOException e) {
+                content = "";
+            }
+
+            if (!content.isEmpty()) {
+                JsonObject jsonModel;
+                try {
+                    jsonModel = JsonParser.parseString(content).getAsJsonObject();
+                } catch (JsonSyntaxException e) {
+                    Logs.logError("Found malformed json at <red>" + model.getPath() + "</red>");
+                    e.printStackTrace();
+                    continue;
+                }
+                if (jsonModel.has("textures")) {
+                    for (JsonElement element : jsonModel.getAsJsonObject("textures").entrySet().stream()
+                            .map(Map.Entry::getValue).toList()) {
+                        String jsonTexture = element.getAsString();
+                        if (!texturePaths.contains(modelPathToPackPath(jsonTexture))) {
+                            if (!jsonTexture.startsWith("#") && !jsonTexture.startsWith("item/")
+                                    && !jsonTexture.startsWith("block/") && !jsonTexture.startsWith("entity/")) {
+                                if (Material.matchMaterial(Utils.getFileNameOnly(jsonTexture).toUpperCase()) == null) {
+                                    Logs.logWarning("Found invalid texture-path inside model-file <blue>"
+                                            + model.getPath() + "</blue>: " + jsonTexture);
+                                    Logs.logWarning("Verify that you have a texture in said path.", true);
+                                    malformedModels.add(model);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        for (VirtualFile texture : textures) {
+            if (!texture.getPath().matches("[a-z0-9/._-]+")) {
+                Logs.logWarning("Found invalid texture at <blue>" + texture.getPath());
+                Logs.logError("Texture-paths must only contain characters [a-z0-9/._-]");
+                malformedTextures.add(texture);
+            }
+            if (!texture.getPath().matches(".*_layer_.*.png")) {
+                if (mcmeta.contains(texture.getPath() + ".mcmeta"))
+                    continue;
+                BufferedImage image;
+                InputStream inputStream = texture.getInputStream();
+                try {
+                    image = ImageIO.read(new File("fake_file.png"));
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    inputStream.transferTo(baos);
+                    ImageIO.write(image, "png", baos);
+                    baos.close();
+                    inputStream.reset();
+                    inputStream.close();
+                } catch (IOException e) {
+                    continue;
+                }
+
+                if (image.getHeight() > 256 || image.getWidth() > 256) {
+                    Logs.logWarning("Found invalid texture at <blue>" + texture.getPath());
+                    Logs.logError("Resolution of textures cannot exceed 256x256");
+                    malformedTextures.add(texture);
+                }
+            }
+        }
+
+        if (!malformedTextures.isEmpty() || !malformedModels.isEmpty()) {
+            Logs.logError("Pack contains malformed texture(s) and/or model(s)");
+            Logs.logError("These need to be fixed, otherwise the resourcepack will be broken");
+        } else
+            Logs.logSuccess("No broken models or textures were found in the resourcepack");
+
+        Set<String> malformedFiles = malformedTextures.stream().map(VirtualFile::getPath).collect(Collectors.toSet());
+        malformedFiles.addAll(malformedModels.stream().map(VirtualFile::getPath).collect(Collectors.toSet()));
+        return malformedFiles;
+    }
+
+    private static String modelPathToPackPath(String modelPath) {
+        String namespace = modelPath.split(":").length == 1 ? "minecraft" : modelPath.split(":")[0];
+        String texturePath = modelPath.split(":").length == 1 ? modelPath : modelPath.split(":")[1];
+        texturePath = texturePath.endsWith(".png") ? texturePath : texturePath + ".png";
+        return "assets/" + namespace + "/textures/" + texturePath;
+    }
+
+    public static void addOutputFiles(final VirtualFile... files) {
+        for (VirtualFile file : files)
+            outputFiles.put(file.getPath(), file);
+    }
+
+    private static boolean needsTinting(Material material) {
+        return material.name().startsWith("LEATHER_")
+                || material == Material.POTION
+                || material == Material.SPLASH_POTION
+                || material == Material.LINGERING_POTION;
+    }
+
+    public static void writeStringToVirtual(String folder, String name, String content) {
+        folder = !folder.endsWith("/") ? folder : folder.substring(0, folder.length() - 1);
+        addOutputFiles(
+                new VirtualFile(folder, name, new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8))));
     }
 
     public void generate() {
@@ -178,135 +365,6 @@ public class ResourcePack {
         });
     }
 
-    private static Set<String> verifyPackFormatting(List<VirtualFile> output) {
-        Logs.logInfo("Verifying formatting for textures and models...");
-        Set<VirtualFile> textures = new HashSet<>();
-        Set<String> texturePaths = new HashSet<>();
-        Set<String> mcmeta = new HashSet<>();
-        Set<VirtualFile> models = new HashSet<>();
-        Set<VirtualFile> malformedTextures = new HashSet<>();
-        Set<VirtualFile> malformedModels = new HashSet<>();
-        for (VirtualFile virtualFile : output) {
-            String path = virtualFile.getPath();
-            if (path.matches("assets/.*/models/.*.json"))
-                models.add(virtualFile);
-            else if (path.matches("assets/.*/textures/.*.png.mcmeta"))
-                mcmeta.add(path);
-            else if (path.matches("assets/.*/textures/.*.png")) {
-                textures.add(virtualFile);
-                texturePaths.add(path);
-            }
-        }
-
-        if (models.isEmpty() && !textures.isEmpty())
-            return Collections.emptySet();
-
-        for (VirtualFile model : models) {
-            if (!model.getPath().matches("[a-z0-9/._-]+")) {
-                Logs.logWarning("Found invalid model at <blue>" + model.getPath());
-                Logs.logError("Model-paths must only contain characters [a-z0-9/._-]");
-                malformedModels.add(model);
-            }
-
-            String content;
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            InputStream inputStream = model.getInputStream();
-            try {
-                inputStream.transferTo(baos);
-                content = baos.toString(StandardCharsets.UTF_8);
-                baos.close();
-                inputStream.reset();
-                inputStream.close();
-            } catch (IOException e) {
-                content = "";
-            }
-
-            if (!content.isEmpty()) {
-                JsonObject jsonModel;
-                try {
-                    jsonModel = JsonParser.parseString(content).getAsJsonObject();
-                } catch (JsonSyntaxException e) {
-                    Logs.logError("Found malformed json at <red>" + model.getPath() + "</red>");
-                    e.printStackTrace();
-                    continue;
-                }
-                if (jsonModel.has("textures")) {
-                    for (JsonElement element : jsonModel.getAsJsonObject("textures").entrySet().stream()
-                            .map(Map.Entry::getValue).toList()) {
-                        String jsonTexture = element.getAsString();
-                        if (!texturePaths.contains(modelPathToPackPath(jsonTexture))) {
-                            if (!jsonTexture.startsWith("#") && !jsonTexture.startsWith("item/")
-                                    && !jsonTexture.startsWith("block/") && !jsonTexture.startsWith("entity/")) {
-                                if (Material.matchMaterial(Utils.getFileNameOnly(jsonTexture).toUpperCase()) == null) {
-                                    Logs.logWarning("Found invalid texture-path inside model-file <blue>"
-                                            + model.getPath() + "</blue>: " + jsonTexture);
-                                    Logs.logWarning("Verify that you have a texture in said path.", true);
-                                    malformedModels.add(model);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        for (VirtualFile texture : textures) {
-            if (!texture.getPath().matches("[a-z0-9/._-]+")) {
-                Logs.logWarning("Found invalid texture at <blue>" + texture.getPath());
-                Logs.logError("Texture-paths must only contain characters [a-z0-9/._-]");
-                malformedTextures.add(texture);
-            }
-            if (!texture.getPath().matches(".*_layer_.*.png")) {
-                if (mcmeta.contains(texture.getPath() + ".mcmeta"))
-                    continue;
-                BufferedImage image;
-                InputStream inputStream = texture.getInputStream();
-                try {
-                    image = ImageIO.read(new File("fake_file.png"));
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    inputStream.transferTo(baos);
-                    ImageIO.write(image, "png", baos);
-                    baos.close();
-                    inputStream.reset();
-                    inputStream.close();
-                } catch (IOException e) {
-                    continue;
-                }
-
-                if (image.getHeight() > 256 || image.getWidth() > 256) {
-                    Logs.logWarning("Found invalid texture at <blue>" + texture.getPath());
-                    Logs.logError("Resolution of textures cannot exceed 256x256");
-                    malformedTextures.add(texture);
-                }
-            }
-        }
-
-        if (!malformedTextures.isEmpty() || !malformedModels.isEmpty()) {
-            Logs.logError("Pack contains malformed texture(s) and/or model(s)");
-            Logs.logError("These need to be fixed, otherwise the resourcepack will be broken");
-        } else
-            Logs.logSuccess("No broken models or textures were found in the resourcepack");
-
-        Set<String> malformedFiles = malformedTextures.stream().map(VirtualFile::getPath).collect(Collectors.toSet());
-        malformedFiles.addAll(malformedModels.stream().map(VirtualFile::getPath).collect(Collectors.toSet()));
-        return malformedFiles;
-    }
-
-    private static String modelPathToPackPath(String modelPath) {
-        String namespace = modelPath.split(":").length == 1 ? "minecraft" : modelPath.split(":")[0];
-        String texturePath = modelPath.split(":").length == 1 ? modelPath : modelPath.split(":")[1];
-        texturePath = texturePath.endsWith(".png") ? texturePath : texturePath + ".png";
-        return "assets/" + namespace + "/textures/" + texturePath;
-    }
-
-    private final boolean extractAssets = !new File(packFolder, "assets").exists();
-    private final boolean extractModels = !new File(packFolder, "models").exists();
-    private final boolean extractFonts = !new File(packFolder, "font").exists();
-    private final boolean extractOptifine = !new File(packFolder, "optifine").exists();
-    private final boolean extractLang = !new File(packFolder, "lang").exists();
-    private final boolean extractTextures = !new File(packFolder, "textures").exists();
-    private final boolean extractSounds = !new File(packFolder, "sounds").exists();
-
     private void extractDefaultFolders() {
         final ZipInputStream zip = ResourcesManager.browse();
         try {
@@ -416,11 +474,6 @@ public class ResourcePack {
         packModifiers.put(groupName, Arrays.asList(modifiers));
     }
 
-    public static void addOutputFiles(final VirtualFile... files) {
-        for (VirtualFile file : files)
-            outputFiles.put(file.getPath(), file);
-    }
-
     public File getFile() {
         return pack;
     }
@@ -450,13 +503,6 @@ public class ResourcePack {
             writeStringToVirtual("assets/minecraft/models/" + vanillaModelPath[0], vanillaModelPath[1],
                     predicatesGenerator.toJSON().toString());
         }
-    }
-
-    private static boolean needsTinting(Material material) {
-        return material.name().startsWith("LEATHER_")
-                || material == Material.POTION
-                || material == Material.SPLASH_POTION
-                || material == Material.LINGERING_POTION;
     }
 
     private void generateModelDefinitions(final Map<Material, Map<String, ItemBuilder>> texturedItems) {
@@ -571,9 +617,9 @@ public class ResourcePack {
     }
 
     private void handleWoodSoundEntries(Collection<CustomSound> sounds,
-            ConfigurationSection customSounds,
-            ConfigurationSection noteblock,
-            ConfigurationSection block) {
+                                        ConfigurationSection customSounds,
+                                        ConfigurationSection noteblock,
+                                        ConfigurationSection block) {
         if (customSounds == null) {
             sounds.removeIf(s -> s.getName().startsWith("required.wood") || s.getName().startsWith("block.wood"));
             return;
@@ -590,9 +636,9 @@ public class ResourcePack {
     }
 
     private void handleStoneSoundEntries(Collection<CustomSound> sounds,
-            ConfigurationSection customSounds,
-            ConfigurationSection stringblock,
-            ConfigurationSection furniture) {
+                                         ConfigurationSection customSounds,
+                                         ConfigurationSection stringblock,
+                                         ConfigurationSection furniture) {
         if (customSounds == null) {
             sounds.removeIf(s -> s.getName().startsWith("required.stone") || s.getName().startsWith("block.stone"));
             return;
@@ -615,12 +661,6 @@ public class ResourcePack {
                 s.getName().equals("block.stone") ||
                 s.getName().equals("required.wood") ||
                 s.getName().equals("required.stone"));
-    }
-
-    public static void writeStringToVirtual(String folder, String name, String content) {
-        folder = !folder.endsWith("/") ? folder : folder.substring(0, folder.length() - 1);
-        addOutputFiles(
-                new VirtualFile(folder, name, new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8))));
     }
 
     private void getAllFiles(File dir, Collection<VirtualFile> fileList, String newFolder, String... excluded) {
@@ -784,24 +824,6 @@ public class ResourcePack {
         output.addAll(virtualLangFiles);
     }
 
-    private static final Set<String> availableLanguageCodes = new HashSet<>(Arrays.asList(
-            "af_za", "ar_sa", "ast_es", "az_az", "ba_ru",
-            "bar", "be_by", "bg_bg", "br_fr", "brb", "bs_ba", "ca_es", "cs_cz",
-            "cy_gb", "da_dk", "de_at", "de_ch", "de_de", "el_gr", "en_au", "en_ca",
-            "en_gb", "en_nz", "en_pt", "en_ud", "en_us", "enp", "enws", "eo_uy",
-            "es_ar", "es_cl", "es_ec", "es_es", "es_mx", "es_uy", "es_ve", "esan",
-            "et_ee", "eu_es", "fa_ir", "fi_fi", "fil_ph", "fo_fo", "fr_ca", "fr_fr",
-            "fra_de", "fur_it", "fy_nl", "ga_ie", "gd_gb", "gl_es", "haw_us", "he_il",
-            "hi_in", "hr_hr", "hu_hu", "hy_am", "id_id", "ig_ng", "io_en", "is_is",
-            "isv", "it_it", "ja_jp", "jbo_en", "ka_ge", "kk_kz", "kn_in", "ko_kr",
-            "ksh", "kw_gb", "la_la", "lb_lu", "li_li", "lmo", "lol_us", "lt_lt",
-            "lv_lv", "lzh", "mk_mk", "mn_mn", "ms_my", "mt_mt", "nah", "nds_de",
-            "nl_be", "nl_nl", "nn_no", "no_no", "oc_fr", "ovd", "pl_pl", "pt_br",
-            "pt_pt", "qya_aa", "ro_ro", "rpr", "ru_ru", "ry_ua", "se_no", "sk_sk",
-            "sl_si", "so_so", "sq_al", "sr_sp", "sv_se", "sxu", "szl", "ta_in",
-            "th_th", "tl_ph", "tlh_aa", "tok", "tr_tr", "tt_ru", "uk_ua", "val_es",
-            "vec_it", "vi_vn", "yi_de", "yo_ng", "zh_cn", "zh_hk", "zh_tw", "zlm_arab"));
-
     private void hideScoreboardNumbers() {
         if (OraxenPlugin.get().getPacketAdapter().isEnabled() && VersionUtil.isPaperServer() && VersionUtil.atOrAbove("1.20.3")) {
             OraxenPlugin.get().getPacketAdapter().registerScoreboardListener();
@@ -828,30 +850,30 @@ public class ResourcePack {
     private String getScoreboardVsh() {
         return """
                 #version 150
-
+                
                 in vec3 Position;
                 in vec4 Color;
                 in vec2 UV0;
                 in ivec2 UV2;
-
+                
                 uniform sampler2D Sampler2;
-
+                
                 uniform mat4 ModelViewMat;
                 uniform mat4 ProjMat;
-
+                
                 uniform vec2 ScreenSize;
-
+                
                 out float vertexDistance;
                 out vec4 vertexColor;
                 out vec2 texCoord0;
-
+                
                 void main() {
                     gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
-
+                
                     vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
                     vertexColor = Color * texelFetch(Sampler2, UV2 / 16, 0);
                     texCoord0 = UV0;
-
+                
                 	// delete sidebar numbers
                 	if(	Position.z == 0.0 && // check if the depth is correct (0 for gui texts)
                 			gl_Position.x >= 0.95 && gl_Position.y >= -0.35 && // check if the position matches the sidebar
@@ -899,20 +921,20 @@ public class ResourcePack {
         if (VersionUtil.atOrAbove("1.21"))
             return """
                     #version 150
-
+                    
                      in vec3 Position;
                      in vec4 Color;
-
+                    
                      uniform mat4 ModelViewMat;
                      uniform mat4 ProjMat;
-
+                    
                      out vec4 vertexColor;
-
+                    
                      void main() {
                      	gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
-
+                    
                      	vertexColor = Color;
-
+                    
                      	//Isolating Scoreboard Display
                      	// Mojang Changed the Z position in 1.21, idk exact value but its huge
                      	if(gl_Position.y > -0.5 && gl_Position.y < 0.85 && gl_Position.x > 0.0 && gl_Position.x <= 1.0 && Position.z > 1000.0 && Position.z < 2750.0) {
@@ -922,31 +944,31 @@ public class ResourcePack {
                      	else {
                          	//vertexColor = vec4(vec3(1.0,0.0,0.0),1.0);
                      	}
-
+                    
                      	// Uncomment this if you want to make LIST invisible
                      	if(Position.z > 2750.0 && Position.z < 3000.0) {
                      		//TABLIST.a = 0.0;
                      	}
                      }
-
+                    
                     """;
         else if (VersionUtil.atOrAbove("1.21"))
             return """
                     #version 150
-
+                    
                     in vec3 Position;
                     in vec4 Color;
-
+                    
                     uniform mat4 ModelViewMat;
                     uniform mat4 ProjMat;
-
+                    
                     out vec4 vertexColor;
-
+                    
                     void main() {
                     	gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
-
+                    
                     	vertexColor = Color;
-
+                    
                     	//Isolating Scoreboard Display
                     	if(gl_Position.y > -0.5 && gl_Position.y < 0.85 && gl_Position.x > 0.0 && gl_Position.x <= 1.0 && Position.z == 0.0) {
                     		//vertexColor = vec4(vec3(0.0,0.0,1.0),1.0); // Debugger
@@ -960,31 +982,31 @@ public class ResourcePack {
         else
             return """
                     #version 150
-
+                    
                     in vec4 vertexColor;
-
+                    
                     uniform vec4 ColorModulator;
-
+                    
                     out vec4 fragColor;
-
+                    
                     bool isgray(vec4 a) {
                         return a.r == 0 && a.g == 0 && a.b == 0 && a.a < 0.3 && a.a > 0.29;
                     }
-
+                    
                     bool isdarkgray(vec4 a) {
                     	return a.r == 0 && a.g == 0 && a.b == 0 && a.a == 0.4;
                     }
-
+                    
                     void main() {
-
+                    
                         vec4 color = vertexColor;
-
+                    
                         if (color.a == 0.0) {
                             discard;
                         }
-
+                    
                         fragColor = color * ColorModulator;
-
+                    
                     	if(isgray(fragColor)){
                     		discard;
                     	}

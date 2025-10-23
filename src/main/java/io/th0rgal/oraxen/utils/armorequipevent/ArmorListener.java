@@ -9,11 +9,19 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.inventory.*;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryAction;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.inventory.InventoryType.SlotType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemBreakEvent;
-import org.bukkit.inventory.*;
+import org.bukkit.inventory.EntityEquipment;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 
 import java.util.List;
 import java.util.Objects;
@@ -37,6 +45,10 @@ public class ArmorListener implements Listener {
     }
     //Event Priority is highest because other plugins might cancel the events before we check.
 
+    static boolean isEmpty(ItemStack item) {
+        return (item == null || item.getType().isAir() || item.getAmount() == 0);
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public final void onClick(final InventoryClickEvent event) {
         boolean shift = false, numberkey = false;
@@ -51,7 +63,6 @@ public class ArmorListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player)) return;
         if (clickedInventory == null || clickedInventory.getType() != InventoryType.PLAYER) return;
         if (inventory.getType() != InventoryType.CRAFTING && inventory.getType() != InventoryType.PLAYER) return;
-
 
         ArmorType newArmorType = ArmorType.matchType(shift ? event.getCurrentItem() : event.getCursor());
         // Used for drag and drop checking to make sure you aren't trying to place a helmet in the boots slot.
@@ -134,10 +145,6 @@ public class ArmorListener implements Listener {
             event.setCancelled(true);
     }
 
-    static boolean isEmpty(ItemStack item) {
-        return (item == null || item.getType().isAir() || item.getAmount() == 0);
-    }
-
 //	@EventHandler(priority =  EventPriority.HIGHEST, ignoreCancelled = true)
 //	public void onFOnEmptyArmorSlot(InventoryClickEvent event) {
 //		if(event.getAction() != InventoryAction.HOTBAR_SWAP) {
@@ -204,7 +211,8 @@ public class ArmorListener implements Listener {
         ArmorType type = ArmorType.matchType(event.getBrokenItem());
         Player player = event.getPlayer();
         if (type == null) return;
-        if (EventUtils.callEvent(new ArmorEquipEvent(player, ArmorEquipEvent.EquipMethod.BROKE, type, event.getBrokenItem(), null))) return;
+        if (EventUtils.callEvent(new ArmorEquipEvent(player, ArmorEquipEvent.EquipMethod.BROKE, type, event.getBrokenItem(), null)))
+            return;
 
         ItemStack i = event.getBrokenItem().clone();
         i.setAmount(1);

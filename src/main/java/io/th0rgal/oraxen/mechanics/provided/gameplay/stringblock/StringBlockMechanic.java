@@ -19,15 +19,13 @@ public class StringBlockMechanic extends Mechanic {
     private final Drop drop;
     private final BlockSounds blockSounds;
     private final LimitedPlacing limitedPlacing;
-    private String model;
     private final int hardness;
     private final LightMechanic light;
-
     private final List<String> randomPlaceBlock;
     private final SaplingMechanic saplingMechanic;
     private final boolean isTall;
-
     private final BlockLockerMechanic blockLocker;
+    private String model;
 
     @SuppressWarnings("unchecked")
     public StringBlockMechanic(MechanicFactory mechanicFactory, ConfigurationSection section) {
@@ -69,17 +67,20 @@ public class StringBlockMechanic extends Mechanic {
     public boolean hasBlockSounds() {
         return blockSounds != null;
     }
+
     public BlockSounds getBlockSounds() {
         return blockSounds;
     }
 
-    public boolean hasLimitedPlacing() { return limitedPlacing != null; }
-    public LimitedPlacing getLimitedPlacing() { return limitedPlacing; }
+    public boolean hasLimitedPlacing() {return limitedPlacing != null;}
 
-    public boolean isSapling() { return saplingMechanic != null; }
-    public SaplingMechanic getSaplingMechanic() { return saplingMechanic; }
+    public LimitedPlacing getLimitedPlacing() {return limitedPlacing;}
 
-    public boolean isTall() { return isTall; }
+    public boolean isSapling() {return saplingMechanic != null;}
+
+    public SaplingMechanic getSaplingMechanic() {return saplingMechanic;}
+
+    public boolean isTall() {return isTall;}
 
     public int getCustomVariation() {
         return customVariation;

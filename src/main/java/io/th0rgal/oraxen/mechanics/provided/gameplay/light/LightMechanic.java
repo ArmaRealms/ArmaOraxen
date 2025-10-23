@@ -24,44 +24,6 @@ public class LightMechanic {
         if (lightData != null) lightData.setLevel(lightLevel);
     }
 
-    public int getLightLevel() {
-        return lightLevel;
-    }
-
-    public boolean hasLightLevel() {
-        return lightLevel != -1 && lightData != null;
-    }
-
-    public void createBlockLight(Block block) {
-        if (!hasLightLevel()) return;
-
-        // If the block attempted placed at is empty, we only place here
-        // This is mainly for furniture with no barrier hitbox
-        if (block.getType().isAir()) block.setBlockData(lightData);
-        else for (BlockFace face : BLOCK_FACES) {
-            Block relative = block.getRelative(face);
-            if (!relative.getType().isAir() && relative.getType() != Material.LIGHT) continue;
-            if (relative.getBlockData() instanceof Light relativeLight && relativeLight.getLevel() > lightLevel) continue;
-
-            relative.setBlockData(lightData);
-        }
-    }
-
-    public void removeBlockLight(Block block) {
-        if (hasLightLevel()) for (BlockFace face : BLOCK_FACES) {
-            Block relative = block.getRelative(face);
-            // If relative is Light we want to remove it
-            if (relative.getType() == Material.LIGHT)
-                relative.setType(Material.AIR);
-            // But also update the surrounding blocks
-            for (BlockFace relativeFace : BLOCK_FACES) {
-                if (relativeFace == face.getOppositeFace()) continue;
-                //refreshBlockLight(relative.getRelative(relativeFace));
-                //refreshBlockLight(relative.getRelative(relativeFace));
-            }
-        }
-    }
-
     public static void refreshBlockLight(Block block) {
         if (block.getType() == Material.LIGHT || block.getType().isAir()) return;
 
@@ -82,6 +44,45 @@ public class LightMechanic {
                 Entity baseEntity = furnitureMechanic.getBaseEntity(block);
                 if (!furnitureMechanic.hasLight() || baseEntity == null) continue;
                 furnitureMechanic.setEntityData(baseEntity, FurnitureMechanic.getFurnitureYaw(baseEntity), baseEntity.getFacing());
+            }
+        }
+    }
+
+    public int getLightLevel() {
+        return lightLevel;
+    }
+
+    public boolean hasLightLevel() {
+        return lightLevel != -1 && lightData != null;
+    }
+
+    public void createBlockLight(Block block) {
+        if (!hasLightLevel()) return;
+
+        // If the block attempted placed at is empty, we only place here
+        // This is mainly for furniture with no barrier hitbox
+        if (block.getType().isAir()) block.setBlockData(lightData);
+        else for (BlockFace face : BLOCK_FACES) {
+            Block relative = block.getRelative(face);
+            if (!relative.getType().isAir() && relative.getType() != Material.LIGHT) continue;
+            if (relative.getBlockData() instanceof Light relativeLight && relativeLight.getLevel() > lightLevel)
+                continue;
+
+            relative.setBlockData(lightData);
+        }
+    }
+
+    public void removeBlockLight(Block block) {
+        if (hasLightLevel()) for (BlockFace face : BLOCK_FACES) {
+            Block relative = block.getRelative(face);
+            // If relative is Light we want to remove it
+            if (relative.getType() == Material.LIGHT)
+                relative.setType(Material.AIR);
+            // But also update the surrounding blocks
+            for (BlockFace relativeFace : BLOCK_FACES) {
+                if (relativeFace == face.getOppositeFace()) continue;
+                //refreshBlockLight(relative.getRelative(relativeFace));
+                //refreshBlockLight(relative.getRelative(relativeFace));
             }
         }
     }

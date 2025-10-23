@@ -82,6 +82,8 @@ public class ItemBuilder {
     private final Map<PersistentDataSpace, Object> persistentDataMap = new HashMap<>();
     private final PersistentDataContainer persistentDataContainer;
     private final Map<Enchantment, Integer> enchantments;
+    // Generic components storage using String keys
+    private final Map<String, Object> genericComponents = new HashMap<>();
     private OraxenMeta oraxenMeta;
     private Material type;
     private int amount;
@@ -103,7 +105,6 @@ public class ItemBuilder {
     private Integer customModelData;
     private List<String> lore;
     private ItemStack finalItemStack;
-
     // 1.20.5+ properties
     @Nullable
     private FoodComponent foodComponent;
@@ -127,11 +128,9 @@ public class ItemBuilder {
     private Integer durability;
     private boolean damagedOnBlockBreak;
     private boolean damagedOnEntityHit;
-
     // 1.21+ properties
     @Nullable
     private JukeboxPlayableComponent jukeboxPlayable;
-
     // 1.21.2+ properties
     @Nullable
     private EquippableComponent equippableComponent;
@@ -149,9 +148,6 @@ public class ItemBuilder {
     private NamespacedKey itemModel;
     @Nullable
     private Integer enchantable;
-
-    // Generic components storage using String keys
-    private final Map<String, Object> genericComponents = new HashMap<>();
 
     public ItemBuilder(final Material material) {
         this(new ItemStack(material));

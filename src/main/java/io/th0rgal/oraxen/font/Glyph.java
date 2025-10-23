@@ -1,6 +1,5 @@
 package io.th0rgal.oraxen.font;
 
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.th0rgal.oraxen.OraxenPlugin;
@@ -32,27 +31,24 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-
 public class Glyph {
 
     public static final Character WHITESPACE_GLYPH = '\ue000';
-
-    private boolean fileChanged = false;
-
+    public final Pattern baseRegex;
+    public final Pattern escapedRegex;
     private final String name;
     private final Key font = Key.key("default");
     private final boolean isEmoji;
     private final boolean tabcomplete;
     private final Character character;
-    private String texture;
     private final int ascent;
     private final int height;
     private final String permission;
     private final String[] placeholders;
     private final BitMapEntry bitmapEntry;
-
-    public final Pattern baseRegex;
-    public final Pattern escapedRegex;
+    private final Set<String> materialNames = Arrays.stream(Material.values()).map(Material::name).collect(Collectors.toSet());
+    private boolean fileChanged = false;
+    private String texture;
 
     public Glyph(final String glyphName, final ConfigurationSection glyphSection, char newChars) {
         name = glyphName;
@@ -65,7 +61,7 @@ public class Glyph {
         tabcomplete = chatSection != null && chatSection.getBoolean("tabcomplete", false);
 
         String placeholderRegex = String.join("|", Arrays.stream(placeholders).map(Pattern::quote).toArray(String[]::new));
-        String baseRegex = "((<(glyph|g):" + name + ")(:(c|colorable))*>" + (placeholders.length > 0 ?  "|" + placeholderRegex : "") + ")";
+        String baseRegex = "((<(glyph|g):" + name + ")(:(c|colorable))*>" + (placeholders.length > 0 ? "|" + placeholderRegex : "") + ")";
         this.baseRegex = Pattern.compile("(?<!\\\\)" + baseRegex);
         escapedRegex = Pattern.compile("\\\\" + baseRegex);
 
@@ -82,16 +78,12 @@ public class Glyph {
 
         character = glyphSection.get("char") != null ? glyphSection.getString("char", "").charAt(0) : null;
 
-
         ConfigurationSection bitmapSection = glyphSection.getConfigurationSection("bitmap");
         bitmapEntry = bitmapSection != null ? new BitMapEntry(bitmapSection.getString("id"), bitmapSection.getInt("row"), bitmapSection.getInt("column")) : null;
         ascent = getBitMap() != null ? getBitMap().ascent() : glyphSection.getInt("ascent", 8);
         height = getBitMap() != null ? getBitMap().height() : glyphSection.getInt("height", 8);
         texture = getBitMap() != null ? getBitMap().texture() : glyphSection.getString("texture", "required/exit_icon.png");
         if (!texture.endsWith(".png")) texture += ".png";
-    }
-
-    public record BitMapEntry(String id, int row, int column) {
     }
 
     public BitMapEntry getBitmapEntry() {
@@ -174,8 +166,6 @@ public class Glyph {
         return player == null || permission.isEmpty() || player.hasPermission(permission);
     }
 
-    private final Set<String> materialNames = Arrays.stream(Material.values()).map(Material::name).collect(Collectors.toSet());
-
     public void verifyGlyph(List<Glyph> glyphs) {
         // Return on first run as files aren't generated yet
         Path packFolder = Path.of(OraxenPlugin.get().getDataFolder().getAbsolutePath()).resolve("pack");
@@ -247,7 +237,6 @@ public class Glyph {
         return '<' + "glyph;" + name + '>';
     }
 
-
     public String getShortGlyphTag() {
         return "<g:" + name + '>';
     }
@@ -263,5 +252,8 @@ public class Glyph {
         Component hoverComponent = AdventureUtils.MINI_MESSAGE.deserialize(hoverText, hoverResolver);
         if (hoverText.isEmpty() || hoverComponent == Component.empty()) return null;
         return HoverEvent.showText(hoverComponent);
+    }
+
+    public record BitMapEntry(String id, int row, int column) {
     }
 }

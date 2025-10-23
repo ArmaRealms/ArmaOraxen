@@ -24,8 +24,7 @@ public class Utils {
     public static Color toColor(String string) {
         if (string.startsWith("#") || string.startsWith("0x")) {
             return Color.fromRGB(Integer.parseInt(string.substring(1), 16));
-        }
-        else if (string.contains(",")) {
+        } else if (string.contains(",")) {
             String[] newString = string.replace(", ", ",").split(",", 3);
             try {
                 int r = Integer.parseInt(newString[0]);
@@ -77,6 +76,7 @@ public class Utils {
 
     /**
      * Removes extension AND parent directories
+     *
      * @param s The path or filename including extension
      * @return Purely the filename, no extension or path
      */
@@ -153,7 +153,7 @@ public class Utils {
     }
 
     public static IntegerRange parseToRange(String string) {
-        return parseToRange(string, new IntegerRange(1,1));
+        return parseToRange(string, new IntegerRange(1, 1));
     }
 
     public static IntegerRange parseToRange(String string, IntegerRange integerRange) {

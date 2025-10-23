@@ -64,7 +64,7 @@ public class FarmBlockDryout {
             case WATER -> 5;
             case FARMLAND -> ((Farmland) block.getBlockData()).getMoisture() > 0 ? 1 : 0;
             case NOTE_BLOCK -> (temp = OraxenBlocks.getNoteBlockMechanic(block)) != null && temp.hasDryout() ?
-                    (int) temp.getDryout() .getMoistureLevel(block) : 0;
+                    (int) temp.getDryout().getMoistureLevel(block) : 0;
             default -> 0;
         };
     }

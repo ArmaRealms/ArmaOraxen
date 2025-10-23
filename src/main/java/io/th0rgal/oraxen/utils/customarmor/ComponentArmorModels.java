@@ -19,7 +19,12 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ComponentArmorModels {
@@ -116,10 +121,10 @@ public class ComponentArmorModels {
     private String armorPrefix(VirtualFile virtualFile) {
         return virtualFile.getPath().endsWith("_armor_layer_1.png")
                 ? StringUtils.substringAfterLast(
-                        StringUtils.substringBefore(virtualFile.getPath(), "_armor_layer_1.png"), "/")
+                StringUtils.substringBefore(virtualFile.getPath(), "_armor_layer_1.png"), "/")
                 : virtualFile.getPath().endsWith("_armor_layer_2.png")
-                        ? StringUtils.substringAfterLast(
-                                StringUtils.substringBefore(virtualFile.getPath(), "_armor_layer_2.png"), "/")
-                        : "";
+                ? StringUtils.substringAfterLast(
+                StringUtils.substringBefore(virtualFile.getPath(), "_armor_layer_2.png"), "/")
+                : "";
     }
 }

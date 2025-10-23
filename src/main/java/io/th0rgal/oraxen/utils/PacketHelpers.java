@@ -17,8 +17,8 @@ public class PacketHelpers {
 
     public static Component translateTitle(Component component) {
         return AdventureUtils.MINI_MESSAGE.deserialize(
-            AdventureUtils.parseMiniMessageThroughLegacy(component)
-                .replaceAll("\\\\(?!u)(?!n)(?!\")", "")
+                AdventureUtils.parseMiniMessageThroughLegacy(component)
+                        .replaceAll("\\\\(?!u)(?!n)(?!\")", "")
         );
     }
 }

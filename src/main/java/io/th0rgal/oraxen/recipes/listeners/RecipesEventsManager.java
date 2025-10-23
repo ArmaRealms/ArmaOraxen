@@ -23,7 +23,14 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.MerchantInventory;
 import org.bukkit.inventory.Recipe;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class RecipesEventsManager implements Listener {
@@ -57,7 +64,8 @@ public class RecipesEventsManager implements Listener {
         ArrayList<ItemStack> ingredients = new ArrayList<>(merchantInventory.getSelectedRecipe().getIngredients());
         String firstIngredient = ingredients.isEmpty() ? null : OraxenItems.getIdByItem(ingredients.get(0));
         String secondIngredient = ingredients.size() < 2 ? null : OraxenItems.getIdByItem(ingredients.get(1));
-        if (!Objects.equals(first, firstIngredient) || !Objects.equals(second, secondIngredient)) event.setCancelled(true);
+        if (!Objects.equals(first, firstIngredient) || !Objects.equals(second, secondIngredient))
+            event.setCancelled(true);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
@@ -82,7 +90,8 @@ public class RecipesEventsManager implements Listener {
             return;
         }
 
-        if (customRecipe == null || whitelistedCraftRecipes.stream().anyMatch(customRecipe::equals) || customRecipe.isValidDyeRecipe()) return;
+        if (customRecipe == null || whitelistedCraftRecipes.stream().anyMatch(customRecipe::equals) || customRecipe.isValidDyeRecipe())
+            return;
 
         event.getInventory().setResult(customRecipe.getResult());
     }
@@ -122,7 +131,6 @@ public class RecipesEventsManager implements Listener {
                 .map(CustomRecipe::getName)
                 .toArray(String[]::new);
     }
-
 
     public boolean hasPermission(CommandSender sender, CustomRecipe recipe) {
         return !permissionsPerRecipe.containsKey(recipe) || sender.hasPermission(permissionsPerRecipe.get(recipe));

@@ -16,15 +16,15 @@ public class SmeltingMechanicFactory extends MechanicFactory {
         MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new SmeltingMechanicListener(this));
     }
 
+    public static SmeltingMechanicFactory getInstance() {
+        return instance;
+    }
+
     @Override
     public Mechanic parse(ConfigurationSection itemMechanicConfiguration) {
         Mechanic mechanic = new SmeltingMechanic(this, itemMechanicConfiguration);
         addToImplemented(mechanic);
         return mechanic;
-    }
-
-    public static SmeltingMechanicFactory getInstance() {
-        return instance;
     }
 
 }

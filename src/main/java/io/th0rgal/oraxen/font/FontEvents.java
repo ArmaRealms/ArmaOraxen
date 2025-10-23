@@ -20,11 +20,19 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.event.*;
+import org.bukkit.event.Event;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.*;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerEditBookEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
@@ -35,7 +43,9 @@ import java.util.Arrays;
 import java.util.Map;
 
 import static io.th0rgal.oraxen.items.ItemBuilder.ORIGINAL_NAME_KEY;
-import static io.th0rgal.oraxen.utils.AdventureUtils.*;
+import static io.th0rgal.oraxen.utils.AdventureUtils.LEGACY_SERIALIZER;
+import static io.th0rgal.oraxen.utils.AdventureUtils.MINI_MESSAGE;
+import static io.th0rgal.oraxen.utils.AdventureUtils.MINI_MESSAGE_EMPTY;
 
 public class FontEvents implements Listener {
 
@@ -43,30 +53,6 @@ public class FontEvents implements Listener {
     @Nullable PaperChatHandler paperChatHandler;
     @Nullable LegacyPaperChatHandler legacyPaperChatHandler;
     @Nullable SpigotChatHandler spigotChatHandler;
-
-    enum ChatHandler {
-        LEGACY,
-        MODERN;
-
-        public static boolean isLegacy() {
-            return get() == LEGACY;
-        }
-
-        public static boolean isModern() {
-            return get() == MODERN;
-        }
-
-        public static ChatHandler get() {
-            try {
-                return valueOf(Settings.CHAT_HANDLER.toString());
-            } catch (IllegalArgumentException e) {
-                ChatHandler chatHandler = VersionUtil.isPaperServer() ? MODERN : LEGACY;
-                Logs.logError("Invalid chat-handler defined in settings.yml, defaulting to " + chatHandler, true);
-                Logs.logError("Valid options are: " + Arrays.toString(values()), true);
-                return chatHandler;
-            }
-        }
-    }
 
     public FontEvents(FontManager manager) {
         this.manager = manager;
@@ -247,6 +233,57 @@ public class FontEvents implements Listener {
         manager.clearGlyphTabCompletions(event.getPlayer());
     }
 
+    private Component format(Component message, Player player) {
+        Key randomKey = Key.key("random");
+        String serialized = MINI_MESSAGE.serialize(message);
+        for (Character character : manager.getReverseMap().keySet()) {
+            if (!serialized.contains(character.toString())) continue;
+
+            Glyph glyph = manager.getGlyphFromName(manager.getReverseMap().get(character));
+            if (!glyph.hasPermission(player)) message.replaceText(
+                    TextReplacementConfig.builder()
+                            .matchLiteral(character.toString())
+                            .replacement(glyph.getGlyphComponent().font(randomKey))
+                            .build()
+            );
+        }
+
+        for (Map.Entry<String, Glyph> entry : manager.getGlyphByPlaceholderMap().entrySet())
+            if (entry.getValue().hasPermission(player)) {
+                message = message.replaceText(
+                        TextReplacementConfig.builder()
+                                .matchLiteral(entry.getKey())
+                                .replacement(entry.getValue().getGlyphComponent()).build()
+                );
+            }
+
+        return message;
+    }
+
+    enum ChatHandler {
+        LEGACY,
+        MODERN;
+
+        public static boolean isLegacy() {
+            return get() == LEGACY;
+        }
+
+        public static boolean isModern() {
+            return get() == MODERN;
+        }
+
+        public static ChatHandler get() {
+            try {
+                return valueOf(Settings.CHAT_HANDLER.toString());
+            } catch (IllegalArgumentException e) {
+                ChatHandler chatHandler = VersionUtil.isPaperServer() ? MODERN : LEGACY;
+                Logs.logError("Invalid chat-handler defined in settings.yml, defaulting to " + chatHandler, true);
+                Logs.logError("Valid options are: " + Arrays.toString(values()), true);
+                return chatHandler;
+            }
+        }
+    }
+
     public class SpigotChatHandler implements Listener {
         @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
         public void onPlayerChat(AsyncPlayerChatEvent event) {
@@ -293,7 +330,6 @@ public class FontEvents implements Listener {
         }
     }
 
-
     @SuppressWarnings("UnstableApiUsage")
     public class PaperChatHandler implements Listener {
 
@@ -319,33 +355,6 @@ public class FontEvents implements Listener {
             event.setCancelled(true);
         }
 
-    }
-
-    private Component format(Component message, Player player) {
-        Key randomKey = Key.key("random");
-        String serialized = MINI_MESSAGE.serialize(message);
-        for (Character character : manager.getReverseMap().keySet()) {
-            if (!serialized.contains(character.toString())) continue;
-
-            Glyph glyph = manager.getGlyphFromName(manager.getReverseMap().get(character));
-            if (!glyph.hasPermission(player)) message.replaceText(
-                    TextReplacementConfig.builder()
-                            .matchLiteral(character.toString())
-                            .replacement(glyph.getGlyphComponent().font(randomKey))
-                            .build()
-            );
-        }
-
-        for (Map.Entry<String, Glyph> entry : manager.getGlyphByPlaceholderMap().entrySet())
-            if (entry.getValue().hasPermission(player)) {
-                message = message.replaceText(
-                        TextReplacementConfig.builder()
-                                .matchLiteral(entry.getKey())
-                                .replacement(entry.getValue().getGlyphComponent()).build()
-                );
-            }
-
-        return message;
     }
 
 }

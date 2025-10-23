@@ -19,10 +19,11 @@ public class RecipesBuilderEvents implements Listener {
     @SuppressWarnings("deprecation") // because we must use setCursor
     public void setCursor(InventoryClickEvent event) {
         String recipeBuilderTitle = Optional.ofNullable(RecipeBuilder.get(event.getWhoClicked().getUniqueId())).map(RecipeBuilder::getInventoryTitle).orElse(null);
-        if (!InventoryUtils.getTitleFromView(event).equals(recipeBuilderTitle) || event.getSlotType() != InventoryType.SlotType.RESULT) return;
+        if (!InventoryUtils.getTitleFromView(event).equals(recipeBuilderTitle) || event.getSlotType() != InventoryType.SlotType.RESULT)
+            return;
 
         event.setCancelled(true);
-        ItemStack currentResult =  Optional.ofNullable(event.getCurrentItem()).orElse(new ItemStack(Material.AIR)).clone();
+        ItemStack currentResult = Optional.ofNullable(event.getCurrentItem()).orElse(new ItemStack(Material.AIR)).clone();
         ItemStack currentCursor = Optional.ofNullable(event.getCursor()).orElse(new ItemStack(Material.AIR)).clone();
         event.setCurrentItem(currentCursor);
         event.setCursor(currentResult);

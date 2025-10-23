@@ -22,7 +22,7 @@ public class ShapedLoader extends RecipeLoader {
         ConfigurationSection ingredientsSection = getSection().getConfigurationSection("ingredients");
         for (String ingredientLetter : Objects.requireNonNull(ingredientsSection).getKeys(false)) {
             ConfigurationSection itemSection = ingredientsSection.getConfigurationSection(ingredientLetter);
-            if (itemSection  == null) continue;
+            if (itemSection == null) continue;
             RecipeChoice recipeChoice = getRecipeChoice(itemSection);
             if (recipeChoice == null) continue;
             recipe.setIngredient(ingredientLetter.charAt(0), recipeChoice);

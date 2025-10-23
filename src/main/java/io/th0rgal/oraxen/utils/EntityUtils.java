@@ -14,38 +14,6 @@ import java.lang.reflect.Method;
 public class EntityUtils {
     private static Method spawnMethod;
 
-    public static boolean isUnderWater(Entity entity) {
-        if (VersionUtil.isPaperServer() && VersionUtil.atOrAbove("1.19")) {
-            return entity.isUnderWater();
-        } else return entity.isInWater();
-    }
-
-    public static boolean isFixed(ItemDisplay itemDisplay) {
-        return itemDisplay.getItemDisplayTransform() == ItemDisplay.ItemDisplayTransform.FIXED;
-    }
-
-    public static boolean isNone(ItemDisplay itemDisplay) {
-        return itemDisplay.getItemDisplayTransform() == ItemDisplay.ItemDisplayTransform.NONE;
-    }
-
-    public void teleport(@NotNull Location location, @NotNull Entity entity, PlayerTeleportEvent.TeleportCause cause) {
-        if (VersionUtil.isPaperServer() || VersionUtil.isFoliaServer() && VersionUtil.atOrAbove("1.19.4")) {
-            entity.teleportAsync(location, cause);
-        } else entity.teleport(location);
-    }
-
-    /**
-     * Teleports an entity to the given location
-     * Uses teleportAsync on 1.19.4+ Paper/Folia servers and teleport on all other servers
-     * @param location The location to teleport the entity to
-     * @param entity The entity to teleport
-     */
-    public static void teleport(@NotNull Location location, @NotNull Entity entity) {
-        if (VersionUtil.atOrAbove("1.19.4") && (VersionUtil.isPaperServer() || VersionUtil.isFoliaServer())) {
-            entity.teleportAsync(location);
-        } else entity.teleport(location);
-    }
-
     static {
         try {
             // Get the method based on the server version
@@ -60,15 +28,43 @@ public class EntityUtils {
         }
     }
 
+    public static boolean isUnderWater(Entity entity) {
+        if (VersionUtil.isPaperServer() && VersionUtil.atOrAbove("1.19")) {
+            return entity.isUnderWater();
+        } else return entity.isInWater();
+    }
+
+    public static boolean isFixed(ItemDisplay itemDisplay) {
+        return itemDisplay.getItemDisplayTransform() == ItemDisplay.ItemDisplayTransform.FIXED;
+    }
+
+    public static boolean isNone(ItemDisplay itemDisplay) {
+        return itemDisplay.getItemDisplayTransform() == ItemDisplay.ItemDisplayTransform.NONE;
+    }
+
+    /**
+     * Teleports an entity to the given location
+     * Uses teleportAsync on 1.19.4+ Paper/Folia servers and teleport on all other servers
+     *
+     * @param location The location to teleport the entity to
+     * @param entity   The entity to teleport
+     */
+    public static void teleport(@NotNull Location location, @NotNull Entity entity) {
+        if (VersionUtil.atOrAbove("1.19.4") && (VersionUtil.isPaperServer() || VersionUtil.isFoliaServer())) {
+            entity.teleportAsync(location);
+        } else entity.teleport(location);
+    }
+
     /**
      * Spawns an entity at the given location and applies the consumer to it based on server version
+     *
      * @param location The location to spawn the entity at
-     * @param clazz The class of the entity to spawn
+     * @param clazz    The class of the entity to spawn
      * @param consumer The consumer to apply to the entity
      * @return The entity that was spawned
      */
     public static <T> T spawnEntity(@NotNull Location location, @NotNull Class<T> clazz, EntityConsumer<T> consumer) {
-       try {
+        try {
             T entity;
             World world = location.getWorld();
             Object wrappedConsumer;
@@ -82,12 +78,16 @@ public class EntityUtils {
 
             return entity;
         } catch (Exception e) {
-           Logs.logWarning(e.getMessage()); // Handle the exception according to your needs
+            Logs.logWarning(e.getMessage()); // Handle the exception according to your needs
         }
         return null;
     }
 
-
+    public void teleport(@NotNull Location location, @NotNull Entity entity, PlayerTeleportEvent.TeleportCause cause) {
+        if (VersionUtil.isPaperServer() || VersionUtil.isFoliaServer() && VersionUtil.atOrAbove("1.19.4")) {
+            entity.teleportAsync(location, cause);
+        } else entity.teleport(location);
+    }
 
     public interface EntityConsumer<T> {
         void accept(T entity);

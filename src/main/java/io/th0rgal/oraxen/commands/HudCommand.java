@@ -41,8 +41,7 @@ public class HudCommand {
                         if (toggle) {
                             Message.HUD_TOGGLE_ON.send(player, AdventureUtils.tagResolver("hud_id", hudId));
                             manager.enableHud(player, hud);
-                        }
-                        else {
+                        } else {
                             Message.HUD_TOGGLE_OFF.send(player, AdventureUtils.tagResolver("hud_id", hudId));
                             manager.disableHud(player);
                         }

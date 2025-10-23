@@ -10,11 +10,10 @@ import io.th0rgal.oraxen.items.OraxenMeta;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import net.kyori.adventure.audience.Audience;
-
-import java.util.Map;
-
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+
+import java.util.Map;
 
 public class ItemInfoCommand {
 

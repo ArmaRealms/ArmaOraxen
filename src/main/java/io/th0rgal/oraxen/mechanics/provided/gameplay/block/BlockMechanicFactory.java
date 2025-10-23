@@ -38,17 +38,6 @@ public class BlockMechanicFactory extends MechanicFactory {
         MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new BlockMechanicListener(this));
     }
 
-    private String getBlockstateContent() {
-        JsonObject mushroomStem = new JsonObject();
-        JsonArray multipart = new JsonArray();
-        // adds default override
-        multipart.add(getBlockstateOverride("block/mushroom_stem", 15));
-        for (JsonObject override : MUSHROOM_STEM_BLOCKSTATE_OVERRIDES)
-            multipart.add(override);
-        mushroomStem.add("multipart", multipart);
-        return mushroomStem.toString();
-    }
-
     public static JsonObject getBlockstateOverride(String modelName, int when) {
         JsonObject content = new JsonObject();
         JsonObject model = new JsonObject();
@@ -56,17 +45,6 @@ public class BlockMechanicFactory extends MechanicFactory {
         content.add("apply", model);
         content.add("when", BlockMechanic.getBlockstateWhenFields(when));
         return content;
-    }
-
-    @Override
-    public Mechanic parse(ConfigurationSection itemMechanicConfiguration) {
-        BlockMechanic mechanic = new BlockMechanic(this, itemMechanicConfiguration);
-        MUSHROOM_STEM_BLOCKSTATE_OVERRIDES
-                .add(getBlockstateOverride(mechanic.getModel(itemMechanicConfiguration.getParent().getParent()),
-                        mechanic.getCustomVariation()));
-        BLOCK_PER_VARIATION.put(mechanic.getCustomVariation(), mechanic);
-        addToImplemented(mechanic);
-        return mechanic;
     }
 
     public static BlockMechanic getBlockMechanic(int customVariation) {
@@ -116,5 +94,26 @@ public class BlockMechanicFactory extends MechanicFactory {
         return true;
     }
 
+    private String getBlockstateContent() {
+        JsonObject mushroomStem = new JsonObject();
+        JsonArray multipart = new JsonArray();
+        // adds default override
+        multipart.add(getBlockstateOverride("block/mushroom_stem", 15));
+        for (JsonObject override : MUSHROOM_STEM_BLOCKSTATE_OVERRIDES)
+            multipart.add(override);
+        mushroomStem.add("multipart", multipart);
+        return mushroomStem.toString();
+    }
+
+    @Override
+    public Mechanic parse(ConfigurationSection itemMechanicConfiguration) {
+        BlockMechanic mechanic = new BlockMechanic(this, itemMechanicConfiguration);
+        MUSHROOM_STEM_BLOCKSTATE_OVERRIDES
+                .add(getBlockstateOverride(mechanic.getModel(itemMechanicConfiguration.getParent().getParent()),
+                        mechanic.getCustomVariation()));
+        BLOCK_PER_VARIATION.put(mechanic.getCustomVariation(), mechanic);
+        addToImplemented(mechanic);
+        return mechanic;
+    }
 
 }

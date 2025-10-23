@@ -28,7 +28,7 @@ public class SaplingMechanic {
         canGrowNaturally = section.getBoolean("canGrowNaturally", true);
         naturalGrowthTime = section.getInt("naturalGrowthTime", 6000); // Default of 5 mins
         canGrowFromBoneMeal = section.getBoolean("canGrowFromBoneMeal", true);
-        boneMealGrowthSpeedup = Math.min(section.getInt("boneMealGrowthSpeedup", naturalGrowthTime/5), naturalGrowthTime);
+        boneMealGrowthSpeedup = Math.min(section.getInt("boneMealGrowthSpeedup", naturalGrowthTime / 5), naturalGrowthTime);
         growSound = section.getString("growSound", null);
         minLightLevel = section.getInt("minLightLevel", 0);
         requiresWaterSource = section.getBoolean("requiresWaterSource", false);
@@ -89,9 +89,11 @@ public class SaplingMechanic {
         else return schem;
     }
 
-    public boolean replaceBlocks() { return shouldReplaceBlocks; }
-    public boolean copyBiomes() { return shouldCopyBiomes; }
-    public boolean copyEntities() { return shouldCopyEntities; }
+    public boolean replaceBlocks() {return shouldReplaceBlocks;}
+
+    public boolean copyBiomes() {return shouldCopyBiomes;}
+
+    public boolean copyEntities() {return shouldCopyEntities;}
 
     public boolean isUnderWater(Block block) {
         return block.getRelative(BlockFace.DOWN).getType() == Material.WATER;

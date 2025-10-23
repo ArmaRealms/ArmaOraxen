@@ -22,7 +22,9 @@ public class EventUtils {
         else return true;
     }
 
-    /** In a recent build of Spigot 1.20.4, they removed undeprecated constructors for EntityDamageByEntityEvent here. This method aims to call the event with backwards compatibility */
+    /**
+     * In a recent build of Spigot 1.20.4, they removed undeprecated constructors for EntityDamageByEntityEvent here. This method aims to call the event with backwards compatibility
+     */
     public static EntityDamageByEntityEvent EntityDamageByEntityEvent(Entity damager, Entity entity, EntityDamageEvent.DamageCause cause, DamageType damageType, double damage) {
         try {
             // Old constructor

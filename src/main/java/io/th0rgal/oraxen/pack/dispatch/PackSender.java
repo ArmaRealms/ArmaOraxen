@@ -12,7 +12,6 @@ public abstract class PackSender {
 
     protected final HostingProvider hostingProvider;
 
-
     protected PackSender(HostingProvider hostingProvider) {
         this.hostingProvider = hostingProvider;
     }

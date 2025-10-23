@@ -20,6 +20,10 @@ public class DurabilityMechanicFactory extends MechanicFactory {
         instance = this;
     }
 
+    public static DurabilityMechanicFactory get() {
+        return instance;
+    }
+
     @Override
     public Mechanic parse(ConfigurationSection itemMechanicConfiguration) {
         Mechanic mechanic = new DurabilityMechanic(this, itemMechanicConfiguration);
@@ -29,10 +33,6 @@ public class DurabilityMechanicFactory extends MechanicFactory {
         }
         addToImplemented(mechanic);
         return mechanic;
-    }
-
-    public static DurabilityMechanicFactory get() {
-        return instance;
     }
 
     @Override

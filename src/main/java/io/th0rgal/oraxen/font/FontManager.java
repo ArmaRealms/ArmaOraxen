@@ -21,19 +21,30 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 public class FontManager {
 
+    public static Map<String, GlyphBitMap> glyphBitMaps = new HashMap<>();
     public final boolean autoGenerate;
     public final String permsChatcolor;
-    public static Map<String, GlyphBitMap> glyphBitMaps = new HashMap<>();
     private final Map<String, Glyph> glyphMap;
     private final Map<String, Glyph> glyphByPlaceholder;
     private final Map<Character, String> reverse;
     private final FontEvents fontEvents;
     private final Set<Font> fonts;
+    private final Map<UUID, List<String>> currentGlyphCompletions = new HashMap<>();
     private boolean useNmsGlyphs;
 
     public FontManager(final ConfigsManager configsManager) {
@@ -61,12 +72,12 @@ public class FontManager {
             loadFonts(fontConfiguration.getConfigurationSection("fonts"));
     }
 
-    public boolean useNmsGlyphs() {
-        return useNmsGlyphs;
-    }
-
     public static GlyphBitMap getGlyphBitMap(final String id) {
         return id != null ? glyphBitMaps.getOrDefault(id, null) : null;
+    }
+
+    public boolean useNmsGlyphs() {
+        return useNmsGlyphs;
     }
 
     public void verifyRequired() {
@@ -159,6 +170,7 @@ public class FontManager {
 
     /**
      * Get a Glyph from a given Glyph-ID
+     *
      * @param id The Glyph-ID
      * @return Returns the Glyph if it exists, otherwise the required Glyph
      */
@@ -169,6 +181,7 @@ public class FontManager {
 
     /**
      * Get a Glyph from a given Glyph-ID
+     *
      * @param id The Glyph-ID
      * @return Returns the Glyph if it exists, otherwise null
      */
@@ -204,7 +217,6 @@ public class FontManager {
         return output.toString();
     }
 
-    private final Map<UUID, List<String>> currentGlyphCompletions = new HashMap<>();
     public void sendGlyphTabCompletion(final Player player) {
         final List<String> completions = getGlyphByPlaceholderMap().values().stream()
                 .filter(Glyph::hasTabCompletion)

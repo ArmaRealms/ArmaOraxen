@@ -23,13 +23,18 @@ import java.util.zip.ZipInputStream;
 public class ResourcesManager {
 
     final JavaPlugin plugin;
-
+    private Entry<File, YamlConfiguration> settings;
+    private Entry<File, YamlConfiguration> mechanics;
     public ResourcesManager(JavaPlugin plugin) {
         this.plugin = plugin;
     }
 
-    private Entry<File, YamlConfiguration> settings;
-    private Entry<File, YamlConfiguration> mechanics;
+    public static ZipInputStream browse() {
+        return ReflectionUtils.getJarStream(OraxenPlugin.class).orElseThrow(() -> {
+            Message.ZIP_BROWSE_ERROR.log();
+            return new RuntimeException("OraxenResources not found!");
+        });
+    }
 
     public YamlConfiguration getSettings() {
         return getSettingsEntry().getValue();
@@ -82,9 +87,11 @@ public class ResourcesManager {
         if (entry.isDirectory() || !isSuitable) return;
         if (entry.getName().startsWith("pack/textures/models/armor/")) {
             CustomArmorType customArmorType = CustomArmorType.getSetting();
-            if (OraxenPlugin.get().getDataFolder().toPath().resolve("pack/" + entry.getName()).toFile().exists()) return;
+            if (OraxenPlugin.get().getDataFolder().toPath().resolve("pack/" + entry.getName()).toFile().exists())
+                return;
             if (customArmorType != CustomArmorType.SHADER) return;
-            if (!Settings.CUSTOM_ARMOR_SHADER_GENERATE_CUSTOM_TEXTURES.toBool() && entry.getName().startsWith("pack/textures/models/armor/leather_layer")) return;
+            if (!Settings.CUSTOM_ARMOR_SHADER_GENERATE_CUSTOM_TEXTURES.toBool() && entry.getName().startsWith("pack/textures/models/armor/leather_layer"))
+                return;
         }
         if (entry.getName().startsWith("items/")) extractVersionSpecificItemConfig(entry);
         else plugin.saveResource(entry.getName(), true);
@@ -98,7 +105,7 @@ public class ResourcesManager {
             return;
         }
 
-        try(InputStream inputStream = plugin.getResource(entry.getName())) {
+        try (InputStream inputStream = plugin.getResource(entry.getName())) {
             YamlConfiguration itemYaml = OraxenYaml.loadConfiguration(new InputStreamReader(inputStream));
             for (String itemId : itemYaml.getKeys(false)) {
                 ConfigurationSection itemSection = itemYaml.getConfigurationSection(itemId);
@@ -130,13 +137,6 @@ public class ResourcesManager {
     private void extractFileAccordingToExtension(ZipEntry entry, String folder, String fileExtension) {
         boolean isSuitable = entry.getName().startsWith(folder + "/") && entry.getName().endsWith("." + fileExtension);
         extractFileIfTrue(entry, isSuitable);
-    }
-
-    public static ZipInputStream browse() {
-        return ReflectionUtils.getJarStream(OraxenPlugin.class).orElseThrow(() -> {
-            Message.ZIP_BROWSE_ERROR.log();
-            return new RuntimeException("OraxenResources not found!");
-        });
     }
 
 }

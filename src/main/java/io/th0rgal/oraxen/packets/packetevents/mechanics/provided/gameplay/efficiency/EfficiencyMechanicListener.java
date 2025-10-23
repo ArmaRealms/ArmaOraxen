@@ -23,11 +23,13 @@ public class EfficiencyMechanicListener implements PacketListener {
         this.factory = factory;
     }
 
-    @Override public void onPacketReceive(PacketReceiveEvent event) {
+    @Override
+    public void onPacketReceive(PacketReceiveEvent event) {
         if (event.getPacketType() != PacketType.Play.Client.PLAYER_DIGGING) return;
 
         final Player player = event.getPlayer();
-        if (player == null) return; // this should never happen to normal players... someone had a problem with it tho...
+        if (player == null)
+            return; // this should never happen to normal players... someone had a problem with it tho...
         if (player.getGameMode() == GameMode.CREATIVE) return;
 
         final var wrapper = new WrapperPlayClientPlayerDigging(event);
@@ -39,13 +41,13 @@ public class EfficiencyMechanicListener implements PacketListener {
         final EfficiencyMechanic mechanic = (EfficiencyMechanic) factory.getMechanic(itemID);
         if (wrapper.getAction() == DiggingAction.START_DIGGING) {
             Bukkit.getScheduler().runTask(OraxenPlugin.get(), () ->
-                player.addPotionEffect(new PotionEffect(mechanic.getType(),
-                    20 * 60 * 5,
-                    mechanic.getAmount() - 1,
-                    false, false, false)));
+                    player.addPotionEffect(new PotionEffect(mechanic.getType(),
+                            20 * 60 * 5,
+                            mechanic.getAmount() - 1,
+                            false, false, false)));
         } else {
             Bukkit.getScheduler().runTask(OraxenPlugin.get(), () ->
-                player.removePotionEffect(mechanic.getType()));
+                    player.removePotionEffect(mechanic.getType()));
         }
     }
 }

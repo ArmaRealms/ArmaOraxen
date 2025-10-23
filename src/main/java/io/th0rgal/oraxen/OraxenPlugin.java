@@ -39,10 +39,7 @@ import io.th0rgal.protectionlib.ProtectionLib;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
-import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,6 +48,7 @@ import java.util.jar.JarFile;
 
 public class OraxenPlugin extends JavaPlugin {
 
+    public static boolean supportsDisplayEntities;
     private static OraxenPlugin oraxen;
     private ConfigsManager configsManager;
     private ResourcesManager resourceManager;
@@ -63,7 +61,6 @@ public class OraxenPlugin extends JavaPlugin {
     private ResourcePack resourcePack;
     private ClickActionManager clickActionManager;
     private PacketAdapter packetAdapter;
-    public static boolean supportsDisplayEntities;
 
     public OraxenPlugin() {
         oraxen = this;

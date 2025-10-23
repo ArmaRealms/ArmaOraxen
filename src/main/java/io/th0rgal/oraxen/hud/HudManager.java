@@ -19,13 +19,14 @@ import java.util.Map;
 
 public class HudManager {
 
+    private static HudTask hudTask;
+    private static boolean hudTaskEnabled;
     public final int hudUpdateTime;
     public final NamespacedKey hudToggleKey;
     public final NamespacedKey hudDisplayKey;
     private final HudEvents hudEvents;
-    private static HudTask hudTask;
-    private static boolean hudTaskEnabled;
     private final Map<String, Hud> huds;
+    public Map<Hud, String> parsedHudDisplays;
 
     public HudManager(final ConfigsManager hudManager) {
         final ConfigurationSection hudSection = getHudConfigSection();
@@ -56,7 +57,8 @@ public class HudManager {
         registerEvents();
     }
 
-    public final Map<String, Hud> getHuds() { return huds; }
+    public final Map<String, Hud> getHuds() {return huds;}
+
     public Hud getHudFromID(final String id) {return huds.get(id);}
 
     public String getHudID(Hud hud) {
@@ -147,8 +149,6 @@ public class HudManager {
             )));
         }
     }
-
-    public Map<Hud, String> parsedHudDisplays;
 
     public Map<Hud, String> generateHudDisplays() {
         Map<Hud, String> hudDisplays = new HashMap<>();

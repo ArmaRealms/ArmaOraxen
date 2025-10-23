@@ -31,7 +31,7 @@ public class PacketEventsAdapter implements PacketAdapter {
 
     @Override
     public void registerInventoryListener() {
-        if(inventoryPacketListener!= null) {
+        if (inventoryPacketListener != null) {
             OraxenPlugin.get().getLogger().severe("[PacketEventsAdapter]: Inventory Listener is already registered!");
             return;
         }
@@ -40,7 +40,7 @@ public class PacketEventsAdapter implements PacketAdapter {
 
     @Override
     public void registerScoreboardListener() {
-        if(scoreboardPacketListener != null) {
+        if (scoreboardPacketListener != null) {
             OraxenPlugin.get().getLogger().severe("[PacketEventsAdapter]: Scoreboard Listener is already registered!");
             return;
         }
@@ -49,7 +49,7 @@ public class PacketEventsAdapter implements PacketAdapter {
 
     @Override
     public void registerTitleListener() {
-        if(titlePacketListener != null) {
+        if (titlePacketListener != null) {
             OraxenPlugin.get().getLogger().severe("[PacketEventsAdapter]: Title Listener is already registered!");
             return;
         }
@@ -58,14 +58,14 @@ public class PacketEventsAdapter implements PacketAdapter {
 
     @Override
     public void removeInventoryListener() {
-        if(inventoryPacketListener != null)
+        if (inventoryPacketListener != null)
             PacketEvents.getAPI().getEventManager().unregisterListener(inventoryPacketListener);
         inventoryPacketListener = null;
     }
 
     @Override
     public void removeTitleListener() {
-        if(titlePacketListener != null)
+        if (titlePacketListener != null)
             PacketEvents.getAPI().getEventManager().unregisterListener(titlePacketListener);
         titlePacketListener = null;
     }
@@ -74,7 +74,7 @@ public class PacketEventsAdapter implements PacketAdapter {
     public void reregisterEfficencyMechanicListener(EfficiencyMechanicFactory efficiencyMechanicFactory) {
         if (efficiencyMechanicListener != null)
             PacketEvents.getAPI().getEventManager().unregisterListener(efficiencyMechanicListener);
-        efficiencyMechanicListener =register(new EfficiencyMechanicListener(efficiencyMechanicFactory), PacketListenerPriority.LOW);
+        efficiencyMechanicListener = register(new EfficiencyMechanicListener(efficiencyMechanicFactory), PacketListenerPriority.LOW);
     }
 
     @Override

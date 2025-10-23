@@ -53,7 +53,7 @@ public class WateringMechanicListener implements Listener {
         if (block.getType() == Material.WATER_CAULDRON) {
             Levelled cauldron = (Levelled) block.getBlockData();
             if (cauldron.getLevel() == 1) return;
-            cauldron.setLevel(cauldron.getLevel()-1);
+            cauldron.setLevel(cauldron.getLevel() - 1);
             block.setBlockData(cauldron);
             player.getInventory().setItemInMainHand(OraxenItems.getItemById(mechanic.getFilledCanItem()).build());
             player.getWorld().playSound(player.getLocation(), Sound.ITEM_BUCKET_FILL, 1.0f, 1.0f);

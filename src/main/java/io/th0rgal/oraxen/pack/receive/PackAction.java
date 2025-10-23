@@ -11,15 +11,12 @@ import org.bukkit.entity.Player;
 public class PackAction {
 
     private final int delay;
-
+    private final CommandsParser commandsParser;
     private String soundType;
     private float soundVolume;
     private float soundPitch;
-
     private String messageType;
     private Component messageContent;
-
-    private final CommandsParser commandsParser;
 
     public PackAction(ConfigurationSection configurationSection, TagResolver tagResolver) {
 

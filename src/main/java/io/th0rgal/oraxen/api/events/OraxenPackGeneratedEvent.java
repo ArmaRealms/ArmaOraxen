@@ -9,11 +9,15 @@ import java.util.List;
 
 public class OraxenPackGeneratedEvent extends Event {
 
-    private final List<VirtualFile> output;
     private static final HandlerList HANDLERS = new HandlerList();
+    private final List<VirtualFile> output;
 
     public OraxenPackGeneratedEvent(List<VirtualFile> output) {
         this.output = output;
+    }
+
+    public static HandlerList getHandlerList() {
+        return HANDLERS;
     }
 
     public List<VirtualFile> getOutput() {
@@ -24,9 +28,5 @@ public class OraxenPackGeneratedEvent extends Event {
     @Override
     public HandlerList getHandlers() {
         return getHandlerList();
-    }
-
-    public static HandlerList getHandlerList() {
-        return HANDLERS;
     }
 }

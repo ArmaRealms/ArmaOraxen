@@ -3,35 +3,19 @@ package io.th0rgal.oraxen.utils;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 public class VersionUtil {
     private static final Map<NMSVersion, Map<Integer, MinecraftVersion>> versionMap = new HashMap<>();
     private static final boolean IS_PAPER;
     private static final boolean IS_FOLIA;
-
-    public enum NMSVersion {
-        v1_21_R6,
-        v1_21_R5,
-        v1_21_R4,
-        v1_21_R3,
-        v1_21_R2,
-        v1_21_R1,
-        v1_20_R4,
-        v1_20_R3,
-        v1_20_R2,
-        v1_20_R1,
-        v1_19_R3,
-        v1_19_R2,
-        v1_19_R1,
-        v1_18_R2,
-        v1_18_R1,
-        UNKNOWN;
-
-        public static boolean matchesServer(NMSVersion version) {
-            return version != UNKNOWN && getNMSVersion(MinecraftVersion.getCurrentVersion()).equals(version);
-        }
-    }
+    private final static String manifest = JarReader.getManifestContent();
+    private static final boolean leaked = JarReader.checkIsLeaked();
 
     static {
         IS_PAPER = hasClass("com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent");
@@ -88,7 +72,7 @@ public class VersionUtil {
     }
 
     public static boolean isSupportedVersion(@NotNull NMSVersion serverVersion,
-            @NotNull NMSVersion... supportedVersions) {
+                                             @NotNull NMSVersion... supportedVersions) {
         for (NMSVersion version : supportedVersions) {
             if (version.equals(serverVersion))
                 return true;
@@ -134,14 +118,10 @@ public class VersionUtil {
         return stringBuilder.toString();
     }
 
-    private final static String manifest = JarReader.getManifestContent();
-
     public static boolean isCompiled() {
         List<String> split = Arrays.stream(manifest.split(":|\n")).map(String::trim).toList();
         return Boolean.parseBoolean(split.get(split.indexOf("Compiled") + 1)) && !isValidCompiler();
     }
-
-    private static final boolean leaked = JarReader.checkIsLeaked();
 
     public static boolean isLeaked() {
         return leaked;
@@ -158,6 +138,29 @@ public class VersionUtil {
             return true;
         } catch (ClassNotFoundException var2) {
             return false;
+        }
+    }
+
+    public enum NMSVersion {
+        v1_21_R6,
+        v1_21_R5,
+        v1_21_R4,
+        v1_21_R3,
+        v1_21_R2,
+        v1_21_R1,
+        v1_20_R4,
+        v1_20_R3,
+        v1_20_R2,
+        v1_20_R1,
+        v1_19_R3,
+        v1_19_R2,
+        v1_19_R1,
+        v1_18_R2,
+        v1_18_R1,
+        UNKNOWN;
+
+        public static boolean matchesServer(NMSVersion version) {
+            return version != UNKNOWN && getNMSVersion(MinecraftVersion.getCurrentVersion()).equals(version);
         }
     }
 }

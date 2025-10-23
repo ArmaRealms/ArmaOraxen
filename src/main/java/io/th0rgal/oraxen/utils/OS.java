@@ -4,56 +4,13 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class OS {
-
-    private OsInfo osInfo;
-
-    private OS(final String name, final String version, final String arch) {
-        if (name != null) {
-            if (name.startsWith("Windows"))
-                this.osInfo = new OsInfo(name, version, arch, name);
-            else if (name.startsWith("Mac"))
-                initMacOsInfo(name, version, arch);
-            else if (name.startsWith("Darwin"))
-                initDarwinOsInfo(name, version, arch);
-            else
-                for (String linuxName : linux)
-                    if (name.startsWith(linuxName))
-                        initLinuxOsInfo(name, version, arch);
-        }
-        if (this.osInfo == null)
-            this.osInfo = new OsInfo(name, version, arch, name);
-    }
-
-    private static class SingletonHolder {
-        static String name = System.getProperty("os.name");
-        static String version = System.getProperty("os.version");
-        static String arch = System.getProperty("os.arch");
-        private static final OS INSTANCE = new OS(name, version, arch);
-
-    }
-
-    public static OS getOs() {
-        return SingletonHolder.INSTANCE;
-    }
-
-    public String getName() {
-        return osInfo.name();
-    }
-
-    public String getArch() {
-        return osInfo.arch();
-    }
-
-    public String getVersion() {
-        return osInfo.version();
-    }
-
-    public String getPlatformName() {
-        return osInfo.platformName();
-    }
 
     private static final Map<String, String> macOs = new HashMap<>();
     private static final Map<Integer, String> darwin = new HashMap<>();
@@ -96,6 +53,45 @@ public class OS {
         darwin.put(16, "Sierra");
 
         linux.addAll(Arrays.asList("Linux", "SunOS"));
+    }
+
+    private OsInfo osInfo;
+
+    private OS(final String name, final String version, final String arch) {
+        if (name != null) {
+            if (name.startsWith("Windows"))
+                this.osInfo = new OsInfo(name, version, arch, name);
+            else if (name.startsWith("Mac"))
+                initMacOsInfo(name, version, arch);
+            else if (name.startsWith("Darwin"))
+                initDarwinOsInfo(name, version, arch);
+            else
+                for (String linuxName : linux)
+                    if (name.startsWith(linuxName))
+                        initLinuxOsInfo(name, version, arch);
+        }
+        if (this.osInfo == null)
+            this.osInfo = new OsInfo(name, version, arch, name);
+    }
+
+    public static OS getOs() {
+        return SingletonHolder.INSTANCE;
+    }
+
+    public String getName() {
+        return osInfo.name();
+    }
+
+    public String getArch() {
+        return osInfo.arch();
+    }
+
+    public String getVersion() {
+        return osInfo.version();
+    }
+
+    public String getPlatformName() {
+        return osInfo.platformName();
     }
 
     private void initMacOsInfo(final String name, final String version, final String arch) {
@@ -161,7 +157,7 @@ public class OS {
     }
 
     private OsInfo getPlatformNameFromFile(final String name, final String version, final String arch,
-            final String filename) {
+                                           final String filename) {
         if (filename == null)
             return null;
         File f = new File(filename);
@@ -217,6 +213,14 @@ public class OS {
         if (distribDescription != null && distribCodename != null)
             return new OsInfo(name, version, arch, distribDescription + " (" + distribCodename + ")");
         return null;
+    }
+
+    private static class SingletonHolder {
+        static String name = System.getProperty("os.name");
+        static String version = System.getProperty("os.version");
+        static String arch = System.getProperty("os.arch");
+        private static final OS INSTANCE = new OS(name, version, arch);
+
     }
 
     record OsInfo(String name, String version, String arch, String platformName) {

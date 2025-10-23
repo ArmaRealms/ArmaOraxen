@@ -7,13 +7,14 @@ import org.bukkit.configuration.ConfigurationSection;
 public class ItemTypeMechanicFactory extends MechanicFactory {
 
     private static ItemTypeMechanicFactory instance;
-    public static ItemTypeMechanicFactory get() {
-        return instance;
-    }
 
     public ItemTypeMechanicFactory(ConfigurationSection section) {
         super(section);
         instance = this;
+    }
+
+    public static ItemTypeMechanicFactory get() {
+        return instance;
     }
 
     @Override

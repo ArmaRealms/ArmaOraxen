@@ -10,7 +10,6 @@ import io.th0rgal.oraxen.utils.wrappers.EnchantmentWrapper;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -24,21 +23,13 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class Drop {
 
-    private List<String> hierarchy;
-    private final List<Loot> loots;
     final boolean silktouch;
     final boolean fortune;
-    String minimalType;
-    private final List<String> bestTools;
     final String sourceID;
-
-    @SuppressWarnings("unchecked")
-    public static Drop createDrop(final List<String> toolTypes, @NotNull final ConfigurationSection dropSection, final String sourceID) {
-        final List<Loot> loots = ((List<LinkedHashMap<String, Object>>) dropSection.getList("loots", new ArrayList<>())).stream().map(c -> new Loot(c, sourceID)).toList();
-        return new Drop(toolTypes, loots, dropSection.getBoolean("silktouch"),
-                dropSection.getBoolean("fortune"), sourceID,
-                dropSection.getString("minimal_type", ""), dropSection.getStringList("best_tools"));
-    }
+    private final List<Loot> loots;
+    private final List<String> bestTools;
+    String minimalType;
+    private List<String> hierarchy;
 
     public Drop(final List<String> hierarchy, final List<Loot> loots, final boolean silktouch, final boolean fortune, final String sourceID,
                 final String minimalType, final List<String> bestTools) {
@@ -59,12 +50,22 @@ public class Drop {
         this.bestTools = new ArrayList<>();
     }
 
+    @SuppressWarnings("unchecked")
+    public static Drop createDrop(final List<String> toolTypes, @NotNull final ConfigurationSection dropSection, final String sourceID) {
+        final List<Loot> loots = ((List<LinkedHashMap<String, Object>>) dropSection.getList("loots", new ArrayList<>())).stream().map(c -> new Loot(c, sourceID)).toList();
+        return new Drop(toolTypes, loots, dropSection.getBoolean("silktouch"),
+                dropSection.getBoolean("fortune"), sourceID,
+                dropSection.getString("minimal_type", ""), dropSection.getStringList("best_tools"));
+    }
+
     public static Drop emptyDrop() {
         return new Drop(new ArrayList<>(), false, false, "");
     }
+
     public static Drop emptyDrop(final List<Loot> loots) {
         return new Drop(loots, false, false, "");
     }
+
     public static Drop clone(final Drop drop, final List<Loot> newLoots) {
         return new Drop(drop.hierarchy, newLoots, drop.silktouch, drop.fortune, drop.sourceID, drop.minimalType, drop.bestTools);
     }
@@ -185,6 +186,7 @@ public class Drop {
 
     /**
      * Get the loots that will drop based on a given Player
+     *
      * @param player the player that triggered this drop
      * @return the loots that will drop
      */

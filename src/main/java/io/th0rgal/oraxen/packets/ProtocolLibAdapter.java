@@ -2,10 +2,10 @@ package io.th0rgal.oraxen.packets;
 
 import com.comphenix.protocol.ProtocolLibrary;
 import io.th0rgal.oraxen.OraxenPlugin;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.efficiency.EfficiencyMechanicFactory;
 import io.th0rgal.oraxen.packets.protocollib.InventoryPacketListener;
 import io.th0rgal.oraxen.packets.protocollib.ScoreboardPacketListener;
 import io.th0rgal.oraxen.packets.protocollib.TitlePacketListener;
-import io.th0rgal.oraxen.mechanics.provided.gameplay.efficiency.EfficiencyMechanicFactory;
 import io.th0rgal.oraxen.packets.protocollib.mechanics.provided.gameplay.efficiency.EfficiencyMechanicListener;
 import io.th0rgal.oraxen.utils.SnapshotVersion;
 import org.bukkit.Bukkit;
@@ -17,11 +17,10 @@ import java.text.SimpleDateFormat;
 import java.util.Locale;
 
 public class ProtocolLibAdapter implements PacketAdapter {
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
     private ScoreboardPacketListener scoreboardPacketListener;
-
     private InventoryPacketListener inventoryPacketListener;
     private TitlePacketListener titlePacketListener;
-
     private EfficiencyMechanicListener efficiencyMechanicListener;
 
     @Override
@@ -31,7 +30,7 @@ public class ProtocolLibAdapter implements PacketAdapter {
 
     @Override
     public void registerInventoryListener() {
-        if(inventoryPacketListener != null) {
+        if (inventoryPacketListener != null) {
             OraxenPlugin.get().getLogger().severe("[ProtocolLibAdapter]: Inventory Listener is already registered!");
             return;
         }
@@ -41,7 +40,7 @@ public class ProtocolLibAdapter implements PacketAdapter {
 
     @Override
     public void registerScoreboardListener() {
-        if(scoreboardPacketListener != null) {
+        if (scoreboardPacketListener != null) {
             OraxenPlugin.get().getLogger().severe("[ProtocolLibAdapter]: Scoreboard Listener is already registered!");
             return;
         }
@@ -51,7 +50,7 @@ public class ProtocolLibAdapter implements PacketAdapter {
 
     @Override
     public void registerTitleListener() {
-        if(titlePacketListener != null) {
+        if (titlePacketListener != null) {
             OraxenPlugin.get().getLogger().severe("[ProtocolLibAdapter]: Title Listener is already registered!");
             return;
         }
@@ -59,13 +58,15 @@ public class ProtocolLibAdapter implements PacketAdapter {
         ProtocolLibrary.getProtocolManager().addPacketListener(titlePacketListener);
     }
 
-    @Override public void removeInventoryListener() {
+    @Override
+    public void removeInventoryListener() {
         if (inventoryPacketListener != null)
             ProtocolLibrary.getProtocolManager().removePacketListener(inventoryPacketListener);
         inventoryPacketListener = null;
     }
 
-    @Override public void removeTitleListener() {
+    @Override
+    public void removeTitleListener() {
         if (titlePacketListener != null)
             ProtocolLibrary.getProtocolManager().removePacketListener(titlePacketListener);
         titlePacketListener = null;
@@ -79,11 +80,10 @@ public class ProtocolLibAdapter implements PacketAdapter {
         ProtocolLibrary.getProtocolManager().addPacketListener(efficiencyMechanicListener);
     }
 
-    @Override public String getLatestMCVersion() {
+    @Override
+    public String getLatestMCVersion() {
         return ProtocolLibrary.MAXIMUM_MINECRAFT_VERSION;
     }
-
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
 
     @Override
     public boolean isNewer(SnapshotVersion snapshot) {

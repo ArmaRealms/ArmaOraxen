@@ -14,7 +14,7 @@ public abstract class Mechanic {
 
     @SafeVarargs
     protected Mechanic(MechanicFactory mechanicFactory, ConfigurationSection section,
-        Function<ItemBuilder, ItemBuilder>... modifiers) {
+                       Function<ItemBuilder, ItemBuilder>... modifiers) {
         this.mechanicFactory = mechanicFactory;
         this.section = section;
         this.itemModifiers = modifiers;

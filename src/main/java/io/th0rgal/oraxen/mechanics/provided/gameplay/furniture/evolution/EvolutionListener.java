@@ -53,6 +53,7 @@ public class EvolutionListener implements Listener {
             nextMechanic.place(entity.getLocation(), entity.getLocation().getYaw(), entity.getFacing());
         }
     }
+
     public boolean randomChance(double chance) {
         return Math.random() <= chance;
     }

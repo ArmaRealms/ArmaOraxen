@@ -8,16 +8,16 @@ import org.bukkit.configuration.ConfigurationSection;
 
 public class BackpackMechanicFactory extends MechanicFactory {
 
-        public BackpackMechanicFactory(ConfigurationSection section) {
-            super(section);
-            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new BackpackListener(this));
-        }
+    public BackpackMechanicFactory(ConfigurationSection section) {
+        super(section);
+        MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new BackpackListener(this));
+    }
 
-        @Override
-        public Mechanic parse(ConfigurationSection itemMechanicConfiguration) {
-            Mechanic mechanic = new BackpackMechanic(this, itemMechanicConfiguration);
-            addToImplemented(mechanic);
-            return mechanic;
-        }
+    @Override
+    public Mechanic parse(ConfigurationSection itemMechanicConfiguration) {
+        Mechanic mechanic = new BackpackMechanic(this, itemMechanicConfiguration);
+        addToImplemented(mechanic);
+        return mechanic;
+    }
 
 }

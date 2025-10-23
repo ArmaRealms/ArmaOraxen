@@ -3,8 +3,6 @@
 
 package io.th0rgal.oraxen.pack.generation.slicer;
 
-import io.th0rgal.oraxen.utils.logs.Logs;
-
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.awt.*;
@@ -30,6 +28,10 @@ public class OutputFile {
     public OutputFile(final String path, final Box box) {
         this.path = path;
         this.box = box;
+    }
+
+    private static Path getMetaPath(final Path path) {
+        return path.resolveSibling(path.getFileName().toString() + ".mcmeta");
     }
 
     public void process(final Path root, final Path imagePath, final BufferedImage image, final Graphics leftover) throws IOException {
@@ -60,10 +62,6 @@ public class OutputFile {
 
         leftover.setColor(REMOVED_MARKER);
         leftover.fillRect(x, y, w, h);
-    }
-
-    private static Path getMetaPath(final Path path) {
-        return path.resolveSibling(path.getFileName().toString() + ".mcmeta");
     }
 
     public OutputFile apply(final UnaryOperator<BufferedImage> transform) {

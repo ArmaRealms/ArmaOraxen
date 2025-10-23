@@ -11,15 +11,30 @@ import io.th0rgal.oraxen.config.Message;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.limitedplacing.LimitedPlacing;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.NoteBlockMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.storage.StorageMechanic;
-import io.th0rgal.oraxen.utils.*;
+import io.th0rgal.oraxen.utils.BlockHelpers;
+import io.th0rgal.oraxen.utils.EventUtils;
+import io.th0rgal.oraxen.utils.Utils;
+import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.breaker.BreakerSystem;
 import io.th0rgal.oraxen.utils.breaker.HardnessModifier;
 import io.th0rgal.protectionlib.ProtectionLib;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.GameEvent;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Rotation;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.entity.*;
+import org.bukkit.entity.AbstractArrow;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Explosive;
+import org.bukkit.entity.Fireball;
+import org.bukkit.entity.Interaction;
+import org.bukkit.entity.ItemFrame;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -50,6 +65,10 @@ public class FurnitureListener implements Listener {
     public FurnitureListener() {
         if (OraxenPlugin.get().getPacketAdapter().isEnabled())
             BreakerSystem.MODIFIERS.add(getHardnessModifier());
+    }
+
+    private static boolean isDamagingProjectile(Projectile projectile) {
+        return projectile instanceof AbstractArrow || projectile instanceof Fireball;
     }
 
     private HardnessModifier getHardnessModifier() {
@@ -358,10 +377,6 @@ public class FurnitureListener implements Listener {
             return;
 
         OraxenFurniture.remove(furniture, player);
-    }
-
-    private static boolean isDamagingProjectile(Projectile projectile) {
-        return projectile instanceof AbstractArrow || projectile instanceof Fireball;
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)

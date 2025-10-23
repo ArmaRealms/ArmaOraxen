@@ -55,7 +55,6 @@ public class RecipesView {
                     .build(), event -> create(page - 1,
                     filteredRecipes).show(event.getWhoClicked())), 1, 3);
 
-
         // Next page button
         if (!lastPage)
             pane.addItem(new GuiItem((OraxenItems.getItemById("arrow_next_icon") == null

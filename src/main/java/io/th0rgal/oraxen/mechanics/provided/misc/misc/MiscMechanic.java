@@ -28,20 +28,26 @@ public class MiscMechanic extends Mechanic {
         compostable = section.getBoolean("compostable", false);
         allowInVanillaRecipes = section.getBoolean("allow_in_vanilla_recipes", false);
 
-        if (VersionUtil.atOrAbove("1.20.5") && (burnsInFire || burnsInLava) && 
-            (section.contains("burns_in_fire") || section.contains("burns_in_lava"))) {
+        if (VersionUtil.atOrAbove("1.20.5") && (burnsInFire || burnsInLava) &&
+                (section.contains("burns_in_fire") || section.contains("burns_in_lava"))) {
             Logs.logWarning(getItemID() + " seems to be using " + (burnsInFire ? "burns_in_fire" : "burns_in_lava") + " which is deprecated....");
             Logs.logWarning("It is heavily advised to swap to the new fire_resistant-property on all 1.20.5+ servers");
         }
     }
 
-    public boolean breaksFromCactus() { return cactusBreaks; }
-    public boolean burnsInFire() { return burnsInFire; }
-    public boolean burnsInLava() { return burnsInLava; }
-    public boolean isVanillaInteractionDisabled() { return disableVanillaInteractions; }
-    public boolean canStripLogs() { return canStripLogs; }
-    public boolean piglinIgnoreWhenEquipped() { return piglinsIgnoreWhenEquipped; }
-    public boolean isCompostable() { return compostable; }
+    public boolean breaksFromCactus() {return cactusBreaks;}
 
-    public boolean isAllowedInVanillaRecipes() { return allowInVanillaRecipes; }
+    public boolean burnsInFire() {return burnsInFire;}
+
+    public boolean burnsInLava() {return burnsInLava;}
+
+    public boolean isVanillaInteractionDisabled() {return disableVanillaInteractions;}
+
+    public boolean canStripLogs() {return canStripLogs;}
+
+    public boolean piglinIgnoreWhenEquipped() {return piglinsIgnoreWhenEquipped;}
+
+    public boolean isCompostable() {return compostable;}
+
+    public boolean isAllowedInVanillaRecipes() {return allowInVanillaRecipes;}
 }

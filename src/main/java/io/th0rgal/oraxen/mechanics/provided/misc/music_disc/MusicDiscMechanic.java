@@ -13,7 +13,8 @@ public class MusicDiscMechanic extends Mechanic {
         song = section.getString("song");
     }
 
-    public boolean hasNoSong() { return song == null || song.isBlank(); }
+    public boolean hasNoSong() {return song == null || song.isBlank();}
+
     public String getSong() {
         return song;
     }

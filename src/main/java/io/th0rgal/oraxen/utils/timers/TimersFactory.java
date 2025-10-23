@@ -16,7 +16,7 @@ public class TimersFactory {
     }
 
     public TimersFactory(long delay) {
-       this.delay = delay;
+        this.delay = delay;
     }
 
     public Timer getTimer(Player player) {

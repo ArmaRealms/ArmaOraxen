@@ -37,7 +37,6 @@ public enum Settings {
     UNICODE_COMPLETIONS("Glyphs.unicode_completions"),
     GLYPH_HOVER_TEXT("Glyphs.chat_hover_text"),
 
-
     // Chat
     CHAT_HANDLER("Chat.chat_handler"),
 
@@ -133,7 +132,6 @@ public enum Settings {
     RECEIVE_INVALID_URL_ACTIONS("Pack.receive.invalid_url.actions"),
     RECEIVE_DISCARDED_ACTIONS("Pack.receive.discarded.actions"),
 
-
     // Inventory
     ORAXEN_INV_LAYOUT("oraxen_inventory.menu_layout"),
     ORAXEN_INV_ROWS("oraxen_inventory.menu_rows"),
@@ -156,7 +154,9 @@ public enum Settings {
     public Object getValue() {
         return OraxenPlugin.get().getConfigsManager().getSettings().get(path);
     }
-    public void setValue(Object value) { setValue(value, true); }
+
+    public void setValue(Object value) {setValue(value, true);}
+
     public void setValue(Object value, boolean save) {
         YamlConfiguration settingFile = OraxenPlugin.get().getConfigsManager().getSettings();
         settingFile.set(path, value);

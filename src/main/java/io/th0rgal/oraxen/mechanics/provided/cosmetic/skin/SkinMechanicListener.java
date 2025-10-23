@@ -22,7 +22,7 @@ public class SkinMechanicListener implements Listener {
         String skinID = OraxenItems.getIdByItem(skin);
         String skinnableID = OraxenItems.getIdByItem(skinnable);
         if (factory.isNotImplementedIn(skinID)
-            || SkinnableMechanicFactory.get().isNotImplementedIn(skinnableID))
+                || SkinnableMechanicFactory.get().isNotImplementedIn(skinnableID))
             return;
         if (skin == null || skinnable == null) return;
 

@@ -15,6 +15,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class OraxenFurnitureInteractEvent extends Event implements Cancellable {
 
+    private static final HandlerList HANDLERS = new HandlerList();
     private final FurnitureMechanic mechanic;
     private final Entity baseEntity;
     private final Player player;
@@ -23,7 +24,6 @@ public class OraxenFurnitureInteractEvent extends Event implements Cancellable {
     private final ItemStack itemInHand;
     private final EquipmentSlot hand;
     private boolean isCancelled;
-    private static final HandlerList HANDLERS = new HandlerList();
 
     public OraxenFurnitureInteractEvent(@NotNull final FurnitureMechanic mechanic, @NotNull final Entity baseEntity, @NotNull final Player player, @Nullable final ItemStack itemInHand, @NotNull final EquipmentSlot hand) {
         this(mechanic, baseEntity, player, itemInHand, hand, null, null);
@@ -38,6 +38,10 @@ public class OraxenFurnitureInteractEvent extends Event implements Cancellable {
         this.itemInHand = itemInHand;
         this.hand = hand;
         this.isCancelled = false;
+    }
+
+    public static HandlerList getHandlerList() {
+        return HANDLERS;
     }
 
     /**
@@ -79,7 +83,7 @@ public class OraxenFurnitureInteractEvent extends Event implements Cancellable {
      * You can safely cast any entity returned by this method to Interaction.
      */
     @Nullable
-    public Entity getInteractionEntity() { return mechanic.getInteractionEntity(baseEntity); }
+    public Entity getInteractionEntity() {return mechanic.getInteractionEntity(baseEntity);}
 
     /**
      * @return The block face that was interacted with, null if the furniture has no hitbox
@@ -117,9 +121,5 @@ public class OraxenFurnitureInteractEvent extends Event implements Cancellable {
     @Override
     public HandlerList getHandlers() {
         return getHandlerList();
-    }
-
-    public static HandlerList getHandlerList() {
-        return HANDLERS;
     }
 }

@@ -13,10 +13,10 @@ import java.util.List;
 
 public class WrappedWorldEdit {
 
+    public static boolean loaded;
+
     private WrappedWorldEdit() {
     }
-
-    public static boolean loaded;
 
     public static void init() {
         loaded = PluginUtils.isEnabled("WorldEdit") || PluginUtils.isEnabled("FastAsyncWorldEdit");

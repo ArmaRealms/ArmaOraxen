@@ -14,6 +14,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class OraxenStringBlockInteractEvent extends Event implements Cancellable {
 
+    private static final HandlerList HANDLERS = new HandlerList();
     private final StringBlockMechanic mechanic;
     private final Player player;
     private final Block block;
@@ -21,7 +22,6 @@ public class OraxenStringBlockInteractEvent extends Event implements Cancellable
     private final EquipmentSlot hand;
     private final BlockFace blockFace;
     private boolean isCancelled;
-    private static final HandlerList HANDLERS = new HandlerList();
 
     public OraxenStringBlockInteractEvent(@NotNull final StringBlockMechanic mechanic, @NotNull final Player player, @Nullable final ItemStack itemInHand, @NotNull final EquipmentSlot hand, @NotNull final Block block, @NotNull final BlockFace blockFace) {
         this.mechanic = mechanic;
@@ -31,6 +31,10 @@ public class OraxenStringBlockInteractEvent extends Event implements Cancellable
         this.isCancelled = false;
         this.hand = hand;
         this.blockFace = blockFace;
+    }
+
+    public static HandlerList getHandlerList() {
+        return HANDLERS;
     }
 
     /**
@@ -95,10 +99,6 @@ public class OraxenStringBlockInteractEvent extends Event implements Cancellable
     @Override
     public HandlerList getHandlers() {
         return getHandlerList();
-    }
-
-    public static HandlerList getHandlerList() {
-        return HANDLERS;
     }
 
 }

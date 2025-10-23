@@ -9,7 +9,6 @@ import org.bukkit.inventory.ItemStack;
 
 public class DropListener extends CustomListener {
 
-
     public DropListener(String itemID, long cooldown, CustomEvent event, ClickAction clickAction) {
         super(itemID, cooldown, event, clickAction);
     }

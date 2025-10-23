@@ -20,7 +20,7 @@ public class OraxenPack {
      * Add files to the final resourcepack without adding them to the
      * folder-structure
      * Useful to avoid overwriting files
-     * 
+     *
      * @param files The files to add to the final resourcepack
      */
     public static void addFilesToPack(File[] files) {

@@ -67,7 +67,8 @@ public class StringBlockSoundListener implements Listener {
         Block block = entity.getLocation().getBlock();
         EntityDamageEvent cause = entity.getLastDamageCause();
 
-        if (gameEvent == GameEvent.HIT_GROUND && cause != null && cause.getCause() != EntityDamageEvent.DamageCause.FALL) return;
+        if (gameEvent == GameEvent.HIT_GROUND && cause != null && cause.getCause() != EntityDamageEvent.DamageCause.FALL)
+            return;
 
         StringBlockMechanic mechanic = OraxenBlocks.getStringMechanic(block);
         String sound;

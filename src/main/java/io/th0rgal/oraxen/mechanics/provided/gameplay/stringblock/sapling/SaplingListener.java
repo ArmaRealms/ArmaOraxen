@@ -32,7 +32,7 @@ public class SaplingListener implements Listener {
         ItemStack item = event.getItem();
 
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getHand() != EquipmentSlot.HAND) return;
-        if (block == null  || block.getType() != Material.TRIPWIRE) return;
+        if (block == null || block.getType() != Material.TRIPWIRE) return;
         if (item == null || item.getType() != Material.BONE_MEAL) return;
 
         Location loc = block.getLocation();
@@ -45,7 +45,8 @@ public class SaplingListener implements Listener {
         if (sapling.requiresWaterSource() && sapling.isUnderWater(block)) return;
         if (!sapling.canGrowFromBoneMeal()) return;
         if (!PluginUtils.isEnabled("WorldEdit")) return;
-        if (!sapling.replaceBlocks() && !WrappedWorldEdit.getBlocksInSchematic(loc, sapling.getSchematic()).isEmpty()) return;
+        if (!sapling.replaceBlocks() && !WrappedWorldEdit.getBlocksInSchematic(loc, sapling.getSchematic()).isEmpty())
+            return;
 
         if (player.getGameMode() != GameMode.CREATIVE) item.setAmount(item.getAmount() - 1);
         block.getWorld().playEffect(loc, Effect.BONE_MEAL_USE, 3);

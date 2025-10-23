@@ -29,12 +29,12 @@ public class StringBlockMechanicFactory extends MechanicFactory {
     public static final Map<Integer, StringBlockMechanic> BLOCK_PER_VARIATION = new HashMap<>();
     private static JsonObject variants;
     private static StringBlockMechanicFactory instance;
-    public final List<String> toolTypes;
-    private boolean sapling;
     private static SaplingTask saplingTask;
-    private final int saplingGrowthCheckDelay;
+    public final List<String> toolTypes;
     public final boolean customSounds;
     public final boolean disableVanillaString;
+    private final int saplingGrowthCheckDelay;
+    private boolean sapling;
 
     public StringBlockMechanicFactory(final ConfigurationSection section) {
         super(section);
@@ -56,7 +56,8 @@ public class StringBlockMechanicFactory extends MechanicFactory {
                                         "tripwire.json", getBlockstateContent())
         );
         MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new StringBlockMechanicListener(), new SaplingListener());
-        if (customSounds) MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new StringBlockSoundListener());
+        if (customSounds)
+            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new StringBlockSoundListener());
 
         // Physics-related stuff
         if (VersionUtil.isPaperServer())
@@ -94,7 +95,6 @@ public class StringBlockMechanicFactory extends MechanicFactory {
         return instance;
     }
 
-
     /**
      * Attempts to set the block directly to the model and texture of an Oraxen item.
      *
@@ -105,37 +105,6 @@ public class StringBlockMechanicFactory extends MechanicFactory {
         final MechanicFactory mechanicFactory = MechanicsManager.getMechanicFactory("stringblock");
         final StringBlockMechanic stringBlockMechanic = (StringBlockMechanic) mechanicFactory.getMechanic(itemId);
         block.setBlockData(createTripwireData(stringBlockMechanic.getCustomVariation()));
-    }
-
-    private String getBlockstateContent() {
-        final JsonObject tripwire = new JsonObject();
-        tripwire.add("variants", variants);
-        return tripwire.toString();
-    }
-
-    @Override
-    public Mechanic parse(final ConfigurationSection itemMechanicConfiguration) {
-        final StringBlockMechanic mechanic = new StringBlockMechanic(this, itemMechanicConfiguration);
-        if (!Range.between(1, 127).contains(mechanic.getCustomVariation())) {
-            Logs.logError("The custom variation of the block " + mechanic.getItemID() + " is not between 1 and 127!");
-            Logs.logWarning("The item has failed to build for now to prevent bugs and issues.");
-        }
-        variants.add(getBlockstateVariantName(mechanic.getCustomVariation()),
-                getModelJson(mechanic.getModel(itemMechanicConfiguration.getParent()
-                        .getParent())));
-        BLOCK_PER_VARIATION.put(mechanic.getCustomVariation(), mechanic);
-        addToImplemented(mechanic);
-        return mechanic;
-    }
-
-    @Override
-    public StringBlockMechanic getMechanic(final String itemID) {
-        return (StringBlockMechanic) super.getMechanic(itemID);
-    }
-
-    @Override
-    public StringBlockMechanic getMechanic(final ItemStack itemStack) {
-        return (StringBlockMechanic) super.getMechanic(itemStack);
     }
 
     public static int getCode(final Tripwire blockData) {
@@ -168,6 +137,37 @@ public class StringBlockMechanicFactory extends MechanicFactory {
         data.setDisarmed((code & 0x1 << i++) != 0);
         data.setPowered((code & 0x1 << i) != 0);
         return data;
+    }
+
+    private String getBlockstateContent() {
+        final JsonObject tripwire = new JsonObject();
+        tripwire.add("variants", variants);
+        return tripwire.toString();
+    }
+
+    @Override
+    public Mechanic parse(final ConfigurationSection itemMechanicConfiguration) {
+        final StringBlockMechanic mechanic = new StringBlockMechanic(this, itemMechanicConfiguration);
+        if (!Range.between(1, 127).contains(mechanic.getCustomVariation())) {
+            Logs.logError("The custom variation of the block " + mechanic.getItemID() + " is not between 1 and 127!");
+            Logs.logWarning("The item has failed to build for now to prevent bugs and issues.");
+        }
+        variants.add(getBlockstateVariantName(mechanic.getCustomVariation()),
+                getModelJson(mechanic.getModel(itemMechanicConfiguration.getParent()
+                        .getParent())));
+        BLOCK_PER_VARIATION.put(mechanic.getCustomVariation(), mechanic);
+        addToImplemented(mechanic);
+        return mechanic;
+    }
+
+    @Override
+    public StringBlockMechanic getMechanic(final String itemID) {
+        return (StringBlockMechanic) super.getMechanic(itemID);
+    }
+
+    @Override
+    public StringBlockMechanic getMechanic(final ItemStack itemStack) {
+        return (StringBlockMechanic) super.getMechanic(itemStack);
     }
 
     /**

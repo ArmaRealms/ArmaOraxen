@@ -116,7 +116,7 @@ public class BackpackListener implements Listener {
     }
 
     private boolean isBackpack(ItemStack item) {
-        return item  != null && factory.getMechanic(OraxenItems.getIdByItem(item)) != null;
+        return item != null && factory.getMechanic(OraxenItems.getIdByItem(item)) != null;
     }
 
     private void openBackpack(Player player) {

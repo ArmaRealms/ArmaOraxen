@@ -5,8 +5,7 @@ public record Hud(String displayText,
                   String perm,
                   boolean disableWhilstInWater,
                   boolean enabledByDefault,
-                  boolean enableInSpectatorMode)
-{
+                  boolean enableInSpectatorMode) {
 
     public String getDisplayText() {
         return displayText;

@@ -3,8 +3,6 @@
 
 package io.th0rgal.oraxen.pack.generation.slicer;
 
-import io.th0rgal.oraxen.utils.logs.Logs;
-
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import javax.imageio.ImageIO;
@@ -12,7 +10,11 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
-import java.nio.file.*;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -50,6 +52,12 @@ public class Slicer {
         }
     }
 
+    private static void process(final Collection<InputFile> inputs, final Path inputPath, final Path outputPath, @Nullable final Path leftoverPath) throws IOException {
+        for (final InputFile input : inputs) {
+            input.process(inputPath, outputPath, leftoverPath);
+        }
+    }
+
     public void process(final Collection<InputFile> inputs) throws IOException {
         if (Files.isDirectory(inputPath)) process(inputs, inputPath, outputPath, leftoverPath);
         else if (inputPath.getFileName().toString().endsWith(".zip")) {
@@ -58,11 +66,5 @@ public class Slicer {
                 process(inputs, fs.getPath("/"), outputPath, leftoverPath);
             }
         } else throw new IllegalStateException("Expected either directory or zip file");
-    }
-
-    private static void process(final Collection<InputFile> inputs, final Path inputPath, final Path outputPath, @Nullable final Path leftoverPath) throws IOException {
-        for (final InputFile input : inputs) {
-            input.process(inputPath, outputPath, leftoverPath);
-        }
     }
 }

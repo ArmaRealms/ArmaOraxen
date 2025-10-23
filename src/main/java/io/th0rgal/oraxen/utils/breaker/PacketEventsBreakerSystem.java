@@ -18,11 +18,13 @@ import org.bukkit.entity.Player;
 
 public class PacketEventsBreakerSystem extends BreakerSystem {
     private final PacketListener listener = new PacketListener() {
-        @Override public void onPacketReceive(PacketReceiveEvent event) {
+        @Override
+        public void onPacketReceive(PacketReceiveEvent event) {
             if (!event.getPacketType().equals(PacketType.Play.Client.PLAYER_DIGGING)) return;
             final var wrapper = new WrapperPlayClientPlayerDigging(event);
             final Player player = event.getPlayer();
-            if (player == null) return; // this should never happen to normal players... someone had a problem with it tho...
+            if (player == null)
+                return; // this should never happen to normal players... someone had a problem with it tho...
 
             final Vector3i pos = wrapper.getBlockPosition();
             BlockFace blockFace;
@@ -44,9 +46,9 @@ public class PacketEventsBreakerSystem extends BreakerSystem {
     @Override
     protected void sendBlockBreak(final Player player, final Location location, final int stage) {
         var wrapper = new WrapperPlayServerBlockBreakAnimation(
-            player.getEntityId(),
-            new Vector3i(location.getBlockX(), location.getBlockY(), location.getBlockZ()),
-            (byte) stage
+                player.getEntityId(),
+                new Vector3i(location.getBlockX(), location.getBlockY(), location.getBlockZ()),
+                (byte) stage
         );
         PacketEvents.getAPI().getPlayerManager().sendPacket(player, wrapper);
     }

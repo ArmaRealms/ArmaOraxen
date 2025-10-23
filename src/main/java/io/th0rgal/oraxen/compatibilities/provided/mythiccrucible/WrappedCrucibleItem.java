@@ -8,7 +8,6 @@ import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.PluginUtils;
 import io.th0rgal.oraxen.utils.logs.Logs;
-
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
@@ -18,20 +17,20 @@ import java.util.Optional;
 public class WrappedCrucibleItem {
     private final String id;
 
-    public WrappedCrucibleItem(ConfigurationSection section) {
+    public WrappedCrucibleItem(final ConfigurationSection section) {
         id = section.getString("id");
     }
 
-    public WrappedCrucibleItem(String id) {
+    public WrappedCrucibleItem(final String id) {
         this.id = id;
     }
 
     @Nullable
     public ItemStack build() {
         try {
-            Optional<MythicItem> maybeItem = MythicBukkit.inst().getItemManager().getItem(id);
+            final Optional<MythicItem> maybeItem = MythicBukkit.inst().getItemManager().getItem(id);
             return BukkitAdapter.adapt(maybeItem.orElseThrow().generateItemStack(1));
-        } catch (Exception e) {
+        } catch (final Exception e) {
             Message.MYTHICCRUCIBLE_LOADING_ITEM_FAILED.log(AdventureUtils.tagResolver("id", id));
             if (!PluginUtils.isEnabled("MythicCrucible"))
                 Message.MYTHICCRUCIBLE_MISSING_PLUGIN.log();

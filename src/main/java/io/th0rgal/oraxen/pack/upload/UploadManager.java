@@ -41,6 +41,23 @@ public class UploadManager {
         hostingProvider = createHostingProvider();
     }
 
+    @NotNull
+    @SuppressWarnings("unchecked")
+    private static Constructor<? extends HostingProvider> getConstructor(Class<?> target) {
+        final Class<? extends HostingProvider> implement = target.asSubclass(HostingProvider.class);
+        Constructor<? extends HostingProvider> constructor = null;
+        for (final Constructor<?> implementConstructor : implement.getConstructors()) {
+            Parameter[] parameters = implementConstructor.getParameters();
+            if (parameters.length == 0 || (parameters.length == 1 && parameters[0].getType().equals(ConfigurationSection.class))) {
+                constructor = (Constructor<? extends HostingProvider>) implementConstructor;
+                break;
+            }
+        }
+
+        if (constructor == null) throw new ProviderNotFoundException("Invalid provider: " + target);
+        return constructor;
+    }
+
     public HostingProvider getHostingProvider() {
         return hostingProvider;
     }
@@ -144,24 +161,5 @@ public class UploadManager {
                     .initCause(e.getCause());
         }
     }
-
-    @NotNull
-    @SuppressWarnings("unchecked")
-    private static Constructor<? extends HostingProvider> getConstructor(Class<?> target) {
-        final Class<? extends HostingProvider> implement = target.asSubclass(HostingProvider.class);
-        Constructor<? extends HostingProvider> constructor = null;
-        for (final Constructor<?> implementConstructor : implement.getConstructors()) {
-            Parameter[] parameters = implementConstructor.getParameters();
-            if (parameters.length == 0 || (parameters.length == 1 && parameters[0].getType().equals(ConfigurationSection.class))) {
-                constructor = (Constructor<? extends HostingProvider>) implementConstructor;
-                break;
-            }
-        }
-
-        if (constructor == null) throw new ProviderNotFoundException("Invalid provider: " + target);
-        return constructor;
-    }
-
-
 
 }

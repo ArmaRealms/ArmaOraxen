@@ -20,32 +20,42 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.*;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 public class ShaderArmorTextures {
 
     static final int DEFAULT_RESOLUTION = 16;
     static final int HEIGHT_RATIO = 2;
     static final int WIDTH_RATIO = 4;
-
+    private static final String SHADER_PARAMETER_PLACEHOLDER = "{#TEXTURE_RESOLUTION#}";
+    private static ShaderType shaderType;
     private final List<BufferedImage> layers1 = new ArrayList<>();
     private final List<BufferedImage> layers2 = new ArrayList<>();
     private final int resolution;
+    private final Map<String, Integer> allSpecifiedArmorColors = getAllSpecifiedArmorColors();
+    private final String OPTIFINE_ARMOR_PATH = "assets/minecraft/optifine/%s/armors/".formatted(VersionUtil.atOrAbove("1.21") ? "cit_single" : "cit");
+    private final String OPTIFINE_ARMOR_ANIMATION_PATH = "assets/minecraft/optifine/anim/";
     private BufferedImage layer1;
     private int layer1Width = 0;
     private int layer1Height = 0;
     private BufferedImage layer2;
     private int layer2Width = 0;
     private int layer2Height = 0;
-    private static ShaderType shaderType;
-
-    public enum ShaderType {
-        FANCY, LESS_FANCY
-    }
 
     public ShaderArmorTextures() {
         int resolution = DEFAULT_RESOLUTION;
@@ -68,11 +78,35 @@ public class ShaderArmorTextures {
     public static boolean isSameArmorType(ItemStack firstItem, ItemStack secondItem) {
         return Objects.equals(getArmorNameFromItem(firstItem), getArmorNameFromItem(secondItem));
     }
+
     public static String getArmorNameFromItem(ItemStack item) {
         return getArmorNameFromId(OraxenItems.getIdByItem(item));
     }
+
     public static String getArmorNameFromId(String itemId) {
         return StringUtils.substringBeforeLast(itemId, "_");
+    }
+
+    private static Map<String, Integer> getAllSpecifiedArmorColors() {
+        Map<String, Integer> specifiedColors = new HashMap<>();
+
+        for (Map.Entry<String, ItemBuilder> entry : OraxenItems.getEntries()) {
+            String itemId = entry.getKey();
+            ItemBuilder builder = entry.getValue();
+            if (!builder.build().getType().toString().contains("LEATHER_")) continue;
+            if (!builder.hasColor()) continue;
+
+            specifiedColors.putIfAbsent(StringUtils.substringBeforeLast(itemId, "_"), builder.getColor().asRGB());
+        }
+        return specifiedColors;
+    }
+
+    public static void generateArmorShaderFiles() {
+        if (shaderType == ShaderType.LESS_FANCY) {
+            ShaderArmorTextures.LessFancyArmorShaders.generateArmorShaderFiles();
+        } else if (shaderType == ShaderType.FANCY) {
+            ShaderArmorTextures.FancyArmorShaders.generateArmorShaderFiles();
+        }
     }
 
     public boolean registerImage(File file) {
@@ -196,7 +230,6 @@ public class ShaderArmorTextures {
         return true;
     }
 
-    private final Map<String, Integer> allSpecifiedArmorColors = getAllSpecifiedArmorColors();
     /**
      * Finds Armor Items tied to this prefix and fixes their colors
      * This removes the need for manually specifying a color
@@ -236,8 +269,8 @@ public class ShaderArmorTextures {
                 }
             }
 
-            boolean duplicateColor = allSpecifiedArmorColors.entrySet().stream().filter(e-> builder != null && builder.hasColor() && e.getValue() == builder.getColor().asRGB()).toList().size() >= 2;
-            if (builder != null && (!builder.hasColor() || duplicateColor  || shaderType == ShaderType.LESS_FANCY)) {
+            boolean duplicateColor = allSpecifiedArmorColors.entrySet().stream().filter(e -> builder != null && builder.hasColor() && e.getValue() == builder.getColor().asRGB()).toList().size() >= 2;
+            if (builder != null && (!builder.hasColor() || duplicateColor || shaderType == ShaderType.LESS_FANCY)) {
                 // If builder has no color or the shader-type is LESS_FANCY
                 // Then assign a color based on the armor ID
                 String itemPrefix = prefix.replace("_", "");
@@ -249,7 +282,8 @@ public class ShaderArmorTextures {
                 }
                 builder.setColor(armorColor);
                 builder.save();
-                if (Settings.DEBUG.toBool()) Logs.logInfo("Assigned color " + armorColor.asRGB() + " to " + prefix + suffix);
+                if (Settings.DEBUG.toBool())
+                    Logs.logInfo("Assigned color " + armorColor.asRGB() + " to " + prefix + suffix);
             }
 
             color = builder != null && builder.hasColor() ? builder.getColor() : null;
@@ -313,9 +347,6 @@ public class ShaderArmorTextures {
     public InputStream getLayerTwo() throws IOException {
         return getInputStream(layer2Width, layer2Height, layer2, layers2);
     }
-
-    private final String OPTIFINE_ARMOR_PATH = "assets/minecraft/optifine/%s/armors/".formatted(VersionUtil.atOrAbove("1.21") ? "cit_single" : "cit");
-    private final String OPTIFINE_ARMOR_ANIMATION_PATH = "assets/minecraft/optifine/anim/";
 
     private InputStream rescaleArmorImage(File original) {
         try {
@@ -545,20 +576,6 @@ public class ShaderArmorTextures {
         return layers;
     }
 
-    private static Map<String, Integer> getAllSpecifiedArmorColors() {
-        Map<String, Integer> specifiedColors = new HashMap<>();
-
-        for (Map.Entry<String, ItemBuilder> entry : OraxenItems.getEntries()) {
-            String itemId = entry.getKey();
-            ItemBuilder builder = entry.getValue();
-            if (!builder.build().getType().toString().contains("LEATHER_")) continue;
-            if (!builder.hasColor()) continue;
-
-            specifiedColors.putIfAbsent(StringUtils.substringBeforeLast(itemId, "_"), builder.getColor().asRGB());
-        }
-        return specifiedColors;
-    }
-
     private InputStream getInputStream(int layerWidth, int layerHeight, BufferedImage layer, List<BufferedImage> layers) throws IOException {
         layers.add(0, layer);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -586,15 +603,9 @@ public class ShaderArmorTextures {
         return concatImage;
     }
 
-    public static void generateArmorShaderFiles() {
-        if (shaderType == ShaderType.LESS_FANCY) {
-            ShaderArmorTextures.LessFancyArmorShaders.generateArmorShaderFiles();
-        } else if (shaderType == ShaderType.FANCY) {
-            ShaderArmorTextures.FancyArmorShaders.generateArmorShaderFiles();
-        }
+    public enum ShaderType {
+        FANCY, LESS_FANCY
     }
-
-    private static final String SHADER_PARAMETER_PLACEHOLDER = "{#TEXTURE_RESOLUTION#}";
 
     private static class FancyArmorShaders {
         private static void generateArmorShaderFiles() {
@@ -609,24 +620,24 @@ public class ShaderArmorTextures {
         private static String getShaderVsh() {
             return """
                     #version 150
-                     
+                    
                      #moj_import <light.glsl>
-                     
+                    
                      in vec3 Position;
                      in vec4 Color;
                      in vec2 UV0;
                      in vec2 UV1;
                      in ivec2 UV2;
                      in vec3 Normal;
-                     
+                    
                      uniform sampler2D Sampler2;
-                     
+                    
                      uniform mat4 ModelViewMat;
                      uniform mat4 ProjMat;
-                     
+                    
                      uniform vec3 Light0_Direction;
                      uniform vec3 Light1_Direction;
-                     
+                    
                      out float vertexDistance;
                      out vec4 vertexColor;
                      out vec2 texCoord0;
@@ -635,12 +646,12 @@ public class ShaderArmorTextures {
                      flat out vec4 tint;
                      flat out vec3 vNormal;
                      flat out vec4 texel;
-                     
+                    
                      void main() {
                          vNormal = Normal;
                          texel = texelFetch(Sampler2, UV2 / 16, 0);
                          gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
-                     
+                    
                          vertexDistance = length((ModelViewMat * vec4(Position, 1.0)).xyz);
                          vertexColor = minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, Color) * texelFetch(Sampler2, UV2 / 16, 0);
                          tint = Color;
@@ -654,16 +665,16 @@ public class ShaderArmorTextures {
         private static String getShaderFsh() {
             return """
                     #version 150
-                     
+                    
                      #moj_import <fog.glsl>
                      #moj_import <light.glsl>
-                     
+                    
                      #define TEX_RES {#TEXTURE_RESOLUTION#}
                      #define ANIM_SPEED 50 // Runs every 24 seconds
                      #define IS_LEATHER_LAYER texelFetch(Sampler0, ivec2(0, 1), 0) == vec4(1) // If it's leather_layer_X.png texture
-                     
+                    
                      uniform sampler2D Sampler0;
-                     
+                    
                      uniform vec4 ColorModulator;
                      uniform float FogStart;
                      uniform float FogEnd;
@@ -671,7 +682,7 @@ public class ShaderArmorTextures {
                      uniform float GameTime;
                      uniform vec3 Light0_Direction;
                      uniform vec3 Light1_Direction;
-                     
+                    
                      in float vertexDistance;
                      in vec4 vertexColor;
                      in vec2 texCoord0;
@@ -680,37 +691,37 @@ public class ShaderArmorTextures {
                      flat in vec4 tint;
                      flat in vec3 vNormal;
                      flat in vec4 texel;
-                     
+                    
                      out vec4 fragColor;
-                     
+                    
                      void main()
                      {
                          ivec2 atlasSize = textureSize(Sampler0, 0);
                          float armorAmount = atlasSize.x / (TEX_RES * 4.0);
                          float maxFrames = atlasSize.y / (TEX_RES * 2.0);
-                     
+                    
                          vec2 coords = texCoord0;
                          coords.x /= armorAmount;
                          coords.y /= maxFrames;
-                     
+                    
                          vec4 color;
-                     
+                    
                          if(IS_LEATHER_LAYER)
                          {
                              // Texture properties contains extra info about the armor texture, such as to enable shading
                              vec4 textureProperties = vec4(0);
                              vec4 customColor = vec4(0);
-                     
+                    
                              float h_offset = 1.0 / armorAmount;
                              vec2 nextFrame = vec2(0);
                              float interpolClock = 0;
                              vec4 vtc = vertexColor;
-                     
+                    
                              for (int i = 1; i < (armorAmount + 1); i++)
                              {
                                  customColor = texelFetch(Sampler0, ivec2(TEX_RES * 4 * i + 0.5, 0), 0);
                                  if (tint == customColor){
-                     
+                    
                                      coords.x += (h_offset * i);
                                      vec4 animInfo = texelFetch(Sampler0, ivec2(TEX_RES * 4 * i + 1.5, 0), 0);
                                      animInfo.rgb *= animInfo.a * 255;
@@ -733,7 +744,7 @@ public class ShaderArmorTextures {
                                      break;
                                  }
                              }
-                     
+                    
                              if (textureProperties.g == 1)
                              {
                                  if (textureProperties.r > 1)
@@ -774,9 +785,9 @@ public class ShaderArmorTextures {
                              {
                                  vtc = minecraft_mix_light(Light0_Direction, Light1_Direction, vNormal, vec4(1)) * texel;
                              }
-                     
+                    
                              vec4 armor = mix(texture(Sampler0, coords), texture(Sampler0, nextFrame), interpolClock);
-                     
+                    
                              // If it's the first leather texture in the atlas (used for the vanilla leather texture, with no custom color specified)
                              if (coords.x < (1 / armorAmount))
                                  color = armor * vertexColor * ColorModulator;
@@ -787,10 +798,10 @@ public class ShaderArmorTextures {
                          {
                              color = texture(Sampler0, texCoord0) * vertexColor * ColorModulator;
                          }
-                     
+                    
                          if (color.a < 0.1)
                              discard;
-                     
+                    
                          fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
                      }
                     """.replace(SHADER_PARAMETER_PLACEHOLDER, String.valueOf((int) Settings.CUSTOM_ARMOR_SHADER_RESOLUTION.getValue())).trim();
@@ -836,7 +847,7 @@ public class ShaderArmorTextures {
         private static String getLicense() {
             return """
                     Author of this shader is Ancientkingg
-                                    
+                    
                     This allowed to commercially use with reference to original author.
                     Original license: https://github.com/Ancientkingg/fancyPants/blob/master/README.md
                     """.trim();
@@ -922,29 +933,29 @@ public class ShaderArmorTextures {
         public static String getArmorVsh() {
             return """
                     #version 150
-                                        
+                    
                     #moj_import <light.glsl>
                     #moj_import <fog.glsl>
-                                        
+                    
                     in vec3 Position;
                     in vec4 Color;
                     in vec2 UV0;
                     in ivec2 UV1;
                     in ivec2 UV2;
                     in vec3 Normal;
-                                        
+                    
                     uniform sampler2D Sampler0;
                     uniform sampler2D Sampler1;
                     uniform sampler2D Sampler2;
-                                        
+                    
                     uniform mat4 ModelViewMat;
                     uniform mat4 ProjMat;
                     uniform mat3 IViewRotMat;
                     uniform int FogShape;
-                                        
+                    
                     uniform vec3 Light0_Direction;
                     uniform vec3 Light1_Direction;
-                                        
+                    
                     out float vertexDistance;
                     out vec4 vertexColor;
                     out vec4 tintColor;
@@ -952,15 +963,15 @@ public class ShaderArmorTextures {
                     out vec4 overlayColor;
                     out vec2 uv;
                     out vec4 normal;
-                                        
+                    
                     int toint(vec3 c) {
                         ivec3 v = ivec3(c*255);
                         return (v.r<<16)+(v.g<<8)+v.b;
                     }
-                                        
+                    
                     void main() {
                         gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
-                                        
+                    
                         vertexDistance = fog_distance(ModelViewMat, IViewRotMat * Position, FogShape);
                         tintColor = Color;
                         vertexColor = minecraft_mix_light(Light0_Direction, Light1_Direction, Normal, vec4(1));
@@ -968,7 +979,7 @@ public class ShaderArmorTextures {
                         overlayColor = texelFetch(Sampler1, UV1, 0);
                         uv = UV0;
                         normal = ProjMat * ModelViewMat * vec4(Normal, 0.0);
-                                        
+                    
                         //number of armors from texture size
                         vec2 size = textureSize(Sampler0, 0);
                         int n = int(2*size.y/size.x);
@@ -991,16 +1002,16 @@ public class ShaderArmorTextures {
         public static String getArmorFsh() {
             return """
                     #version 150
-                                        
+                    
                     #moj_import <fog.glsl>
-                                        
+                    
                     uniform sampler2D Sampler0;
-                                        
+                    
                     uniform vec4 ColorModulator;
                     uniform float FogStart;
                     uniform float FogEnd;
                     uniform vec4 FogColor;
-                                        
+                    
                     in float vertexDistance;
                     in vec4 vertexColor;
                     in vec4 tintColor;
@@ -1008,9 +1019,9 @@ public class ShaderArmorTextures {
                     in vec4 overlayColor;
                     in vec2 uv;
                     in vec4 normal;
-                                        
+                    
                     out vec4 fragColor;
-                                        
+                    
                     void main() {
                         vec4 color = texture(Sampler0, uv);
                         if (color.a < 0.1) discard;
@@ -1024,24 +1035,24 @@ public class ShaderArmorTextures {
         public static String getGlowingVsh() {
             return """
                     #version 150
-                                        
+                    
                     uniform sampler2D Sampler0;
-                                        
+                    
                     in vec3 Position;
                     in vec4 Color;
                     in vec2 UV0;
-                                        
+                    
                     uniform mat4 ModelViewMat;
                     uniform mat4 ProjMat;
-                                        
+                    
                     out vec4 vertexColor;
                     out vec2 uv;
-                                        
+                    
                     void main() {
                         gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
                         vertexColor = Color;
                         uv = UV0;
-                                        
+                    
                         //we assume if y >= 2x it is an armor and divide uv
                         //cannot pass tint color here so it's the only option
                         vec2 size = textureSize(Sampler0, 0);
@@ -1054,16 +1065,16 @@ public class ShaderArmorTextures {
         public static String getGlowingFsh() {
             return """
                     #version 150
-                                        
+                    
                     uniform sampler2D Sampler0;
-                                        
+                    
                     uniform vec4 ColorModulator;
-                                        
+                    
                     in vec4 vertexColor;
                     in vec2 uv;
-                                        
+                    
                     out vec4 fragColor;
-                                        
+                    
                     void main() {
                         vec4 color = texture(Sampler0, uv);
                         if (color.a == 0.0) discard;
@@ -1074,7 +1085,7 @@ public class ShaderArmorTextures {
         public static String getFogGlsl() {
             return """
                     #version 150
-                                        
+                    
                     vec4 linear_fog(vec4 inColor, float vertexDistance, float fogStart, float fogEnd, vec4 fogColor) {
                         if (vertexDistance <= fogStart) {
                             return inColor;
@@ -1082,7 +1093,7 @@ public class ShaderArmorTextures {
                         float fogValue = vertexDistance < fogEnd ? smoothstep(fogStart, fogEnd, vertexDistance) : 1.0;
                         return vec4(mix(inColor.rgb, fogColor.rgb, fogValue * fogColor.a), inColor.a);
                     }
-                                        
+                    
                     float linear_fog_fade(float vertexDistance, float fogStart, float fogEnd) {
                         if (vertexDistance <= fogStart) {
                             return 1.0;
@@ -1091,7 +1102,7 @@ public class ShaderArmorTextures {
                         }
                         return smoothstep(fogEnd, fogStart, vertexDistance);
                     }
-                                        
+                    
                     float fog_distance(mat4 modelViewMat, vec3 pos, int shape) {
                         if (shape == 0) {
                             return length((modelViewMat * vec4(pos, 1.0)).xyz);

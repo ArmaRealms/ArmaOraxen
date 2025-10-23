@@ -20,6 +20,30 @@ import org.bukkit.persistence.PersistentDataType;
 
 public class RepairCommand {
 
+    private static boolean repairPlayerItem(ItemStack itemStack) {
+        String itemId = OraxenItems.getIdByItem(itemStack);
+        ItemMeta itemMeta = itemStack.getItemMeta();
+        if (!(itemMeta instanceof Damageable damageable)) return true;
+        DurabilityMechanicFactory durabilityFactory = DurabilityMechanicFactory.get();
+        if (durabilityFactory.isNotImplementedIn(itemId)) {
+            if ((boolean) Settings.REPAIR_COMMAND_ORAXEN_DURABILITY.getValue()) // not oraxen item
+                return true;
+            if (damageable.getDamage() == 0) // full durability
+                return true;
+        } else {
+            DurabilityMechanic durabilityMechanic = durabilityFactory.getMechanic(itemId);
+            PersistentDataContainer pdc = itemMeta.getPersistentDataContainer();
+            int realMaxDurability = durabilityMechanic.getItemMaxDurability();
+            int damage = realMaxDurability - pdc.get(DurabilityMechanic.DURABILITY_KEY, PersistentDataType.INTEGER);
+            if (damage == 0)
+                return true; // full durability
+            pdc.set(DurabilityMechanic.DURABILITY_KEY, PersistentDataType.INTEGER, realMaxDurability);
+        }
+        damageable.setDamage(0);
+        itemStack.setItemMeta(damageable);
+        return false;
+    }
+
     @Deprecated(forRemoval = true, since = "1.20.6")
     CommandAPICommand getRepairCommand() {
         return new CommandAPICommand("repair")
@@ -56,31 +80,6 @@ public class RepairCommand {
                     else
                         Message.NOT_PLAYER.send(sender);
                 });
-    }
-
-
-    private static boolean repairPlayerItem(ItemStack itemStack) {
-        String itemId = OraxenItems.getIdByItem(itemStack);
-        ItemMeta itemMeta = itemStack.getItemMeta();
-        if (!(itemMeta instanceof Damageable damageable)) return true;
-        DurabilityMechanicFactory durabilityFactory = DurabilityMechanicFactory.get();
-        if (durabilityFactory.isNotImplementedIn(itemId)) {
-            if ((boolean) Settings.REPAIR_COMMAND_ORAXEN_DURABILITY.getValue()) // not oraxen item
-                return true;
-            if (damageable.getDamage() == 0) // full durability
-                return true;
-        } else {
-            DurabilityMechanic durabilityMechanic = durabilityFactory.getMechanic(itemId);
-            PersistentDataContainer pdc = itemMeta.getPersistentDataContainer();
-            int realMaxDurability = durabilityMechanic.getItemMaxDurability();
-            int damage = realMaxDurability - pdc.get(DurabilityMechanic.DURABILITY_KEY, PersistentDataType.INTEGER);
-            if (damage == 0)
-                return true; // full durability
-            pdc.set(DurabilityMechanic.DURABILITY_KEY, PersistentDataType.INTEGER, realMaxDurability);
-        }
-        damageable.setDamage(0);
-        itemStack.setItemMeta(damageable);
-        return false;
     }
 
 }

@@ -26,7 +26,6 @@ public class InvManager {
         return itemsViews.computeIfAbsent(player.getUniqueId(), uuid -> new ItemsView().create());
     }
 
-
     public ChestGui getRecipesShowcase(final int page, final List<CustomRecipe> filteredRecipes) {
         return new RecipesView().create(page, filteredRecipes);
     }

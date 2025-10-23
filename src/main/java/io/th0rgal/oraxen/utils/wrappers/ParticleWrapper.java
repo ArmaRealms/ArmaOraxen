@@ -2,17 +2,20 @@ package io.th0rgal.oraxen.utils.wrappers;
 
 import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.logs.Logs;
-import net.kyori.adventure.key.Key;
 import org.bukkit.NamespacedKey;
-import org.bukkit.Registry;
 import org.bukkit.Particle;
+import org.bukkit.Registry;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
 public class ParticleWrapper {
     private static Particle DUST_VALUE;
+    @NotNull
+    public static final Particle DUST = Objects.requireNonNull(DUST_VALUE);
     private static Particle SPLASH_VALUE;
+    @NotNull
+    public static final Particle SPLASH = Objects.requireNonNull(SPLASH_VALUE);
 
     static {
         try {
@@ -44,9 +47,4 @@ public class ParticleWrapper {
             }
         }
     }
-
-    @NotNull
-    public static final Particle DUST = Objects.requireNonNull(DUST_VALUE);
-    @NotNull
-    public static final Particle SPLASH = Objects.requireNonNull(SPLASH_VALUE);
 }

@@ -27,10 +27,6 @@ public class ModelEngineUtils {
         }
     }
 
-    enum ModelEngineVersion {
-        MEG_4, MEG_3
-    }
-
     static ModelEngineVersion getVersion() {
         try {
             Class.forName("com.ticxo.modelengine.api.generator.blueprint.ModelBlueprint");
@@ -54,5 +50,9 @@ public class ModelEngineUtils {
         } catch (IllegalAccessException | InvocationTargetException e) {
             if (Settings.DEBUG.toBool()) Logs.logError(e.getMessage());
         }
+    }
+
+    enum ModelEngineVersion {
+        MEG_4, MEG_3
     }
 }

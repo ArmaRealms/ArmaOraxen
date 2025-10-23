@@ -15,13 +15,13 @@ import static com.github.retrooper.packetevents.protocol.packettype.PacketType.P
 public class TitlePacketListener implements PacketListener {
     @Override
     public void onPacketSend(PacketSendEvent event) {
-        if(event.getPacketType() == SET_TITLE_TEXT  && Settings.FORMAT_TITLES.toBool()) {
+        if (event.getPacketType() == SET_TITLE_TEXT && Settings.FORMAT_TITLES.toBool()) {
             var wrapper = new WrapperPlayServerSetTitleText(event);
             wrapper.setTitle(PacketHelpers.translateTitle(wrapper.getTitle()));
-        } else if(event.getPacketType() == SET_TITLE_SUBTITLE && Settings.FORMAT_SUBTITLES.toBool()) {
+        } else if (event.getPacketType() == SET_TITLE_SUBTITLE && Settings.FORMAT_SUBTITLES.toBool()) {
             var wrapper = new WrapperPlayServerSetTitleSubtitle(event);
             wrapper.setSubtitle(PacketHelpers.translateTitle(wrapper.getSubtitle()));
-        } else if(event.getPacketType() == ACTION_BAR && Settings.FORMAT_ACTION_BAR.toBool()) {
+        } else if (event.getPacketType() == ACTION_BAR && Settings.FORMAT_ACTION_BAR.toBool()) {
             var wrapper = new WrapperPlayServerActionBar(event);
             wrapper.setActionBarText(PacketHelpers.translateTitle(wrapper.getActionBarText()));
         }

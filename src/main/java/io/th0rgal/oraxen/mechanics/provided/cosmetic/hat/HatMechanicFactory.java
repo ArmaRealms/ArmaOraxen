@@ -19,6 +19,10 @@ public class HatMechanicFactory extends MechanicFactory {
         instance = this;
     }
 
+    public static HatMechanicFactory get() {
+        return instance;
+    }
+
     @Override
     public Mechanic parse(ConfigurationSection itemMechanicConfiguration) {
         Mechanic mechanic = new HatMechanic(this, itemMechanicConfiguration);
@@ -30,10 +34,6 @@ public class HatMechanicFactory extends MechanicFactory {
 
         addToImplemented(mechanic);
         return mechanic;
-    }
-
-    public static HatMechanicFactory get() {
-        return instance;
     }
 
 }

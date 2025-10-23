@@ -14,7 +14,10 @@ import io.th0rgal.oraxen.utils.VersionUtil;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
-import org.bukkit.*;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.SoundCategory;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -98,20 +101,21 @@ public class MusicDiscListener implements Listener {
      * Inserts the custom Oraxen Disc item by storing the ItemStack in the blocks PersistentDataContainer.
      * Plays the sound attached to the disc, if any.
      *
-     * @param block The Jukebox block to insert the disc into
-     * @param disc The Oraxen Disc item to insert
+     * @param block  The Jukebox block to insert the disc into
+     * @param disc   The Oraxen Disc item to insert
      * @param player The player who inserted the disc, null if inserted by a non-player, i.e hoppers or other entities
      **/
     private boolean insertAndPlayCustomDisc(Block block, ItemStack disc, @Nullable Player player) {
         // ignore vanilla juke boxes with vanilla discs.
-        if(block.getType().equals(Material.JUKEBOX) && ItemUtils.isMusicDisc(disc)) return false;
+        if (block.getType().equals(Material.JUKEBOX) && ItemUtils.isMusicDisc(disc)) return false;
 
         String itemID = OraxenItems.getIdByItem(disc);
         PersistentDataContainer pdc = BlockHelpers.getPDC(block);
         MusicDiscMechanic mechanic = (MusicDiscMechanic) factory.getMechanic(itemID);
         FurnitureMechanic furnitureMechanic = OraxenFurniture.getFurnitureMechanic(block);
 
-        if (block.getType() != Material.JUKEBOX && (furnitureMechanic == null || !furnitureMechanic.isJukebox())) return false;
+        if (block.getType() != Material.JUKEBOX && (furnitureMechanic == null || !furnitureMechanic.isJukebox()))
+            return false;
         if (pdc.has(MusicDiscHelpers.MUSIC_DISC_KEY, DataType.ITEM_STACK)) return false;
         if (disc.getType() == Material.AIR || factory.isNotImplementedIn(itemID)) return false;
         if (mechanic == null || mechanic.hasNoSong()) return false;
@@ -129,11 +133,12 @@ public class MusicDiscListener implements Listener {
     /**
      * Ejects the custom Oraxen Disc item from the Jukebox block.
      * Stops the sound attached to the disc, if any.
+     *
      * @param block The Jukebox block to eject the disc from
      */
     private boolean ejectAndStopCustomDisc(Block block) {
         // ignore vanilla juke boxes with vanilla discs.
-        if(MusicDiscHelpers.isVanillaJukeboxWithVanillaDisc(block)) return false;
+        if (MusicDiscHelpers.isVanillaJukeboxWithVanillaDisc(block)) return false;
 
         PersistentDataContainer pdc = BlockHelpers.getPDC(block);
         ItemStack ejectedDisc = MusicDiscHelpers.getMusicDisc(pdc);
@@ -142,7 +147,8 @@ public class MusicDiscListener implements Listener {
         FurnitureMechanic furnitureMechanic = OraxenFurniture.getFurnitureMechanic(block);
         Location loc = BlockHelpers.toCenterLocation(block.getLocation());
 
-        if (block.getType() != Material.JUKEBOX && (furnitureMechanic == null || !furnitureMechanic.isJukebox())) return false;
+        if (block.getType() != Material.JUKEBOX && (furnitureMechanic == null || !furnitureMechanic.isJukebox()))
+            return false;
         if (!MusicDiscHelpers.hasMusicDisc(pdc)) return false;
         if (ejectedDisc == null || factory.isNotImplementedIn(itemID)) return false;
         if (mechanic == null || mechanic.hasNoSong()) return false;

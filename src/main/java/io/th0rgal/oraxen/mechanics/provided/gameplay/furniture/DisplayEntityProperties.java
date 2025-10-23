@@ -12,18 +12,18 @@ import java.util.Arrays;
 import java.util.Objects;
 
 public class DisplayEntityProperties {
+    private final Display.Brightness brightness;
+    private final float displayWidth;
+    private final float displayHeight;
+    private final Vector3f scale;
     //private final Color glowColor;
     private Integer viewRange;
-    private final Display.Brightness brightness;
     private ItemDisplay.ItemDisplayTransform displayTransform;
     private Display.Billboard trackingRotation;
     private Float shadowStrength;
     private Float shadowRadius;
     private Integer interpolationDuration;
     private Integer interpolationDelay;
-    private final float displayWidth;
-    private final float displayHeight;
-    private final Vector3f scale;
 
     public DisplayEntityProperties() {
         this.displayWidth = 0f;
@@ -166,13 +166,13 @@ public class DisplayEntityProperties {
         if (!(entity instanceof ItemDisplay itemDisplay)) return false;
         itemDisplay.setItemDisplayTransform(displayTransform);
         itemDisplay.setBillboard(Objects.requireNonNullElse(trackingRotation, Display.Billboard.FIXED));
-        itemDisplay.setBrightness(Objects.requireNonNullElse(brightness, new Display.Brightness(0,0)));
+        itemDisplay.setBrightness(Objects.requireNonNullElse(brightness, new Display.Brightness(0, 0)));
         itemDisplay.setShadowRadius(Objects.requireNonNullElse(shadowRadius, 0f));
         itemDisplay.setShadowStrength(Objects.requireNonNullElse(shadowStrength, 0f));
         itemDisplay.setViewRange(Objects.requireNonNullElse(viewRange, 0));
         itemDisplay.setInterpolationDuration(Objects.requireNonNullElse(interpolationDuration, 0));
         itemDisplay.setInterpolationDelay(Objects.requireNonNullElse(interpolationDelay, 0));
-        itemDisplay.getTransformation().getScale().set(Objects.requireNonNullElse(scale, new Vector3f(1,1,1)));
+        itemDisplay.getTransformation().getScale().set(Objects.requireNonNullElse(scale, new Vector3f(1, 1, 1)));
 
         return true;
     }

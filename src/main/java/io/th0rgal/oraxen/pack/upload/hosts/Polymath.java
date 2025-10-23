@@ -30,7 +30,7 @@ public class Polymath implements HostingProvider {
 
     @Override
     public boolean uploadPack(File resourcePack) {
-        try(CloseableHttpClient httpClient = HttpClients.createDefault()) {
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpPost request = new HttpPost(serverAddress + "upload");
 
             HttpEntity httpEntity = MultipartEntityBuilder
@@ -63,7 +63,7 @@ public class Polymath implements HostingProvider {
             Logs.logError("Response: " + jsonOutput);
             Logs.logError("The resource pack has not been uploaded to the server. Usually this is due to an excessive size.");
             return false;
-        } catch(IllegalStateException | IOException ex) {
+        } catch (IllegalStateException | IOException ex) {
             Logs.logError("The resource pack has not been uploaded to the server. Usually this is due to an excessive size.");
             ex.printStackTrace();
             return false;

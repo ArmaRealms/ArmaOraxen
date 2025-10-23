@@ -18,7 +18,7 @@ import java.util.Set;
 
 public class ArmorEffectsMechanic extends Mechanic {
 
-    public static final Set<Integer> ARMOR_SLOTS = Set.of(36,37,38,39);
+    public static final Set<Integer> ARMOR_SLOTS = Set.of(36, 37, 38, 39);
     private final Set<ArmorEffect> armorEffects = new HashSet<>();
 
     public ArmorEffectsMechanic(MechanicFactory mechanicFactory, ConfigurationSection section) {
@@ -26,6 +26,28 @@ public class ArmorEffectsMechanic extends Mechanic {
         for (String effect : section.getKeys(false)) {
             ConfigurationSection effectSection = section.getConfigurationSection(effect);
             if (effectSection != null) registersEffectFromSection(effectSection);
+        }
+    }
+
+    public static void addEffects(Player player) {
+        for (int armorSlot : ArmorEffectsMechanic.ARMOR_SLOTS) {
+            ItemStack armorPiece = player.getInventory().getItem(armorSlot);
+            ArmorEffectsMechanic mechanic = (ArmorEffectsMechanic) ArmorEffectsFactory.getInstance().getMechanic(armorPiece);
+            if (mechanic == null) continue;
+
+            Set<PotionEffect> finalArmorEffects = new HashSet<>();
+            for (ArmorEffect armorEffect : mechanic.getArmorEffects()) {
+                if (armorEffect.requiresFullSet()) {
+                    boolean hasFullSet = ArmorEffectsMechanic.ARMOR_SLOTS.stream().filter(s -> s != armorSlot).allMatch(slot -> {
+                        ItemStack armor = player.getInventory().getItem(slot);
+                        return armor != null && ShaderArmorTextures.isSameArmorType(armorPiece, armor);
+                    });
+
+                    if (hasFullSet) finalArmorEffects.add(armorEffect.getEffect());
+                } else finalArmorEffects.add(armorEffect.getEffect());
+            }
+
+            player.addPotionEffects(finalArmorEffects);
         }
     }
 
@@ -49,27 +71,5 @@ public class ArmorEffectsMechanic extends Mechanic {
 
     public Set<ArmorEffect> getArmorEffects() {
         return armorEffects;
-    }
-
-    public static void addEffects(Player player) {
-        for (int armorSlot : ArmorEffectsMechanic.ARMOR_SLOTS) {
-            ItemStack armorPiece = player.getInventory().getItem(armorSlot);
-            ArmorEffectsMechanic mechanic = (ArmorEffectsMechanic) ArmorEffectsFactory.getInstance().getMechanic(armorPiece);
-            if (mechanic == null) continue;
-
-            Set<PotionEffect> finalArmorEffects = new HashSet<>();
-            for (ArmorEffect armorEffect : mechanic.getArmorEffects()) {
-                if (armorEffect.requiresFullSet()) {
-                    boolean hasFullSet = ArmorEffectsMechanic.ARMOR_SLOTS.stream().filter(s -> s != armorSlot).allMatch(slot -> {
-                        ItemStack armor = player.getInventory().getItem(slot);
-                        return armor != null && ShaderArmorTextures.isSameArmorType(armorPiece, armor);
-                    });
-
-                    if (hasFullSet) finalArmorEffects.add(armorEffect.getEffect());
-                } else finalArmorEffects.add(armorEffect.getEffect());
-            }
-
-            player.addPotionEffects(finalArmorEffects);
-        }
     }
 }

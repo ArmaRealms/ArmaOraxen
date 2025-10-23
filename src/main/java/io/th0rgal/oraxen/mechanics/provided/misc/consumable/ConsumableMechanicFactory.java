@@ -16,14 +16,14 @@ public class ConsumableMechanicFactory extends MechanicFactory {
         instance = this;
     }
 
+    public static ConsumableMechanicFactory get() {
+        return instance;
+    }
+
     @Override
     public Mechanic parse(ConfigurationSection itemMechanicConfiguration) {
         Mechanic mechanic = new ConsumableMechanic(this, itemMechanicConfiguration);
         addToImplemented(mechanic);
         return mechanic;
-    }
-
-    public static ConsumableMechanicFactory get() {
-        return instance;
     }
 }

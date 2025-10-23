@@ -1,8 +1,6 @@
 package io.th0rgal.oraxen.utils.wrappers;
 
 import io.th0rgal.oraxen.utils.VersionUtil;
-import io.th0rgal.oraxen.utils.logs.Logs;
-import net.kyori.adventure.key.Key;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.enchantments.Enchantment;
@@ -12,8 +10,11 @@ import java.util.Objects;
 
 public class EnchantmentWrapper {
     private static Enchantment FORTUNE_VALUE;
+    public static final @NotNull Enchantment FORTUNE = Objects.requireNonNull(FORTUNE_VALUE);
     private static Enchantment EFFICIENCY_VALUE;
+    public static final @NotNull Enchantment EFFICIENCY = Objects.requireNonNull(EFFICIENCY_VALUE);
     private static Enchantment SILK_TOUCH_VALUE;
+    public static final @NotNull Enchantment SILK_TOUCH = Objects.requireNonNull(SILK_TOUCH_VALUE);
 
     static {
         try {
@@ -34,8 +35,4 @@ public class EnchantmentWrapper {
             SILK_TOUCH_VALUE = Enchantment.getByKey(NamespacedKey.minecraft("silk_touch"));
         }
     }
-
-    public static final @NotNull Enchantment FORTUNE = Objects.requireNonNull(FORTUNE_VALUE);
-    public static final @NotNull Enchantment EFFICIENCY = Objects.requireNonNull(EFFICIENCY_VALUE);
-    public static final @NotNull Enchantment SILK_TOUCH = Objects.requireNonNull(SILK_TOUCH_VALUE);
 }

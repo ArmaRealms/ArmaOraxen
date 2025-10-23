@@ -27,7 +27,7 @@ public class FurnitureUpdater implements Listener {
         if (!Settings.UPDATE_FURNITURE.toBool()) return;
         if (Settings.UPDATE_FURNITURE_ON_LOAD.toBool()) {
             Bukkit.getPluginManager().registerEvent(EntitiesLoadEvent.class, this, EventPriority.NORMAL, (listener, event) ->
-                    ((EntitiesLoadEvent) event).getEntities().stream().filter(OraxenFurniture::isBaseEntity).forEach(OraxenFurniture::updateFurniture)
+                            ((EntitiesLoadEvent) event).getEntities().stream().filter(OraxenFurniture::isBaseEntity).forEach(OraxenFurniture::updateFurniture)
                     , OraxenPlugin.get());
         }
 

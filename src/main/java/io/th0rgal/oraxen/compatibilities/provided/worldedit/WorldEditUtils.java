@@ -39,40 +39,6 @@ public class WorldEditUtils {
 
     private WorldEditUtils() {}
 
-    protected static class OraxenBlockInputParser extends InputParser<BaseBlock> {
-
-        public OraxenBlockInputParser() {
-            super(WorldEdit.getInstance());
-            if (WrappedWorldEdit.loaded) {
-                WorldEdit.getInstance().getBlockFactory().register(this);
-            }
-        }
-
-        @Override
-        public BaseBlock parseFromInput(String input, ParserContext context) {
-            if (input.equals("minecraft:note_block") || input.equals("note_block")) {
-                return BukkitAdapter.adapt(Bukkit.createBlockData(Material.NOTE_BLOCK)).toBaseBlock();
-            } else if (input.equals("minecraft:tripwire") || input.equals("tripwire")) {
-                return BukkitAdapter.adapt(Bukkit.createBlockData(Material.TRIPWIRE)).toBaseBlock();
-            }
-
-            if (!input.startsWith("oraxen:") || input.endsWith(":")) return null;
-            String id = input.split(":")[1].split("\\[")[0]; // Potential arguments
-            boolean hasArguments = input.contains("[");
-            if (id.equals(input) || !OraxenBlocks.isOraxenBlock(id)) return null;
-
-            NoteBlockMechanic noteMechanic = OraxenBlocks.getNoteBlockMechanic(id);
-            BlockData blockData = OraxenBlocks.getOraxenBlockData(id);
-            if (blockData == null) return null;
-
-            if (Settings.WORLDEDIT_STRINGBLOCKS.toBool() && OraxenBlocks.isOraxenStringBlock(id))
-                return BukkitAdapter.adapt(blockData).toBaseBlock();
-            else if (Settings.WORLDEDIT_NOTEBLOCKS.toBool() && noteMechanic != null) {
-                return BukkitAdapter.adapt(hasArguments ? parseNoteBlock(noteMechanic, input) : blockData).toBaseBlock();
-            } else return null;
-        }
-    }
-
     private static BlockData parseNoteBlock(NoteBlockMechanic mechanic, String input) {
         NoteBlockMechanicFactory factory = NoteBlockMechanicFactory.getInstance();
         if (mechanic.isDirectional()) {
@@ -82,7 +48,7 @@ public class WorldEditUtils {
             if (!dirBlock.isParentBlock()) {
                 return factory.createNoteBlockData(dirBlock.getParentBlock());
             } else if (dirBlock.isParentBlock() && !direction.equals(input)) {
-                return  factory.createNoteBlockData(getDirectionalID(mechanic, direction));
+                return factory.createNoteBlockData(getDirectionalID(mechanic, direction));
             } else return factory.createNoteBlockData(mechanic.getItemID());
         } else return factory.createNoteBlockData(mechanic.getItemID());
     }
@@ -192,5 +158,39 @@ public class WorldEditUtils {
         }
 
         return list;
+    }
+
+    protected static class OraxenBlockInputParser extends InputParser<BaseBlock> {
+
+        public OraxenBlockInputParser() {
+            super(WorldEdit.getInstance());
+            if (WrappedWorldEdit.loaded) {
+                WorldEdit.getInstance().getBlockFactory().register(this);
+            }
+        }
+
+        @Override
+        public BaseBlock parseFromInput(String input, ParserContext context) {
+            if (input.equals("minecraft:note_block") || input.equals("note_block")) {
+                return BukkitAdapter.adapt(Bukkit.createBlockData(Material.NOTE_BLOCK)).toBaseBlock();
+            } else if (input.equals("minecraft:tripwire") || input.equals("tripwire")) {
+                return BukkitAdapter.adapt(Bukkit.createBlockData(Material.TRIPWIRE)).toBaseBlock();
+            }
+
+            if (!input.startsWith("oraxen:") || input.endsWith(":")) return null;
+            String id = input.split(":")[1].split("\\[")[0]; // Potential arguments
+            boolean hasArguments = input.contains("[");
+            if (id.equals(input) || !OraxenBlocks.isOraxenBlock(id)) return null;
+
+            NoteBlockMechanic noteMechanic = OraxenBlocks.getNoteBlockMechanic(id);
+            BlockData blockData = OraxenBlocks.getOraxenBlockData(id);
+            if (blockData == null) return null;
+
+            if (Settings.WORLDEDIT_STRINGBLOCKS.toBool() && OraxenBlocks.isOraxenStringBlock(id))
+                return BukkitAdapter.adapt(blockData).toBaseBlock();
+            else if (Settings.WORLDEDIT_NOTEBLOCKS.toBool() && noteMechanic != null) {
+                return BukkitAdapter.adapt(hasArguments ? parseNoteBlock(noteMechanic, input) : blockData).toBaseBlock();
+            } else return null;
+        }
     }
 }

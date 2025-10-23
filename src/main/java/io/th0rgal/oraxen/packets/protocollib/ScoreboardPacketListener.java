@@ -14,11 +14,12 @@ import java.util.Optional;
 
 public class ScoreboardPacketListener extends PacketAdapter {
 
+    private final Optional<InternalStructure> numberFormat = Optional.of(InternalStructure.getConverter().getSpecific(WrappedNumberFormat.fixed(WrappedChatComponent.fromText("test")).getHandle()));
+
     public ScoreboardPacketListener() {
         super(OraxenPlugin.get(), ListenerPriority.MONITOR, PacketType.Play.Server.SCOREBOARD_OBJECTIVE);
     }
 
-    private final Optional<InternalStructure> numberFormat = Optional.of(InternalStructure.getConverter().getSpecific(WrappedNumberFormat.fixed(WrappedChatComponent.fromText("test")).getHandle()));
     @Override
     public void onPacketSending(PacketEvent event) {
         PacketContainer packet = event.getPacket();

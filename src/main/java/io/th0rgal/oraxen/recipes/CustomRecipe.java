@@ -1,7 +1,6 @@
 package io.th0rgal.oraxen.recipes;
 
 import io.th0rgal.oraxen.api.OraxenItems;
-import io.th0rgal.oraxen.utils.logs.Logs;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
@@ -38,48 +37,6 @@ public class CustomRecipe {
      *
      */
 
-    public String getName() {
-        return name;
-    }
-
-    public ItemStack getResult() {
-        return result;
-    }
-
-    public List<ItemStack> getIngredients() {
-        return !ingredients.isEmpty() ? ingredients : new ArrayList<>();
-    }
-
-    public boolean isOrdered() {
-        return ordered;
-    }
-
-    @Override
-    public boolean equals(Object object) {
-        if (object == null) return false;
-        if (object == this) return true;
-        if (object instanceof CustomRecipe customRecipe) return result.equals(customRecipe.result) && areEqual(ingredients, customRecipe.ingredients);
-        return false;
-    }
-
-    @Override
-    public int hashCode() {
-        return result.hashCode() / 2 + ingredients.hashCode() / 2 + (ordered ? 1 : 0);
-    }
-
-    private boolean areEqual(List<ItemStack> ingredients1, List<ItemStack> ingredients2) {
-        for (int index = 0; index < ingredients1.size(); index++) {
-            ItemStack ingredient1 = ingredients1.get(index);
-            if (ordered) {
-                ItemStack ingredient2 = ingredients2.get(index);
-                if (ingredient1 == null && ingredient2 == null) continue;
-                if (ingredient1 == null || ingredient2 == null) return false;
-                if (!ingredient1.isSimilar(ingredient2)) return false;
-            } else if (ingredient1 != null && ingredients2.stream().noneMatch(ingredient1::isSimilar)) return false;
-        }
-        return true;
-    }
-
     public static CustomRecipe fromRecipe(Recipe bukkitRecipe) {
         if (bukkitRecipe instanceof ShapedRecipe recipe) {
             List<ItemStack> ingredients = new ArrayList<>(9);
@@ -100,6 +57,49 @@ public class CustomRecipe {
             ingredients.addAll(recipe.getIngredientList());
             return new CustomRecipe(recipe.getKey().getKey(), recipe.getResult(), ingredients, false);
         } else return null;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public ItemStack getResult() {
+        return result;
+    }
+
+    public List<ItemStack> getIngredients() {
+        return !ingredients.isEmpty() ? ingredients : new ArrayList<>();
+    }
+
+    public boolean isOrdered() {
+        return ordered;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (object == null) return false;
+        if (object == this) return true;
+        if (object instanceof CustomRecipe customRecipe)
+            return result.equals(customRecipe.result) && areEqual(ingredients, customRecipe.ingredients);
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return result.hashCode() / 2 + ingredients.hashCode() / 2 + (ordered ? 1 : 0);
+    }
+
+    private boolean areEqual(List<ItemStack> ingredients1, List<ItemStack> ingredients2) {
+        for (int index = 0; index < ingredients1.size(); index++) {
+            ItemStack ingredient1 = ingredients1.get(index);
+            if (ordered) {
+                ItemStack ingredient2 = ingredients2.get(index);
+                if (ingredient1 == null && ingredient2 == null) continue;
+                if (ingredient1 == null || ingredient2 == null) return false;
+                if (!ingredient1.isSimilar(ingredient2)) return false;
+            } else if (ingredient1 != null && ingredients2.stream().noneMatch(ingredient1::isSimilar)) return false;
+        }
+        return true;
     }
 
     /**

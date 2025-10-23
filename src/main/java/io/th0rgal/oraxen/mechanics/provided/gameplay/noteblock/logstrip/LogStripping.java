@@ -14,13 +14,13 @@ public class LogStripping {
         decreaseAxeDurability = logStripSection.getBoolean("decrease_axe_durability");
     }
 
-    public boolean canBeStripped() { return strippedLog != null; }
+    public boolean canBeStripped() {return strippedLog != null;}
 
-    public String getStrippedLogBlock() { return strippedLog; }
+    public String getStrippedLogBlock() {return strippedLog;}
 
-    public boolean hasStrippedDrop() { return dropFromStrippedLog != null; }
+    public boolean hasStrippedDrop() {return dropFromStrippedLog != null;}
 
-    public String getStrippedLogDrop() { return dropFromStrippedLog; }
+    public String getStrippedLogDrop() {return dropFromStrippedLog;}
 
     public boolean shouldDecreaseAxeDurability() {
         return decreaseAxeDurability;

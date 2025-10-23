@@ -34,7 +34,7 @@ public class BackpackMechanic extends Mechanic {
         return title;
     }
 
-    public boolean hasOpenSound(){
+    public boolean hasOpenSound() {
         return openSound != null;
     }
 
@@ -42,7 +42,7 @@ public class BackpackMechanic extends Mechanic {
         return openSound;
     }
 
-    public boolean hasCloseSound(){
+    public boolean hasCloseSound() {
         return closeSound != null;
     }
 

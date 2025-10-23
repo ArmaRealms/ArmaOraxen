@@ -7,7 +7,6 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
-
 public class CookingBuilder extends RecipeBuilder {
 
     private int cookingTime;

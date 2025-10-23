@@ -10,7 +10,6 @@ import org.bukkit.inventory.ItemStack;
 
 public class PickupListener extends CustomListener {
 
-
     public PickupListener(String itemID, long cooldown, CustomEvent event, ClickAction clickAction) {
         super(itemID, cooldown, event, clickAction);
     }

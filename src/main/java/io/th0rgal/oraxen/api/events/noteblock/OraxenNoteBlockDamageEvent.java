@@ -11,26 +11,31 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Event fired right before a player damages a NoteBlock.
  * If cancelled, the block will not be damaged.
+ *
  * @see NoteBlockMechanic
  */
 public class OraxenNoteBlockDamageEvent extends Event implements Cancellable {
 
+    private static final HandlerList HANDLERS = new HandlerList();
     private final NoteBlockMechanic mechanic;
     private final Player player;
     private final Block block;
     private boolean isCancelled;
-    private static final HandlerList HANDLERS = new HandlerList();
 
     /**
      * @param mechanic The NoteBlockMechanic of this block
-     * @param block The block that was damaged
-     * @param player The player who damaged this block
+     * @param block    The block that was damaged
+     * @param player   The player who damaged this block
      */
     public OraxenNoteBlockDamageEvent(@NotNull final NoteBlockMechanic mechanic, @NotNull final Block block, @NotNull final Player player) {
         this.mechanic = mechanic;
         this.player = player;
         this.block = block;
         this.isCancelled = false;
+    }
+
+    public static HandlerList getHandlerList() {
+        return HANDLERS;
     }
 
     /**
@@ -71,9 +76,5 @@ public class OraxenNoteBlockDamageEvent extends Event implements Cancellable {
     @Override
     public HandlerList getHandlers() {
         return getHandlerList();
-    }
-
-    public static HandlerList getHandlerList() {
-        return HANDLERS;
     }
 }

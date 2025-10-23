@@ -28,7 +28,6 @@ public class NoteBlockMechanic extends Mechanic {
     private final LimitedPlacing limitedPlacing;
     private final StorageMechanic storage;
     private final BlockSounds blockSounds;
-    private String model;
     private final int hardness;
     private final LightMechanic light;
     private final boolean canIgnite;
@@ -37,8 +36,8 @@ public class NoteBlockMechanic extends Mechanic {
     private final LogStripping logStripping;
     private final DirectionalBlock directionalBlock;
     private final List<ClickAction> clickActions;
-
     private final BlockLockerMechanic blockLocker;
+    private String model;
 
     @SuppressWarnings("unchecked")
     public NoteBlockMechanic(MechanicFactory mechanicFactory, ConfigurationSection section) {
@@ -83,24 +82,29 @@ public class NoteBlockMechanic extends Mechanic {
         blockLocker = blockLockerSection != null ? new BlockLockerMechanic(blockLockerSection) : null;
     }
 
-    public boolean hasLimitedPlacing() { return limitedPlacing != null; }
-    public LimitedPlacing getLimitedPlacing() { return limitedPlacing; }
+    public boolean hasLimitedPlacing() {return limitedPlacing != null;}
 
-    public boolean isStorage() { return storage != null; }
-    public StorageMechanic getStorage() { return storage; }
+    public LimitedPlacing getLimitedPlacing() {return limitedPlacing;}
 
-    public boolean hasBlockSounds() { return blockSounds != null; }
-    public BlockSounds getBlockSounds() { return blockSounds; }
+    public boolean isStorage() {return storage != null;}
 
-    public boolean hasDryout() { return farmBlockDryout != null; }
-    public FarmBlockDryout getDryout() { return farmBlockDryout; }
+    public StorageMechanic getStorage() {return storage;}
+
+    public boolean hasBlockSounds() {return blockSounds != null;}
+
+    public BlockSounds getBlockSounds() {return blockSounds;}
+
+    public boolean hasDryout() {return farmBlockDryout != null;}
+
+    public FarmBlockDryout getDryout() {return farmBlockDryout;}
 
     public boolean isLog() {
         if (isDirectional() && !getDirectional().isParentBlock()) {
             return logStripping != null || directionalBlock.getParentMechanic().isLog();
         } else return logStripping != null;
     }
-    public LogStripping getLog() { return logStripping; }
+
+    public LogStripping getLog() {return logStripping;}
 
     public boolean isFalling() {
         if (isDirectional() && !directionalBlock.isParentBlock()) {
@@ -108,8 +112,9 @@ public class NoteBlockMechanic extends Mechanic {
         } else return isFalling;
     }
 
-    public boolean isDirectional() { return directionalBlock != null; }
-    public DirectionalBlock getDirectional() { return directionalBlock; }
+    public boolean isDirectional() {return directionalBlock != null;}
+
+    public DirectionalBlock getDirectional() {return directionalBlock;}
 
     public String getModel(ConfigurationSection section) {
         if (model != null)
@@ -152,7 +157,7 @@ public class NoteBlockMechanic extends Mechanic {
         } else return canIgnite;
     }
 
-    public boolean hasClickActions() { return !clickActions.isEmpty(); }
+    public boolean hasClickActions() {return !clickActions.isEmpty();}
 
     public void runClickActions(final Player player) {
         for (final ClickAction action : clickActions) {

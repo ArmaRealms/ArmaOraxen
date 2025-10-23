@@ -13,13 +13,13 @@ import org.jetbrains.annotations.Nullable;
 
 public class OraxenFurnitureBreakEvent extends Event implements Cancellable {
 
-    boolean isCancelled;
+    private static final HandlerList HANDLERS = new HandlerList();
     private final FurnitureMechanic mechanic;
     private final Block block;
     private final Player player;
     private final Entity baseEntity;
+    boolean isCancelled;
     private Drop drop;
-    private static final HandlerList HANDLERS = new HandlerList();
 
     public OraxenFurnitureBreakEvent(@NotNull final FurnitureMechanic mechanic, @NotNull final Entity baseEntity, @NotNull final Player player, @Nullable final Block block) {
         this.block = block;
@@ -27,6 +27,10 @@ public class OraxenFurnitureBreakEvent extends Event implements Cancellable {
         this.player = player;
         this.baseEntity = baseEntity;
         this.drop = mechanic.getDrop();
+    }
+
+    public static HandlerList getHandlerList() {
+        return HANDLERS;
     }
 
     /**
@@ -47,6 +51,7 @@ public class OraxenFurnitureBreakEvent extends Event implements Cancellable {
 
     /**
      * Returns the block that was broken.
+     *
      * @return block that was broken or null if it was an entity
      */
     @Nullable
@@ -72,12 +77,12 @@ public class OraxenFurnitureBreakEvent extends Event implements Cancellable {
 
     /**
      * Set the drop of the furniture
-    * @param drop the new drop
-    */
+     *
+     * @param drop the new drop
+     */
     public void setDrop(@NotNull final Drop drop) {
         this.drop = drop;
     }
-
 
     @Override
     public boolean isCancelled() {
@@ -92,10 +97,6 @@ public class OraxenFurnitureBreakEvent extends Event implements Cancellable {
     @NotNull
     @Override
     public HandlerList getHandlers() {
-        return HANDLERS;
-    }
-
-    public static HandlerList getHandlerList() {
         return HANDLERS;
     }
 

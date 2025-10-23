@@ -5,7 +5,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 
-
 public class BlastingBuilder extends CookingBuilder {
 
     public BlastingBuilder(Player player) {

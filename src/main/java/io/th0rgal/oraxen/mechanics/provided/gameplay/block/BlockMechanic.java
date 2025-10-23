@@ -13,16 +13,20 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.MultipleFacing;
 import org.bukkit.configuration.ConfigurationSection;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Objects;
 
 public class BlockMechanic extends Mechanic {
 
-    private String model;
     private final int customVariation;
     private final Drop drop;
     private final boolean canIgnite;
     private final LimitedPlacing limitedPlacing;
     private final BlockSounds blockSounds;
+    private String model;
 
     @SuppressWarnings("unchecked")
     public BlockMechanic(MechanicFactory mechanicFactory, ConfigurationSection section) {
@@ -37,10 +41,9 @@ public class BlockMechanic extends Mechanic {
         customVariation = section.getInt("custom_variation");
         canIgnite = section.getBoolean("can_ignite", false);
 
-
         List<Loot> loots = new ArrayList<>();
         ConfigurationSection drop = section.getConfigurationSection("drop");
-        if (drop != null){
+        if (drop != null) {
             for (LinkedHashMap<String, Object> lootConfig : (List<LinkedHashMap<String, Object>>) drop.getList("loots", new ArrayList<>()))
                 loots.add(new Loot(lootConfig, getItemID()));
             if (drop.isString("minimal_type")) {
@@ -61,31 +64,6 @@ public class BlockMechanic extends Mechanic {
         if (section.isConfigurationSection("block_sounds")) {
             blockSounds = new BlockSounds(Objects.requireNonNull(section.getConfigurationSection("block_sounds")));
         } else blockSounds = null;
-    }
-
-    public String getModel(ConfigurationSection section) {
-        if (model != null)
-            return model;
-        // use the itemstack model if block model isn't set
-        return section.getString("Pack.model");
-    }
-
-    public boolean hasLimitedPlacing() { return limitedPlacing != null; }
-    public LimitedPlacing getLimitedPlacing() { return limitedPlacing; }
-
-    public boolean hasBlockSounds() { return blockSounds != null; }
-    public BlockSounds getBlockSounds() { return blockSounds; }
-
-    public int getCustomVariation() {
-        return customVariation;
-    }
-
-    public Drop getDrop() {
-        return drop;
-    }
-
-    public boolean canIgnite() {
-        return canIgnite;
     }
 
     public static int getCode(final Block block) {
@@ -115,5 +93,31 @@ public class BlockMechanic extends Mechanic {
         for (int i = 0; i < properties.length; i++) blockData.setFace(properties[i], (code & 0x1 << i) != 0);
     }
 
+    public String getModel(ConfigurationSection section) {
+        if (model != null)
+            return model;
+        // use the itemstack model if block model isn't set
+        return section.getString("Pack.model");
+    }
+
+    public boolean hasLimitedPlacing() {return limitedPlacing != null;}
+
+    public LimitedPlacing getLimitedPlacing() {return limitedPlacing;}
+
+    public boolean hasBlockSounds() {return blockSounds != null;}
+
+    public BlockSounds getBlockSounds() {return blockSounds;}
+
+    public int getCustomVariation() {
+        return customVariation;
+    }
+
+    public Drop getDrop() {
+        return drop;
+    }
+
+    public boolean canIgnite() {
+        return canIgnite;
+    }
 
 }

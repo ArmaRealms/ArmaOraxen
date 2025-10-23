@@ -11,9 +11,9 @@ import java.util.Objects;
 public class EnergyBlastMechanic extends SpellMechanic {
 
     private final Particle particle;
-    private Particle.DustOptions particleColor = null;
     private final double damage;
     private final int length;
+    private Particle.DustOptions particleColor = null;
 
     public EnergyBlastMechanic(MechanicFactory mechanicFactory, ConfigurationSection section) {
         super(mechanicFactory, section);

@@ -58,7 +58,7 @@ public class JukeboxListener implements Listener {
 
         if (displayName != null) {
             Component message = AdventureUtils.MINI_MESSAGE.deserialize(
-                Message.MECHANICS_JUKEBOX_NOW_PLAYING.toString(), AdventureUtils.tagResolver("disc", displayName));
+                    Message.MECHANICS_JUKEBOX_NOW_PLAYING.toString(), AdventureUtils.tagResolver("disc", displayName));
             OraxenPlugin.get().getAudience().player(player).sendActionBar(message);
         }
 
@@ -119,13 +119,13 @@ public class JukeboxListener implements Listener {
         if (!jukebox.hasPermission(player))
             return false;
         var item = MusicDiscHelpers.stopJukeboxAt(baseEntity, jukebox.getVolume(), jukebox.getPitch());
-        if(item == null) return false;
+        if (item == null) return false;
         baseEntity.getWorld().dropItemNaturally(baseEntity.getLocation().toCenterLocation(), item);
 
         // if the active stage was not null we need to reset it because it changed
         if (jukebox.active_stage != null) {
             FurnitureMechanic.setFurnitureItem(baseEntity,
-                OraxenItems.getItemById(furnitureMechanic.getItemID()).build());
+                    OraxenItems.getItemById(furnitureMechanic.getItemID()).build());
         }
         return true;
     }

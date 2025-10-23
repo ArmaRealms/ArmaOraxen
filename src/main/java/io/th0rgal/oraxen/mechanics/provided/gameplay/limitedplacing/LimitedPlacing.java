@@ -28,24 +28,6 @@ public class LimitedPlacing {
     private final boolean wall;
     private final RadiusLimitation radiusLimitation;
 
-    public static final class RadiusLimitation {
-        private final int radius;
-        private final int amount;
-
-        public RadiusLimitation(ConfigurationSection section) {
-            radius = section.getInt("radius", -1);
-            amount = section.getInt("amount", -1);
-        }
-
-        public int getRadius() {
-            return radius;
-        }
-
-        public int getAmount() {
-            return amount;
-        }
-    }
-
     public LimitedPlacing(ConfigurationSection section) {
         floor = section.getBoolean("floor", true);
         roof = section.getBoolean("roof", true);
@@ -53,7 +35,7 @@ public class LimitedPlacing {
         type = LimitedPlacingType.valueOf(section.getString("type", "DENY"));
         blockTypes = getLimitedBlockMaterials(section.getStringList("block_types"));
         blockTags = getLimitedBlockTags(section.getStringList("block_tags"));
-        oraxenBlocks =  getLimitedOraxenBlocks(section.getStringList("oraxen_blocks"));
+        oraxenBlocks = getLimitedOraxenBlocks(section.getStringList("oraxen_blocks"));
 
         ConfigurationSection radiusSection = section.getConfigurationSection("radius_limitation");
         radiusLimitation = radiusSection != null ? new RadiusLimitation(radiusSection) : null;
@@ -84,7 +66,7 @@ public class LimitedPlacing {
         return tags;
     }
 
-    public LimitedPlacingType getType() { return type; }
+    public LimitedPlacingType getType() {return type;}
 
     public boolean isNotPlacableOn(Block block, BlockFace blockFace) {
         Block placedBlock = block.getRelative(blockFace);
@@ -110,7 +92,8 @@ public class LimitedPlacing {
     }
 
     public boolean checkLimitedMechanic(Block block) {
-        if (blockTypes.isEmpty() && blockTags.isEmpty() && oraxenBlocks.isEmpty()) return type == LimitedPlacingType.ALLOW;
+        if (blockTypes.isEmpty() && blockTags.isEmpty() && oraxenBlocks.isEmpty())
+            return type == LimitedPlacingType.ALLOW;
         String oraxenId = checkIfOraxenItem(block);
         if (oraxenId == null) {
             if (blockTypes.contains(block.getType())) return true;
@@ -144,17 +127,37 @@ public class LimitedPlacing {
         };
     }
 
+    public boolean isFloor() {
+        return floor;
+    }
+
+    public boolean isRoof() {
+        return roof;
+    }
+
+    public boolean isWall() {
+        return wall;
+    }
+
     public enum LimitedPlacingType {
         ALLOW, DENY
     }
 
-    public boolean isFloor() {
-        return floor;
-    }
-    public boolean isRoof() {
-        return roof;
-    }
-    public boolean isWall() {
-        return wall;
+    public static final class RadiusLimitation {
+        private final int radius;
+        private final int amount;
+
+        public RadiusLimitation(ConfigurationSection section) {
+            radius = section.getInt("radius", -1);
+            amount = section.getInt("amount", -1);
+        }
+
+        public int getRadius() {
+            return radius;
+        }
+
+        public int getAmount() {
+            return amount;
+        }
     }
 }

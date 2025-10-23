@@ -6,21 +6,21 @@ import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 public class OraxenPackPreUploadEvent extends Event implements Cancellable {
-    private boolean cancelled;
     private static final HandlerList HANDLERS = new HandlerList();
+    private boolean cancelled;
 
     public OraxenPackPreUploadEvent() {
         super(true);
+    }
+
+    public static HandlerList getHandlerList() {
+        return HANDLERS;
     }
 
     @NotNull
     @Override
     public HandlerList getHandlers() {
         return getHandlerList();
-    }
-
-    public static HandlerList getHandlerList() {
-        return HANDLERS;
     }
 
     @Override

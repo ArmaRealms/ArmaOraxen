@@ -12,6 +12,9 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 
 public class WorldEditListener implements Listener {
+    private static final List<String> oraxenBlockIDs = OraxenItems.getEntries().stream()
+            .map(entry -> entry.getKey().toLowerCase(Locale.ROOT)).filter(OraxenBlocks::isOraxenBlock).toList();
+
     @EventHandler
     public void onTabComplete(AsyncTabCompleteEvent event) {
         List<String> args = Arrays.stream(event.getBuffer().split(" ")).toList();
@@ -23,7 +26,4 @@ public class WorldEditListener implements Listener {
         ids.addAll(event.getCompletions());
         event.setCompletions(ids);
     }
-
-    private static final List<String> oraxenBlockIDs = OraxenItems.getEntries().stream()
-            .map(entry -> entry.getKey().toLowerCase(Locale.ROOT)).filter(OraxenBlocks::isOraxenBlock).toList();
 }

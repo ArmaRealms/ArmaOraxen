@@ -74,16 +74,15 @@ public class EnergyBlastMechanicManager implements Listener {
         playEffect(player, mechanic);
     }
 
-
     private void playEffect(Player player, EnergyBlastMechanic mechanic) {
         new BukkitRunnable() {
-            final Vector dir = player.getLocation().getDirection().normalize();
             static final int circlePoints = 360;
-            double radius = 2;
+            final Vector dir = player.getLocation().getDirection().normalize();
             final Location playerLoc = player.getEyeLocation();
             final double pitch = (playerLoc.getPitch() + 90.0F) * 0.017453292F;
             final double yaw = -playerLoc.getYaw() * 0.017453292F;
             final double increment = (2 * Math.PI) / circlePoints;
+            double radius = 2;
             double circlePointOffset = 0;
             int beamLength = mechanic.getLength() * 2;
             final double radiusShrinkage = radius / ((beamLength + 2) / 2.0);

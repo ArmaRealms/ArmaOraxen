@@ -4,12 +4,11 @@ import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.compatibilities.provided.ecoitems.WrappedEcoItem;
 import io.th0rgal.oraxen.compatibilities.provided.mythiccrucible.WrappedCrucibleItem;
 import io.th0rgal.oraxen.config.Message;
-import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
+import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.PotionUtils;
 import io.th0rgal.oraxen.utils.logs.Logs;
-
 import net.Indyuce.mmoitems.MMOItems;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Material;

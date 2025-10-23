@@ -6,11 +6,11 @@ import org.bukkit.entity.Player;
 
 public class HelixAura extends Aura {
 
+    private double y = 0;
+
     public HelixAura(AuraMechanic mechanic) {
         super(mechanic);
     }
-
-    private double y = 0;
 
     @Override
     protected void spawnParticles(Player player) {

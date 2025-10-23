@@ -33,6 +33,16 @@ import static io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureM
 
 public class UpdateCommand {
 
+    private static Set<Chunk> getChunksAroundPlayer(Player player, int radius) {
+        Location loc = player.getLocation();
+        Set<Chunk> chunks = new HashSet<>();
+        for (int x = loc.getBlockX() - radius; x <= loc.getBlockX() + radius; x++)
+            for (int z = loc.getBlockZ() - radius; z <= loc.getBlockZ() + radius; z++)
+                chunks.add(new Location(player.getWorld(), x, loc.getBlockY(), z).getChunk());
+
+        return chunks;
+    }
+
     CommandAPICommand getUpdateCommand() {
         return new CommandAPICommand("update")
                 .withPermission("oraxen.command.update")
@@ -99,15 +109,5 @@ public class UpdateCommand {
             });
             mechanic.place(rootLoc, yaw, BlockFace.UP);
         }
-    }
-
-    private static Set<Chunk> getChunksAroundPlayer(Player player, int radius) {
-        Location loc = player.getLocation();
-        Set<Chunk> chunks = new HashSet<>();
-        for (int x = loc.getBlockX() - radius; x <= loc.getBlockX() + radius; x++)
-            for (int z = loc.getBlockZ() - radius; z <= loc.getBlockZ() + radius; z++)
-                chunks.add(new Location(player.getWorld(), x, loc.getBlockY(), z).getChunk());
-
-        return chunks;
     }
 }

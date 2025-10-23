@@ -12,13 +12,13 @@ import org.jetbrains.annotations.NotNull;
 
 public class OraxenNoteBlockPlaceEvent extends Event implements Cancellable {
 
+    private static final HandlerList HANDLERS = new HandlerList();
     private final NoteBlockMechanic mechanic;
     private final Player player;
     private final Block block;
     private final ItemStack itemInHand;
     private final EquipmentSlot hand;
     private boolean isCancelled;
-    private static final HandlerList HANDLERS = new HandlerList();
 
     public OraxenNoteBlockPlaceEvent(@NotNull final NoteBlockMechanic mechanic, @NotNull final Block block, @NotNull final Player player, @NotNull final ItemStack itemInHand, @NotNull final EquipmentSlot hand) {
         this.mechanic = mechanic;
@@ -27,6 +27,10 @@ public class OraxenNoteBlockPlaceEvent extends Event implements Cancellable {
         this.itemInHand = itemInHand;
         this.hand = hand;
         this.isCancelled = false;
+    }
+
+    public static HandlerList getHandlerList() {
+        return HANDLERS;
     }
 
     /**
@@ -57,7 +61,7 @@ public class OraxenNoteBlockPlaceEvent extends Event implements Cancellable {
      * Gets the item in the player's hand when they placed the furniture.
      *
      * @return The ItemStack for the item in the player's hand when they
-     *     placed the furniture
+     * placed the furniture
      */
     @NotNull
     public ItemStack getItemInHand() {
@@ -88,10 +92,6 @@ public class OraxenNoteBlockPlaceEvent extends Event implements Cancellable {
     @Override
     public HandlerList getHandlers() {
         return getHandlerList();
-    }
-
-    public static HandlerList getHandlerList() {
-        return HANDLERS;
     }
 
 }

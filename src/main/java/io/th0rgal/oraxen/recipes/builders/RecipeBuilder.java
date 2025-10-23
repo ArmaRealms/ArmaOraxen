@@ -19,13 +19,12 @@ import java.util.UUID;
 public abstract class RecipeBuilder {
 
     private static final Map<UUID, RecipeBuilder> MAP = new HashMap<>();
-
-    private Inventory inventory;
-    private File configFile;
-    private YamlConfiguration config;
     private final String inventoryTitle;
     private final Player player;
     private final String builderName;
+    private Inventory inventory;
+    private File configFile;
+    private YamlConfiguration config;
 
     protected RecipeBuilder(Player player, String builderName) {
         this.player = player;
@@ -37,6 +36,10 @@ public abstract class RecipeBuilder {
                 : createInventory(player, inventoryTitle);
         player.openInventory(inventory);
         MAP.put(playerId, this);
+    }
+
+    public static RecipeBuilder get(UUID playerUUID) {
+        return MAP.get(playerUUID);
     }
 
     abstract Inventory createInventory(Player player, String inventoryTitle);
@@ -53,12 +56,17 @@ public abstract class RecipeBuilder {
         return this.inventory;
     }
 
+    public void setInventory(Inventory inventory) {
+        this.inventory = inventory;
+        MAP.put(player.getUniqueId(), this);
+    }
+
     protected void setSerializedItem(ConfigurationSection section, @NotNull ItemStack itemStack) {
 
         // if our itemstack is made using oraxen and is not modified
         if (OraxenItems.exists(itemStack))
             section.set("oraxen_item", OraxenItems.getIdByItem(itemStack));
-        // if our itemstack is an unmodified vanilla item outside of amount
+            // if our itemstack is an unmodified vanilla item outside of amount
         else if (itemStack.isSimilar(new ItemStack(itemStack.getType())))
             section.set("minecraft_type", itemStack.getType().name());
         else section.set("minecraft_item", itemStack);
@@ -83,11 +91,6 @@ public abstract class RecipeBuilder {
         }
     }
 
-    public void setInventory(Inventory inventory) {
-        this.inventory = inventory;
-        MAP.put(player.getUniqueId(), this);
-    }
-
     public String getInventoryTitle() {
         return inventoryTitle;
     }
@@ -98,9 +101,5 @@ public abstract class RecipeBuilder {
 
     public void open() {
         player.openInventory(inventory);
-    }
-
-    public static RecipeBuilder get(UUID playerUUID) {
-        return MAP.get(playerUUID);
     }
 }

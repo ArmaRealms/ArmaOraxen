@@ -7,8 +7,9 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerOp
 import io.th0rgal.oraxen.utils.PacketHelpers;
 
 public class InventoryPacketListener implements PacketListener {
-    @Override public void onPacketSend(PacketSendEvent event) {
-        if(event.getPacketType() != PacketType.Play.Server.OPEN_WINDOW) return;
+    @Override
+    public void onPacketSend(PacketSendEvent event) {
+        if (event.getPacketType() != PacketType.Play.Server.OPEN_WINDOW) return;
         var wrapper = new WrapperPlayServerOpenWindow(event);
         wrapper.setTitle(PacketHelpers.translateTitle(wrapper.getTitle()));
     }

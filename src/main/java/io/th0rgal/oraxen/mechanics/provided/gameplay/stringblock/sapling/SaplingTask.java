@@ -42,7 +42,8 @@ public class SaplingTask extends BukkitRunnable {
                         if (!sapling.canGrowNaturally()) continue;
                         if (sapling.requiresWaterSource() && !sapling.isUnderWater(block)) continue;
                         if (sapling.requiresLight() && block.getLightLevel() < sapling.getMinLightLevel()) continue;
-                        if (!sapling.replaceBlocks() && !WrappedWorldEdit.getBlocksInSchematic(block.getLocation(), sapling.getSchematic()).isEmpty()) continue;
+                        if (!sapling.replaceBlocks() && !WrappedWorldEdit.getBlocksInSchematic(block.getLocation(), sapling.getSchematic()).isEmpty())
+                            continue;
 
                         int growthTimeRemains = pdc.getOrDefault(SAPLING_KEY, PersistentDataType.INTEGER, 0) - delay;
                         if (growthTimeRemains <= 0) {
@@ -51,8 +52,7 @@ public class SaplingTask extends BukkitRunnable {
                                 block.getWorld().playSound(block.getLocation(), sapling.getGrowSound(), 1.0f, 0.8f);
                             WrappedWorldEdit.pasteSchematic(block.getLocation(), sapling.getSchematic(), sapling.replaceBlocks(), sapling.copyBiomes(), sapling.copyEntities());
                         } else pdc.set(SAPLING_KEY, PersistentDataType.INTEGER, growthTimeRemains);
-                    }
-                    else if (pdc.has(SAPLING_KEY, PersistentDataType.INTEGER) && block.getType() != Material.TRIPWIRE) {
+                    } else if (pdc.has(SAPLING_KEY, PersistentDataType.INTEGER) && block.getType() != Material.TRIPWIRE) {
                         pdc.remove(SAPLING_KEY);
                     }
                 }

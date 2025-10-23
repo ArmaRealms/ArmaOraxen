@@ -19,7 +19,13 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class ItemsView {
 
@@ -127,10 +133,6 @@ public class ItemsView {
         return gui;
     }
 
-    private record GuiItemSlot(ItemStack itemStack, Integer slot) {
-
-    }
-
     private GuiItemSlot getGuiItemSlot(final File file) {
         ItemStack itemStack;
         final String fileName = Utils.removeExtension(file.getName());
@@ -146,5 +148,9 @@ public class ItemsView {
         if (itemStack == null) itemStack = new ItemBuilder(Material.PAPER).setDisplayName(displayName).build();
         final int slot = settings.getInt(String.format("oraxen_inventory.menu_layout.%s.slot", Utils.removeExtension(file.getName())), 0) - 1;
         return new GuiItemSlot(itemStack, slot);
+    }
+
+    private record GuiItemSlot(ItemStack itemStack, Integer slot) {
+
     }
 }

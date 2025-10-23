@@ -11,12 +11,12 @@ import org.jetbrains.annotations.NotNull;
 
 public class OraxenStringBlockBreakEvent extends Event implements Cancellable {
 
+    private static final HandlerList HANDLERS = new HandlerList();
     private final StringBlockMechanic mechanic;
     private final Player player;
     private final Block block;
     private Drop drop;
     private boolean isCancelled;
-    private static final HandlerList HANDLERS = new HandlerList();
 
     public OraxenStringBlockBreakEvent(@NotNull final StringBlockMechanic mechanic, @NotNull final Block block, @NotNull final Player player) {
         this.mechanic = mechanic;
@@ -24,6 +24,10 @@ public class OraxenStringBlockBreakEvent extends Event implements Cancellable {
         this.block = block;
         this.drop = mechanic.getDrop();
         this.isCancelled = false;
+    }
+
+    public static HandlerList getHandlerList() {
+        return HANDLERS;
     }
 
     /**
@@ -60,6 +64,7 @@ public class OraxenStringBlockBreakEvent extends Event implements Cancellable {
 
     /**
      * Set the drop of the block
+     *
      * @param drop the new drop
      */
     public void setDrop(Drop drop) {
@@ -80,10 +85,6 @@ public class OraxenStringBlockBreakEvent extends Event implements Cancellable {
     @Override
     public HandlerList getHandlers() {
         return getHandlerList();
-    }
-
-    public static HandlerList getHandlerList() {
-        return HANDLERS;
     }
 
 }

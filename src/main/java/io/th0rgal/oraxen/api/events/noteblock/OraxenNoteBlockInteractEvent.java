@@ -15,6 +15,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class OraxenNoteBlockInteractEvent extends Event implements Cancellable {
 
+    private static final HandlerList HANDLERS = new HandlerList();
     private final NoteBlockMechanic mechanic;
     private final Block block;
     private final Player player;
@@ -23,7 +24,6 @@ public class OraxenNoteBlockInteractEvent extends Event implements Cancellable {
     private final EquipmentSlot hand;
     private final Action action;
     private boolean isCancelled;
-    private static final HandlerList HANDLERS = new HandlerList();
 
     @Deprecated
     public OraxenNoteBlockInteractEvent(@NotNull final NoteBlockMechanic mechanic, @NotNull final Player player, @Nullable final ItemStack itemInHand, @NotNull final EquipmentSlot hand, @NotNull final Block block, @NotNull final BlockFace blockFace) {
@@ -46,6 +46,10 @@ public class OraxenNoteBlockInteractEvent extends Event implements Cancellable {
         this.hand = hand;
         this.action = action;
         this.isCancelled = false;
+    }
+
+    public static HandlerList getHandlerList() {
+        return HANDLERS;
     }
 
     /**
@@ -114,15 +118,10 @@ public class OraxenNoteBlockInteractEvent extends Event implements Cancellable {
         isCancelled = cancel;
     }
 
-
     @NotNull
     @Override
     public HandlerList getHandlers() {
         return getHandlerList();
-    }
-
-    public static HandlerList getHandlerList() {
-        return HANDLERS;
     }
 
 }

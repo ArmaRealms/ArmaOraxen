@@ -7,6 +7,7 @@ import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 
 public class PlaceholderAPICompatibility extends CompatibilityProvider<PlaceholderAPIPlugin> {
     public static PlaceholderExpansion expansion = null;
+
     public PlaceholderAPICompatibility() {
         expansion = new OraxenExpansion(OraxenPlugin.get());
         expansion.register();

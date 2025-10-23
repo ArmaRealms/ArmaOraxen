@@ -12,10 +12,15 @@ import org.bukkit.inventory.ItemStack;
 public class MiscMechanicFactory extends MechanicFactory {
 
     private static MiscMechanicFactory instance;
+
     public MiscMechanicFactory(ConfigurationSection section) {
         super(section);
         MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new MiscListener(this));
         instance = this;
+    }
+
+    public static MiscMechanicFactory get() {
+        return instance;
     }
 
     @Override
@@ -23,8 +28,8 @@ public class MiscMechanicFactory extends MechanicFactory {
         MiscMechanic mechanic = new MiscMechanic(this, section);
 
         if (VersionUtil.atOrAbove("1.21.2")) {
-            if ((!mechanic.burnsInFire() || !mechanic.burnsInLava()) && 
-                (section.contains("burns_in_fire") || section.contains("burns_in_lava"))) {
+            if ((!mechanic.burnsInFire() || !mechanic.burnsInLava()) &&
+                    (section.contains("burns_in_fire") || section.contains("burns_in_lava"))) {
                 Logs.logWarning(mechanic.getItemID() + " is using deprecated Misc-Mechanic burns_in_fire/lava...");
                 Logs.logWarning("It is heavily advised to swap to the new `damage_resistant`-component on 1.21.2+ servers...");
             } else if (!mechanic.breaksFromCactus() && section.contains("breaks_from_cactus")) {
@@ -35,10 +40,6 @@ public class MiscMechanicFactory extends MechanicFactory {
 
         addToImplemented(mechanic);
         return mechanic;
-    }
-
-    public static MiscMechanicFactory get() {
-        return instance;
     }
 
     @Override

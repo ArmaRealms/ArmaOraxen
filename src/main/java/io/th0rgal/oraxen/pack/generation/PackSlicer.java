@@ -18,99 +18,11 @@ import java.util.stream.Collectors;
 
 public class PackSlicer extends Slicer {
 
+    public static final List<InputFile> INPUTS;
+    public static final Set<String> OUTPUT_PATHS;
     private static final Path packFolder = OraxenPlugin.get().getResourcePack().getPackFolder().toPath();
     private static final Path assetsFolder = packFolder.resolve("assets/minecraft");
     private static final Box STANDARD_CONTAINER_BOX = new Box(0, 0, 176, 166, 256, 256);
-    public static final List<InputFile> INPUTS;
-    public static final Set<String> OUTPUT_PATHS;
-
-    public PackSlicer(Path rootPath) {
-        super(rootPath, rootPath, null);
-    }
-
-    public static void slicePackFiles() {
-        Logs.logInfo("Slicing gui-textures to 1.20.2-format...");
-        try {
-            new PackSlicer(packFolder).process(INPUTS);
-            if (assetsFolder.toFile().exists()) new PackSlicer(assetsFolder).process(INPUTS);
-            Logs.logSuccess("Successfully sliced gui-textures for 1.20.2");
-        } catch (Exception e) {
-            Logs.logWarning("Failed to properly slice textures for 1.20.2");
-            if (Settings.DEBUG.toBool()) e.printStackTrace();
-        }
-    }
-
-    private static InputFile input(String path, OutputFile... outputs) {
-        return (new InputFile(path)).outputs(outputs);
-    }
-
-    private static InputFile copy(String name) {
-        String path = nameToPath("minecraft", name);
-        return move(path, path);
-    }
-
-    private static InputFile clip(String name, Box box) {
-        return clip(name, name, box);
-    }
-
-    private static InputFile clip(String inputName, String outputName, Box box) {
-        String inputPath = nameToPath("minecraft", inputName);
-        String outputPath = nameToPath("minecraft", outputName);
-        Box imageBox = new Box(0, 0, box.totalW(), box.totalH(), box.totalW(), box.totalH());
-        return (new InputFile(inputPath)).outputs((new OutputFile(outputPath, imageBox)).apply((image) -> {
-            int imageWidth = image.getWidth();
-            int imageHeight = image.getHeight();
-            int x = box.scaleX(imageWidth);
-            int y = box.scaleY(imageHeight);
-            int width = box.scaleW(imageWidth);
-            int height = box.scaleH(imageHeight);
-            BufferedImage subImage = image.getSubimage(x, y, width, height);
-            BufferedImage clippedImage = new BufferedImage(imageWidth, imageHeight, 2);
-            clippedImage.getGraphics().drawImage(subImage, x, y, null);
-            return clippedImage;
-        }));
-    }
-
-    private static InputFile move(String inputPath, String outputPath) {
-        return (new InputFile(inputPath)).outputs(new OutputFile[]{new OutputFile(outputPath, new Box(0, 0, 1, 1, 1, 1))});
-    }
-
-    private static InputFile moveRealmsToMinecraft(String name) {
-        return move(nameToPath("realms", name), nameToPath("minecraft", name));
-    }
-
-    private static String nameToPath(String namespace, String name) {
-        return "assets/" + namespace + "/textures/gui/" + name + ".png";
-    }
-
-    private static UnaryOperator<BufferedImage> flipFrameAxis() {
-        return (image) -> {
-            int frameWidth = image.getWidth() / 2;
-            int frameHeight = image.getHeight();
-            BufferedImage newImage = new BufferedImage(frameWidth, frameHeight * 2, 2);
-            Graphics graphics = newImage.getGraphics();
-
-            for (int frame = 0; frame < 2; ++frame)
-                graphics.drawImage(image.getSubimage(frame * frameWidth, 0, frameWidth, frameHeight), 0, frame * frameHeight, null);
-
-            graphics.dispose();
-            return newImage;
-        };
-    }
-
-    private static UnaryOperator<BufferedImage> spriteExtender() {
-        return (image) -> {
-            int imageWidth = image.getWidth();
-            int imageHeight = image.getHeight();
-            int x = 3 * imageWidth / 17;
-            int y = 4 * imageHeight / 16;
-            int width = 26 * imageWidth / 17;
-            int height = 26 * imageHeight / 16;
-            BufferedImage extendedImage = new BufferedImage(width, height, 2);
-            extendedImage.getGraphics().drawImage(image, x, y, null);
-            return extendedImage;
-        };
-    }
 
     static {
         INPUTS = List.of(
@@ -588,6 +500,94 @@ public class PackSlicer extends Slicer {
 
         OUTPUT_PATHS = INPUTS.stream().map(i -> i.outputs.stream().map(o -> o.path).collect(Collectors.toSet())).flatMap(s -> s.stream()).collect(Collectors.toSet());
 
+    }
+
+    public PackSlicer(Path rootPath) {
+        super(rootPath, rootPath, null);
+    }
+
+    public static void slicePackFiles() {
+        Logs.logInfo("Slicing gui-textures to 1.20.2-format...");
+        try {
+            new PackSlicer(packFolder).process(INPUTS);
+            if (assetsFolder.toFile().exists()) new PackSlicer(assetsFolder).process(INPUTS);
+            Logs.logSuccess("Successfully sliced gui-textures for 1.20.2");
+        } catch (Exception e) {
+            Logs.logWarning("Failed to properly slice textures for 1.20.2");
+            if (Settings.DEBUG.toBool()) e.printStackTrace();
+        }
+    }
+
+    private static InputFile input(String path, OutputFile... outputs) {
+        return (new InputFile(path)).outputs(outputs);
+    }
+
+    private static InputFile copy(String name) {
+        String path = nameToPath("minecraft", name);
+        return move(path, path);
+    }
+
+    private static InputFile clip(String name, Box box) {
+        return clip(name, name, box);
+    }
+
+    private static InputFile clip(String inputName, String outputName, Box box) {
+        String inputPath = nameToPath("minecraft", inputName);
+        String outputPath = nameToPath("minecraft", outputName);
+        Box imageBox = new Box(0, 0, box.totalW(), box.totalH(), box.totalW(), box.totalH());
+        return (new InputFile(inputPath)).outputs((new OutputFile(outputPath, imageBox)).apply((image) -> {
+            int imageWidth = image.getWidth();
+            int imageHeight = image.getHeight();
+            int x = box.scaleX(imageWidth);
+            int y = box.scaleY(imageHeight);
+            int width = box.scaleW(imageWidth);
+            int height = box.scaleH(imageHeight);
+            BufferedImage subImage = image.getSubimage(x, y, width, height);
+            BufferedImage clippedImage = new BufferedImage(imageWidth, imageHeight, 2);
+            clippedImage.getGraphics().drawImage(subImage, x, y, null);
+            return clippedImage;
+        }));
+    }
+
+    private static InputFile move(String inputPath, String outputPath) {
+        return (new InputFile(inputPath)).outputs(new OutputFile[]{new OutputFile(outputPath, new Box(0, 0, 1, 1, 1, 1))});
+    }
+
+    private static InputFile moveRealmsToMinecraft(String name) {
+        return move(nameToPath("realms", name), nameToPath("minecraft", name));
+    }
+
+    private static String nameToPath(String namespace, String name) {
+        return "assets/" + namespace + "/textures/gui/" + name + ".png";
+    }
+
+    private static UnaryOperator<BufferedImage> flipFrameAxis() {
+        return (image) -> {
+            int frameWidth = image.getWidth() / 2;
+            int frameHeight = image.getHeight();
+            BufferedImage newImage = new BufferedImage(frameWidth, frameHeight * 2, 2);
+            Graphics graphics = newImage.getGraphics();
+
+            for (int frame = 0; frame < 2; ++frame)
+                graphics.drawImage(image.getSubimage(frame * frameWidth, 0, frameWidth, frameHeight), 0, frame * frameHeight, null);
+
+            graphics.dispose();
+            return newImage;
+        };
+    }
+
+    private static UnaryOperator<BufferedImage> spriteExtender() {
+        return (image) -> {
+            int imageWidth = image.getWidth();
+            int imageHeight = image.getHeight();
+            int x = 3 * imageWidth / 17;
+            int y = 4 * imageHeight / 16;
+            int width = 26 * imageWidth / 17;
+            int height = 26 * imageHeight / 16;
+            BufferedImage extendedImage = new BufferedImage(width, height, 2);
+            extendedImage.getGraphics().drawImage(image, x, y, null);
+            return extendedImage;
+        };
     }
 
 }

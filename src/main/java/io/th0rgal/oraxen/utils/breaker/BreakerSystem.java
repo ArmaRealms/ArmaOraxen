@@ -56,7 +56,7 @@ public abstract class BreakerSystem {
 
     public abstract void registerListener();
 
-    protected abstract void sendBlockBreak(final Player player, final Location location, final int stage) ;
+    protected abstract void sendBlockBreak(final Player player, final Location location, final int stage);
 
     protected void handleEvent(Player player, Block block, Location location, BlockFace blockFace, World world, Runnable cancel, boolean startedDigging) {
         if (player.getGameMode() == GameMode.CREATIVE) return;
@@ -95,10 +95,10 @@ public abstract class BreakerSystem {
             else drop = null;
 
             Bukkit.getScheduler().runTask(OraxenPlugin.get(), () ->
-                player.addPotionEffect(new PotionEffect(PotionUtils.getEffectType("mining_fatigue"),
-                    (int) (period * 11),
-                    Integer.MAX_VALUE,
-                    false, false, false)));
+                    player.addPotionEffect(new PotionEffect(PotionUtils.getEffectType("mining_fatigue"),
+                            (int) (period * 11),
+                            Integer.MAX_VALUE,
+                            false, false, false)));
 
             if (breakerPerLocation.containsKey(location))
                 breakerPerLocation.get(location).cancelTasks(OraxenPlugin.get());
@@ -107,7 +107,7 @@ public abstract class BreakerSystem {
             // Cancellation state is being ignored.
             // However still needs to be called for plugin support.
             final PlayerInteractEvent playerInteractEvent =
-                new PlayerInteractEvent(player, Action.LEFT_CLICK_BLOCK, player.getInventory().getItemInMainHand(), block, blockFace, EquipmentSlot.HAND);
+                    new PlayerInteractEvent(player, Action.LEFT_CLICK_BLOCK, player.getInventory().getItemInMainHand(), block, blockFace, EquipmentSlot.HAND);
             scheduler.runTask(OraxenPlugin.get(), () -> Bukkit.getPluginManager().callEvent(playerInteractEvent));
 
             breakerPerLocation.put(location, scheduler);
@@ -153,7 +153,7 @@ public abstract class BreakerSystem {
                     } else stopBlockHitSound(location);
 
                     scheduler.runTask(OraxenPlugin.get(), () ->
-                        player.removePotionEffect(PotionUtils.getEffectType("mining_fatigue")));
+                            player.removePotionEffect(PotionUtils.getEffectType("mining_fatigue")));
 
                     stopBlockBreaker(location);
                     stopBlockHitSound(location);

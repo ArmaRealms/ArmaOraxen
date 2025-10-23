@@ -10,7 +10,9 @@ import com.comphenix.protocol.reflect.StructureModifier;
 import com.comphenix.protocol.wrappers.BlockPosition;
 import com.comphenix.protocol.wrappers.EnumWrappers;
 import io.th0rgal.oraxen.OraxenPlugin;
-import org.bukkit.*;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
@@ -18,7 +20,7 @@ import org.bukkit.inventory.ItemStack;
 
 public class ProtocolLibBreakerSystem extends BreakerSystem {
     private final PacketAdapter listener = new PacketAdapter(OraxenPlugin.get(),
-        ListenerPriority.LOW, PacketType.Play.Client.BLOCK_DIG) {
+            ListenerPriority.LOW, PacketType.Play.Client.BLOCK_DIG) {
         @Override
         public void onPacketReceiving(final PacketEvent event) {
             final PacketContainer packet = event.getPacket();
@@ -29,7 +31,7 @@ public class ProtocolLibBreakerSystem extends BreakerSystem {
             final StructureModifier<BlockPosition> dataTemp = packet.getBlockPositionModifier();
             final StructureModifier<EnumWrappers.Direction> dataDirection = packet.getDirections();
             final StructureModifier<EnumWrappers.PlayerDigType> data = packet
-                .getEnumModifier(EnumWrappers.PlayerDigType.class, 2);
+                    .getEnumModifier(EnumWrappers.PlayerDigType.class, 2);
             EnumWrappers.PlayerDigType type;
             try {
                 type = data.getValues().getFirst();
@@ -42,8 +44,8 @@ public class ProtocolLibBreakerSystem extends BreakerSystem {
             final Block block = world.getBlockAt(pos.getX(), pos.getY(), pos.getZ());
             final Location location = block.getLocation();
             final BlockFace blockFace = dataDirection.size() > 0 ?
-                BlockFace.valueOf(dataDirection.read(0).name()) :
-                BlockFace.UP;
+                    BlockFace.valueOf(dataDirection.read(0).name()) :
+                    BlockFace.UP;
 
             handleEvent(player, block, location, blockFace, world, () -> event.setCancelled(true), type == EnumWrappers.PlayerDigType.START_DESTROY_BLOCK);
         }

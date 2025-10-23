@@ -18,31 +18,25 @@ import java.util.Locale;
 
 public class AdventureUtils {
 
-    private AdventureUtils() {
-    }
-
     public static final MiniMessage MINI_MESSAGE_EMPTY = MiniMessage.miniMessage();
-
     public static final TagResolver OraxenTagResolver = TagResolver.resolver(TagResolver.standard(),
             GlyphTag.RESOLVER, ShiftTag.RESOLVER, TagResolver.resolver("prefix", Tag.selfClosingInserting(MINI_MESSAGE_EMPTY.deserialize(Message.PREFIX.toString())))
     );
-
+    public static final MiniMessage MINI_MESSAGE = MiniMessage.builder().tags(OraxenTagResolver).build();
     public static final LegacyComponentSerializer LEGACY_SERIALIZER =
             LegacyComponentSerializer.builder().hexColors().useUnusualXRepeatedCharacterHexFormat().build();
 
     public static final LegacyComponentSerializer LEGACY_AMPERSAND =
             LegacyComponentSerializer.builder().character('&').hexColors().useUnusualXRepeatedCharacterHexFormat().build();
+    public static final GsonComponentSerializer GSON_SERIALIZER = GsonComponentSerializer.gson();
+    public static final PlainTextComponentSerializer PLAIN_TEXT = PlainTextComponentSerializer.plainText();
 
-    public static final MiniMessage MINI_MESSAGE = MiniMessage.builder().tags(OraxenTagResolver).build();
-
+    private AdventureUtils() {
+    }
 
     public static MiniMessage MINI_MESSAGE_PLAYER(Player player) {
         return MiniMessage.builder().tags(TagResolver.resolver(TagResolver.standard(), GlyphTag.getResolverForPlayer(player))).build();
     }
-
-    public static final GsonComponentSerializer GSON_SERIALIZER = GsonComponentSerializer.gson();
-
-    public static final PlainTextComponentSerializer PLAIN_TEXT = PlainTextComponentSerializer.plainText();
 
     /**
      * @param message The string to parse
@@ -78,6 +72,7 @@ public class AdventureUtils {
 
     /**
      * Parses the string by deserializing it to a legacy component, then serializing it to a string via MiniMessage
+     *
      * @param message The string to parse
      * @return The parsed string
      */
@@ -96,6 +91,7 @@ public class AdventureUtils {
     /**
      * Parses a string through both legacy and minimessage serializers.
      * This is useful for parsing strings that may contain legacy formatting codes and modern adventure-tags.
+     *
      * @param message The component to parse
      * @return The parsed string
      */
@@ -159,7 +155,6 @@ public class AdventureUtils {
     public static Component parsePlainText(Component message) {
         return PLAIN_TEXT.deserialize(PLAIN_TEXT.serialize(message));
     }
-
 
     public static TagResolver tagResolver(String string, String tag) {
         return TagResolver.resolver(string, Tag.selfClosingInserting(AdventureUtils.MINI_MESSAGE.deserialize(tag)));

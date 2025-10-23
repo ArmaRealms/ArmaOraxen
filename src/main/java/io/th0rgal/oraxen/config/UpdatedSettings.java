@@ -38,16 +38,16 @@ public enum UpdatedSettings {
         this.newPath = newPath;
     }
 
-    @Override
-    public String toString() {
-        return this.path + ", " + newPath;
-    }
-
     public static List<String> toStringList() {
         return Arrays.stream(UpdatedSettings.values()).map(UpdatedSettings::toString).toList();
     }
 
     public static Map<String, String> toStringMap() {
         return Arrays.stream(UpdatedSettings.values()).map(u -> u.toString().split(", ", 2)).collect(Collectors.toMap(e -> e[0], e -> e[1]));
+    }
+
+    @Override
+    public String toString() {
+        return this.path + ", " + newPath;
     }
 }

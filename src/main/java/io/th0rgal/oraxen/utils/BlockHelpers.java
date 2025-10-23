@@ -76,6 +76,18 @@ import static org.bukkit.block.data.FaceAttachable.AttachedFace.FLOOR;
 
 public class BlockHelpers {
 
+    public static final Set<Material> UNBREAKABLE_BLOCKS = Sets.newHashSet(Material.BEDROCK, Material.BARRIER, Material.NETHER_PORTAL, Material.END_PORTAL_FRAME, Material.END_PORTAL, Material.END_GATEWAY);
+    public static final List<Material> REPLACEABLE_BLOCKS;
+
+    static {
+        if (VersionUtil.atOrAbove("1.19")) UNBREAKABLE_BLOCKS.add(Material.REINFORCED_DEEPSLATE);
+        if (VersionUtil.atOrAbove("1.20")) {
+            REPLACEABLE_BLOCKS = Tag.REPLACEABLE.getValues().stream().toList();
+        } else REPLACEABLE_BLOCKS = Arrays.asList(
+                Material.SNOW, Material.VINE, Material.valueOf("GRASS"), Material.TALL_GRASS, Material.SEAGRASS, Material.FERN,
+                Material.LARGE_FERN, Material.AIR, Material.WATER, Material.LAVA, Material.LIGHT);
+    }
+
     /**
      * Returns the block the entity is standing on.<br>
      * Mainly to handle cases where player is on the edge of a block, with AIR below them
@@ -173,19 +185,6 @@ public class BlockHelpers {
         return new CustomBlockData(block, plugin);
     }
 
-    public static final Set<Material> UNBREAKABLE_BLOCKS = Sets.newHashSet(Material.BEDROCK, Material.BARRIER, Material.NETHER_PORTAL, Material.END_PORTAL_FRAME, Material.END_PORTAL, Material.END_GATEWAY);
-
-    static {
-        if (VersionUtil.atOrAbove("1.19")) UNBREAKABLE_BLOCKS.add(Material.REINFORCED_DEEPSLATE);
-        if (VersionUtil.atOrAbove("1.20")) {
-            REPLACEABLE_BLOCKS = Tag.REPLACEABLE.getValues().stream().toList();
-        } else REPLACEABLE_BLOCKS = Arrays.asList(
-                Material.SNOW, Material.VINE, Material.valueOf("GRASS"), Material.TALL_GRASS, Material.SEAGRASS, Material.FERN,
-                Material.LARGE_FERN, Material.AIR, Material.WATER, Material.LAVA, Material.LIGHT);
-    }
-
-    public static final List<Material> REPLACEABLE_BLOCKS;
-
     public static boolean isReplaceable(final Block block) {
         return REPLACEABLE_BLOCKS.contains(block.getType());
     }
@@ -226,18 +225,6 @@ public class BlockHelpers {
             return block.getState(false);
         } else {
             return block.getState();
-        }
-    }
-
-    public enum BlockCorrection {
-        NMS, LEGACY;
-
-        public static boolean useNMS() {
-            return get() == NMS;
-        }
-
-        public static BlockCorrection get() {
-            return Objects.equals(Settings.BLOCK_CORRECTION.toString(), "NMS") ? NMS : LEGACY;
         }
     }
 
@@ -575,6 +562,18 @@ public class BlockHelpers {
 
     public static boolean isLoaded(final Location loc) {
         return loc.getWorld() != null && isLoaded(loc.getWorld(), loc);
+    }
+
+    public enum BlockCorrection {
+        NMS, LEGACY;
+
+        public static boolean useNMS() {
+            return get() == NMS;
+        }
+
+        public static BlockCorrection get() {
+            return Objects.equals(Settings.BLOCK_CORRECTION.toString(), "NMS") ? NMS : LEGACY;
+        }
     }
 
 }

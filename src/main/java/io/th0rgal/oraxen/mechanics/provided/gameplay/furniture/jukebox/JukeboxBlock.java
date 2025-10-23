@@ -9,11 +9,11 @@ import org.bukkit.inventory.ItemStack;
 
 public class JukeboxBlock {
 
+    public final String active_stage;
     private final MechanicFactory factory;
     private final String permission;
     private final double volume;
     private final double pitch;
-    public final String active_stage;
 
     public JukeboxBlock(MechanicFactory factory, ConfigurationSection section) {
         this.factory = factory;

@@ -9,8 +9,8 @@ import org.bukkit.entity.Player;
 
 public class WitherSkullMechanic extends SpellMechanic {
 
-    private final TimersFactory timersFactory;
     public final boolean charged;
+    private final TimersFactory timersFactory;
 
     public WitherSkullMechanic(MechanicFactory mechanicFactory, ConfigurationSection section) {
         super(mechanicFactory, section);

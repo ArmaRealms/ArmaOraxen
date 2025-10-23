@@ -15,11 +15,11 @@ public class WateringMechanic extends Mechanic {
         filledCanItem = section.getString("filledCanItem");
     }
 
-    public boolean isEmpty() { return (emptyCanItem == null && filledCanItem != null); }
+    public boolean isEmpty() {return (emptyCanItem == null && filledCanItem != null);}
 
-    public boolean isFilled() { return (filledCanItem == null && emptyCanItem != null); }
+    public boolean isFilled() {return (filledCanItem == null && emptyCanItem != null);}
 
-    public String getEmptyCanItem() { return this.emptyCanItem; }
+    public String getEmptyCanItem() {return this.emptyCanItem;}
 
-    public String getFilledCanItem() { return this.filledCanItem; }
+    public String getFilledCanItem() {return this.filledCanItem;}
 }

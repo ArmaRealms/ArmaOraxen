@@ -13,22 +13,23 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Event fired right before a player damages the Furniture.
  * If cancelled, the block will not be damaged.
+ *
  * @see FurnitureMechanic
  */
 public class OraxenFurnitureDamageEvent extends Event implements Cancellable {
 
-    boolean isCancelled;
+    private static final HandlerList HANDLERS = new HandlerList();
     private final Block block;
     private final FurnitureMechanic mechanic;
     private final Player player;
     private final Entity baseEntity;
-    private static final HandlerList HANDLERS = new HandlerList();
+    boolean isCancelled;
 
     /**
-     * @param mechanic The FurnitureMechanic of this block
+     * @param mechanic   The FurnitureMechanic of this block
      * @param baseEntity The base-entity for the damaged furniture
-     * @param player The player who damaged this block
-     * @param block The block that was damaged
+     * @param player     The player who damaged this block
+     * @param block      The block that was damaged
      */
     public OraxenFurnitureDamageEvent(@NotNull final FurnitureMechanic mechanic, @NotNull final Entity baseEntity, @NotNull final Player player, @Nullable final Block block) {
         this.mechanic = mechanic;
@@ -39,6 +40,10 @@ public class OraxenFurnitureDamageEvent extends Event implements Cancellable {
 
     public OraxenFurnitureDamageEvent(@NotNull final FurnitureMechanic mechanic, @NotNull final Entity baseEntity, @NotNull final Player player) {
         this(mechanic, baseEntity, player, null);
+    }
+
+    public static HandlerList getHandlerList() {
+        return HANDLERS;
     }
 
     /**
@@ -59,6 +64,7 @@ public class OraxenFurnitureDamageEvent extends Event implements Cancellable {
 
     /**
      * Gets the block that was damaged.
+     *
      * @return block that was broken or null if it was an entity
      */
     @Nullable
@@ -87,10 +93,6 @@ public class OraxenFurnitureDamageEvent extends Event implements Cancellable {
     @NotNull
     @Override
     public HandlerList getHandlers() {
-        return HANDLERS;
-    }
-
-    public static HandlerList getHandlerList() {
         return HANDLERS;
     }
 }

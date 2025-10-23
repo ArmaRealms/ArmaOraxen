@@ -31,7 +31,7 @@ public class HarvestingMechanic extends Mechanic {
         return height;
     }
 
-    public boolean shouldLowerItemDurability() { return lowerItemDurability; }
+    public boolean shouldLowerItemDurability() {return lowerItemDurability;}
 
     public Timer getTimer(Player player) {
         return timersFactory.getTimer(player);

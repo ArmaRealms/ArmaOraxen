@@ -84,7 +84,7 @@ public class BigMiningMechanicListener implements Listener {
                                final double relativeDepth) {
         loc = loc.clone();
         return switch (face) {
-            case WEST, EAST ->  loc.add(relativeDepth, relX, relY);
+            case WEST, EAST -> loc.add(relativeDepth, relX, relY);
             case UP, DOWN -> loc.add(relX, relativeDepth, relY);
             default -> loc.add(relX, relY, relativeDepth);
         };

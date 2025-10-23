@@ -40,8 +40,8 @@ public class BlockLockerCompatibility extends CompatibilityProvider<BlockLockerP
                 if (furnitureMechanic != null) blockLocker = furnitureMechanic.getBlockLocker();
 
                 return blockLocker != null && blockLocker.canProtect() && blockLocker.getProtectionType() == type;
-            }});
+            }
+        });
     }
-
 
 }
