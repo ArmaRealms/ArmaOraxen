@@ -72,6 +72,7 @@ repositories {
         content { includeGroup("com.github.retrooper") }
     }
     mavenCentral()
+    flatDir { dirs("libs") }
 }
 
 dependencies {
