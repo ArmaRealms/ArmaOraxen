@@ -89,7 +89,7 @@ dependencies {
         exclude("com.google.code.gson", "gson")
         exclude("net.kyori")
     }
-    compileOnly(files("/libs/BSP.jar"))
+    compileOnly(fileTree("libs"))
     // shaded dependencies
     implementation(oraxenLibs.bundles.libraries.shade) {
         exclude("com.google.code.gson", "gson")
