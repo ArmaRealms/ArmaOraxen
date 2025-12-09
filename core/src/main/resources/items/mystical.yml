@@ -111,3 +111,63 @@ magic_book:
       damage: 10.0
       particle:
         type: PORTAL
+
+# ════════════════════════════════════════════════════════════════════════════
+# Pike of the Realm - Spear with charge-and-lunge attack
+# Hold right-click to charge, release or left-click to lunge forward
+# ════════════════════════════════════════════════════════════════════════════
+lotr_pike:
+  displayname: "<gradient:#8B7355:#C4A574>Pike of the Realm"
+  material: IRON_SWORD
+  lore:
+    - "<#6f737d>» <#D5D6D8>Hold right-click to charge"
+    - "<#6f737d>» <#D5D6D8>Release to lunge forward"
+  AttributeModifiers:
+    # Low base melee damage - the spear is meant for lunge attacks, not regular swings
+    - { attribute: ATTACK_DAMAGE, amount: 2, operation: 0, slot: HAND }
+    - { attribute: ATTACK_SPEED, amount: 1.2, operation: 0, slot: HAND }
+  Pack:
+    generate_model: false
+    model: default/lotrpikeinactive
+  Components:
+    # Cooldown between lunge attacks (1.5 seconds)
+    use_cooldown:
+      group: "oraxen:pike_lunge"
+      seconds: 1.5
+    # Rarity indicator
+    rarity: RARE
+  Mechanics:
+    spear_lunge:
+      # The active model path (same format as Pack.model)
+      # Oraxen will auto-generate the item model definition for this
+      active_model: default/lotrpikeactive
+      # Intermediate models for smooth animation (in order)
+      intermediate_models:
+        - default/lotrpike_frame0
+        - default/lotrpike_frame1
+      smooth_frames: 2          # Number of intermediate frames to use
+      charge_ticks: 20          # 1 second to fully charge
+      lunge_velocity: 0.9       # Forward velocity on lunge
+      max_range: 7.0            # Hit detection range in blocks (increased spear reach)
+      damage: 12.0              # Lunge damage at full charge (increased)
+      knockback: 1.2            # Knockback applied to targets (doubled)
+      min_charge_percent: 0.25  # Minimum charge needed to attack (25%)
+      # Movement while charging
+      charge_slowdown: 0.5      # 50% slower while charging (0.0 = none, 1.0 = frozen)
+      max_hold_ticks: 60        # 3 seconds max hold before auto-cancel to inactive
+      # How many entities can be hit per lunge (set to 1 for single-target)
+      max_targets: 3
+      # Visual feedback
+      particles:
+        enabled: true
+        charge: CRIT            # Particles while charging
+        lunge: SWEEP_ATTACK     # Particles on lunge
+        hit: DAMAGE_INDICATOR   # Particles on hit
+      # Audio feedback
+      sounds:
+        enabled: true
+        charge: item.trident.riptide_1
+        lunge: entity.player.attack.sweep
+        hit: entity.player.attack.strong
+    durability:
+      value: 750                # Between iron (250) and diamond (1561)
