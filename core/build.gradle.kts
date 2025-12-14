@@ -1,6 +1,5 @@
 plugins {
     id("java")
-    //id("io.papermc.paperweight.userdev") version "1.6.0"
     id("maven-publish")
     id("io.github.goooler.shadow") version "8.1.8"
     id("org.ajoberstar.grgit.service") version "5.2.0"
@@ -8,7 +7,7 @@ plugins {
 
 val pluginVersion = project.property("pluginVersion") as String
 tasks {
-    shadowJar.get().archiveFileName.set("oraxen-${pluginVersion}.jar")
+    shadowJar.get().archiveFileName.set("Oraxen-${pluginVersion}.jar")
     build.get().dependsOn(shadowJar)
     
     test {

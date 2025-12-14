@@ -64,9 +64,9 @@ commons-io = { module = "commons-io:commons-io", version = "2.11.0" }
 # Libraries that are in Maven Central
 # And therefore can be in the plugins.yml > libraries section
 #
-gson = { module = "com.google.code.gson:gson", version = "2.10.1" }
-commons-lang3 = { module = "org.apache.commons:commons-lang3", version = "3.14.0" }
-joml = { module = "org.joml:joml", version = "1.10.5" }                             # Because pre 1.19.4 api does not have this in the server-jar
+gson = { module = "com.google.code.gson:gson", version = "2.13.2" }
+commons-lang3 = { module = "org.apache.commons:commons-lang3", version = "3.20.0" }
+joml = { module = "org.joml:joml", version = "1.10.8" }                             # Because pre 1.19.4 api does not have this in the server-jar
 annotations = { module = "org.jetbrains:annotations", version = "26.0.2" }
 
 # Adventure
