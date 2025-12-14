@@ -22,10 +22,10 @@ tasks.register<JavaExec>("runPackMergerDebug") {
     description = "Runs the PackMerger debug tool to analyze resource pack zip files"
     classpath = sourceSets["test"].runtimeClasspath
     mainClass.set("io.th0rgal.oraxen.pack.generation.PackMergerDebugRunner")
-    
+
     // Pass command line args: ./gradlew :core:runPackMergerDebug --args="path/to/pack.zip"
     if (project.hasProperty("packFile")) {
-        args(project.property("packFile"))
+        args(project.property("packFile").toString())
     }
 }
 
