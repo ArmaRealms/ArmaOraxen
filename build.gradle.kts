@@ -161,7 +161,6 @@ tasks {
 
         archiveClassifier = null
         oraxenLibs.bundles.libraries.shade.get().forEach {
-            val plugin = it;
             val group = it.group!!
                 .replace("jeff-media", "jeff_media") // they use a different package than the group...
             val parts = group
