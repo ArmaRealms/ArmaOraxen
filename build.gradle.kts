@@ -95,6 +95,12 @@ allprojects {
         maven("https://repo.codemc.io/repository/maven-releases/") {
             content { includeGroup("com.github.retrooper") }
         }
+        maven("https://repo.skriptlang.org/releases") {
+            content { includeGroup("com.github.SkriptLang") } // Skript
+        }
+        maven("https://jitpack.io") {
+            content { includeGroupByRegex("com\\.github\\..*") }
+        }
         mavenCentral()
     }
 }
@@ -215,13 +221,14 @@ bukkit {
     version = pluginVersion
     name = "Oraxen"
     apiVersion = "1.18"
+    foliaSupported = true
     authors = listOf("th0rgal", "https://github.com/oraxen/oraxen/blob/master/CONTRIBUTORS.md")
     softDepend = listOf(
         "CommandAPI",
         "ProtocolLib",
         "LightAPI", "PlaceholderAPI", "MythicMobs", "MMOItems", "MythicCrucible", "MythicMobs", "BossShopPro",
         "CrateReloaded", "ItemBridge", "WorldEdit", "WorldGuard", "Towny", "Factions", "Lands", "PlotSquared",
-        "NBTAPI", "ModelEngine", "ViaBackwards", "HuskClaims", "HuskTowns", "BentoBox"
+        "NBTAPI", "ModelEngine", "ViaBackwards", "HuskClaims", "HuskTowns", "BentoBox", "Skript"
     )
     loadBefore = listOf("Realistic_World")
     permissions.create("oraxen.command") {
