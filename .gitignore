@@ -217,3 +217,7 @@ local.properties
 
 # Test server for schema generation
 test-server/
+
+# Claude Code
+.claude/secrets.json
+secrets.json
