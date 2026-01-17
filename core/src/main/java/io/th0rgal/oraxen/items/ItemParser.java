@@ -212,6 +212,8 @@ public class ItemParser {
             item.setFireResistant(components.getBoolean("fire_resistant"));
         if (components.contains("hide_tooltip"))
             item.setHideToolTip(components.getBoolean("hide_tooltip"));
+        if (components.contains("max_stack_size"))
+            item.setMaxStackSize(components.getInt("max_stack_size"));
 
         final NMSHandler nmsHandler = NMSHandlers.getHandler();
         if (nmsHandler == null) {
@@ -301,6 +303,7 @@ public class ItemParser {
         return key.equals("durability") ||
                 key.equals("fire_resistant") ||
                 key.equals("hide_tooltip") ||
+                key.equals("max_stack_size") ||
                 key.equals("food") ||
                 key.equals("tool") ||
                 key.equals("jukebox_playable") ||

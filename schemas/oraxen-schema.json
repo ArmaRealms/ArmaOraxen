@@ -1,8 +1,8 @@
 {
-  "oraxenVersion": "1.203.3",
+  "oraxenVersion": "1.204.0",
   "minecraftVersion": "1.21.11",
   "serverVersion": "1.21.11-R0.1-SNAPSHOT",
-  "generatedAt": "2026-01-05T10:07:03.322392938Z",
+  "generatedAt": "2026-01-17T17:50:45.540798279Z",
   "enums": {
     "Material": {
       "values": [
@@ -7506,6 +7506,30 @@
         }
       }
     },
+    "shaped_block": {
+      "category": "gameplay",
+      "description": "Allows creating custom stairs, slabs, doors, trapdoors, grates, and bulbs (transparent blocks) using waxed copper blocks as base",
+      "_source": "factory",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Type of shaped block: STAIR, SLAB, DOOR, TRAPDOOR, GRATE, BULB"
+        },
+        "custom_variation": {
+          "type": "integer",
+          "description": "Custom variation (1-4, maps to copper oxidation states)",
+          "default": 1,
+          "min": 1.0,
+          "max": 4.0
+        },
+        "hardness": {
+          "type": "integer",
+          "description": "Block hardness for mining",
+          "default": 3,
+          "min": -1.0
+        }
+      }
+    },
     "lifeleech": {
       "category": "combat",
       "description": "Heals the player when dealing damage to entities",
@@ -7776,10 +7800,6 @@
           "type": "object",
           "description": "Directional block configuration",
           "properties": {
-            "z_block": {
-              "type": "string",
-              "description": "Z-axis variant ID"
-            },
             "x_block": {
               "type": "string",
               "description": "X-axis variant ID"
@@ -7791,6 +7811,10 @@
             "parent_block": {
               "type": "string",
               "description": "Parent block ID"
+            },
+            "z_block": {
+              "type": "string",
+              "description": "Z-axis variant ID"
             }
           }
         },
@@ -7939,6 +7963,27 @@
           "type": "object",
           "description": "Display entity configuration",
           "properties": {
+            "scale": {
+              "type": "object",
+              "description": "Scale of the display entity",
+              "properties": {
+                "y": {
+                  "type": "number",
+                  "description": "Y-axis scale",
+                  "default": 1.0
+                },
+                "z": {
+                  "type": "number",
+                  "description": "Z-axis scale",
+                  "default": 1.0
+                },
+                "x": {
+                  "type": "number",
+                  "description": "X-axis scale",
+                  "default": 1.0
+                }
+              }
+            },
             "brightness": {
               "type": "object",
               "description": "Light levels",
@@ -7973,6 +8018,27 @@
                 "GROUND",
                 "FIXED"
               ]
+            },
+            "translation": {
+              "type": "object",
+              "description": "Position offset in blocks",
+              "properties": {
+                "y": {
+                  "type": "number",
+                  "description": "Y-axis offset",
+                  "default": 0.0
+                },
+                "z": {
+                  "type": "number",
+                  "description": "Z-axis offset",
+                  "default": 0.0
+                },
+                "x": {
+                  "type": "number",
+                  "description": "X-axis offset",
+                  "default": 0.0
+                }
+              }
             }
           }
         },
@@ -8200,10 +8266,6 @@
           "type": "object",
           "description": "Custom block sounds",
           "properties": {
-            "place_sound": {
-              "type": "string",
-              "description": "Sound when placed"
-            },
             "step_sound": {
               "type": "string",
               "description": "Sound when stepped on"
@@ -8219,6 +8281,10 @@
             "fall_sound": {
               "type": "string",
               "description": "Sound when fallen on"
+            },
+            "place_sound": {
+              "type": "string",
+              "description": "Sound when placed"
             }
           }
         },
@@ -8421,6 +8487,51 @@
           "default": 1.0,
           "min": 0.0,
           "max": 2.0
+        }
+      }
+    },
+    "backpack_cosmetic": {
+      "category": "cosmetic",
+      "description": "Displays a cosmetic backpack on the player\u0027s back using packet-based armor stands",
+      "_source": "factory",
+      "properties": {
+        "slot": {
+          "type": "string",
+          "description": "Equipment slot that triggers backpack display",
+          "default": "CHEST"
+        },
+        "model": {
+          "type": "string",
+          "description": "Model to display as the backpack"
+        },
+        "scale": {
+          "type": "number",
+          "description": "Scale of the backpack",
+          "default": 1.0,
+          "min": 0.1,
+          "max": 3.0
+        },
+        "view_distance": {
+          "type": "integer",
+          "description": "View distance in blocks",
+          "default": 48,
+          "min": 8.0,
+          "max": 128.0
+        },
+        "hide_in_spectator": {
+          "type": "boolean",
+          "description": "Hide backpack in spectator mode",
+          "default": true
+        },
+        "small": {
+          "type": "boolean",
+          "description": "Use small armor stand",
+          "default": false
+        },
+        "visible_to_self": {
+          "type": "boolean",
+          "description": "Whether the backpack is visible to the player themselves",
+          "default": true
         }
       }
     },
