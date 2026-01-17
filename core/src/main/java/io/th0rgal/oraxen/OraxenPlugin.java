@@ -7,6 +7,7 @@ import io.th0rgal.oraxen.compatibilities.CompatibilitiesManager;
 import io.th0rgal.oraxen.config.*;
 import io.th0rgal.oraxen.font.FontManager;
 import io.th0rgal.oraxen.hopper.OraxenHopper;
+import io.th0rgal.oraxen.mechanics.provided.cosmetic.backpack.BackpackCosmeticManager;
 import io.th0rgal.oraxen.packets.PacketAdapter;
 import io.th0rgal.oraxen.packets.PacketEventsAdapter;
 import io.th0rgal.oraxen.packets.ProtocolLibAdapter;
@@ -30,6 +31,7 @@ import io.th0rgal.oraxen.utils.breaker.ProtocolLibBreakerSystem;
 import io.th0rgal.oraxen.utils.customarmor.CustomArmorListener;
 import io.th0rgal.oraxen.utils.inventories.InvManager;
 import io.th0rgal.oraxen.utils.logs.Logs;
+import io.th0rgal.oraxen.utils.schema.SchemaGenerator;
 import io.th0rgal.protectionlib.ProtectionLib;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
@@ -120,7 +122,7 @@ public class OraxenPlugin extends JavaPlugin {
         NMSHandlers.setup();
 
         // Auto-update Paper config for block updates (noteblock, tripwire, chorus)
-        var updatedSettings = PaperConfigUpdater.ensureAllBlockUpdatesDisabled();
+        final var updatedSettings = PaperConfigUpdater.ensureAllBlockUpdatesDisabled();
         if (!updatedSettings.isEmpty()) {
             Logs.logSuccess("Auto-updated paper-global.yml: enabled " + String.join(", ", updatedSettings) + " (restart required)");
         }
@@ -165,9 +167,8 @@ public class OraxenPlugin extends JavaPlugin {
 
         // Auto-generate schema in debug mode (useful for CI/CD)
         if (Settings.DEBUG.toBool()) {
-            SchedulerUtil.runTaskLater(this, 20L, () -> {
-                io.th0rgal.oraxen.utils.schema.SchemaGenerator.generateAndSave();
-            }); // Small delay to ensure everything is loaded
+            // Small delay to ensure everything is loaded
+            SchedulerUtil.runTaskLater(this, 20L, () -> SchemaGenerator.generateAndSave());
         }
     }
 
@@ -177,7 +178,7 @@ public class OraxenPlugin extends JavaPlugin {
         FurnitureFactory.unregisterEvolution();
 
         // Clean up backpack cosmetic entities to prevent ghost armor stands
-        io.th0rgal.oraxen.mechanics.provided.cosmetic.backpack.BackpackCosmeticManager.getInstance().cleanup();
+        BackpackCosmeticManager.getInstance().cleanup();
 
         for (final Player player : Bukkit.getOnlinePlayers())
             if (GlyphHandlers.isNms())
