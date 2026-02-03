@@ -189,7 +189,7 @@ public class ItemUpdater implements Listener {
             // If oldItem had all enchantments removed, don't restore configured enchantments
             if (oldMeta.getEnchants().isEmpty() && !newMeta.getEnchants().isEmpty()) {
                 // Remove all configured enchantments since user intentionally unenchanted the item
-                for (Enchantment enchantment : newMeta.getEnchants().keySet())
+                for (final Enchantment enchantment : newMeta.getEnchants().keySet())
                     itemMeta.removeEnchant(enchantment);
             } else {
                 // Add all enchantments from oldItem and add all from newItem as long as it is not the same Enchantments
@@ -209,13 +209,6 @@ public class ItemUpdater implements Listener {
             } else {
                 if (VersionUtil.isPaperServer()) itemMeta.lore(oldMeta.lore());
                 else itemMeta.setLore(oldMeta.getLore());
-            }
-
-            // Update first line of the lore if it is different
-            if (VersionUtil.isPaperServer()) {
-                updateLore(oldMeta.lore(), newMeta.lore(), itemMeta::lore);
-            } else {
-                updateLore(oldMeta.getLore(), newMeta.getLore(), itemMeta::setLore);
             }
 
             // Only change AttributeModifiers if the new item has some
@@ -346,17 +339,6 @@ public class ItemUpdater implements Listener {
         );
 
         return newItem;
-    }
-
-    private static <T> void updateLore(final List<T> oldLore, final List<T> newLore, final Consumer<List<T>> applyLore) {
-        if (isValidLore(oldLore) && isValidLore(newLore)) {
-            // Utilize Pattern Matching for Equality Checks
-            if (!(newLore.getFirst() instanceof final T newElement && newElement.equals(oldLore.getFirst()))) {
-                final List<T> updatedLore = new ArrayList<>(oldLore);
-                updatedLore.set(0, newLore.getFirst());
-                applyLore.accept(updatedLore);
-            }
-        }
     }
 
     private static <T> boolean isValidLore(final List<T> lore) {
