@@ -2,7 +2,6 @@ package io.th0rgal.oraxen.items;
 
 import com.jeff_media.morepersistentdatatypes.DataType;
 import com.jeff_media.persistentdataserializer.PersistentDataSerializer;
-import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.nms.NMSHandlers;
@@ -37,13 +36,11 @@ import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Consumer;
 
 import static io.th0rgal.oraxen.items.ItemBuilder.ORIGINAL_NAME_KEY;
 import static io.th0rgal.oraxen.items.ItemBuilder.UNSTACKABLE_KEY;
@@ -249,8 +246,10 @@ public class ItemUpdater implements Listener {
                 if (newMeta.hasFood()) itemMeta.setFood(newMeta.getFood());
                 else if (oldMeta.hasFood()) itemMeta.setFood(oldMeta.getFood());
 
-                if (newMeta.hasEnchantmentGlintOverride()) itemMeta.setEnchantmentGlintOverride(newMeta.getEnchantmentGlintOverride());
-                else if (oldMeta.hasEnchantmentGlintOverride()) itemMeta.setEnchantmentGlintOverride(oldMeta.getEnchantmentGlintOverride());
+                if (newMeta.hasEnchantmentGlintOverride())
+                    itemMeta.setEnchantmentGlintOverride(newMeta.getEnchantmentGlintOverride());
+                else if (oldMeta.hasEnchantmentGlintOverride())
+                    itemMeta.setEnchantmentGlintOverride(oldMeta.getEnchantmentGlintOverride());
 
                 if (newMeta.hasMaxStackSize()) itemMeta.setMaxStackSize(newMeta.getMaxStackSize());
                 else if (oldMeta.hasMaxStackSize()) itemMeta.setMaxStackSize(oldMeta.getMaxStackSize());
@@ -326,7 +325,6 @@ public class ItemUpdater implements Listener {
                     else itemMeta.setDisplayName(oldMeta.getDisplayName());
                 }
             }
-
 
             // If the item is not unstackable, we should remove the unstackable tag
             // Also remove it on 1.20.5+ due to maxStackSize component
