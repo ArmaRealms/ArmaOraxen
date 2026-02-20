@@ -464,6 +464,7 @@ public class FurnitureMechanic extends Mechanic {
         if (checkSpace && this.notEnoughSpace(yaw, location)) return null;
         assert location.getWorld() != null;
         assert location.getWorld() != null;
+        BlockFace resolvedFacing = facing != null ? facing : BlockFace.NORTH;
 
         Class<? extends Entity> entityClass = getFurnitureEntityType().getEntityClass();
         if (entityClass == null) entityClass = ItemFrame.class;
@@ -474,7 +475,7 @@ public class FurnitureMechanic extends Mechanic {
         }
         item.setAmount(1);
 
-        Entity baseEntity = EntityUtils.spawnEntity(correctedSpawnLocation(location, facing), entityClass, e -> setEntityData(e, yaw, item, facing));
+        Entity baseEntity = EntityUtils.spawnEntity(correctedSpawnLocation(location, resolvedFacing), entityClass, (e) -> setEntityData(e, yaw, item, resolvedFacing));
         if (this.isModelEngine() && PluginUtils.isEnabled("ModelEngine")) {
             spawnModelEngineFurniture(baseEntity);
         }
@@ -483,6 +484,7 @@ public class FurnitureMechanic extends Mechanic {
     }
 
     private boolean allowWallForLimitedFloor(Location location, BlockFace blockFace) {
+        if (blockFace == null) return false;
         return blockFace.getModY() == 0 && location.getBlock().getRelative(BlockFace.DOWN).isSolid();
     }
 
@@ -704,12 +706,14 @@ public class FurnitureMechanic extends Mechanic {
     }
 
     public static void setFurnitureItem(Entity entity, ItemStack item) {
-        if (entity instanceof ItemFrame itemFrame) {
-            itemFrame.setItem(item, false);
-        } else if (entity instanceof ArmorStand armorStand) {
-            armorStand.getEquipment().setHelmet(item);
-        } else if (entity instanceof ItemDisplay itemDisplay && OraxenPlugin.supportsDisplayEntities) {
-            itemDisplay.setItemStack(item);
+        switch (entity.getType()) {
+            case ITEM_FRAME, GLOW_ITEM_FRAME -> ((ItemFrame) entity).setItem(item, false);
+            case ARMOR_STAND -> ((ArmorStand) entity).getEquipment().setHelmet(item);
+            case ITEM_DISPLAY -> {
+                if (OraxenPlugin.supportsDisplayEntities) ((ItemDisplay) entity).setItemStack(item);
+            }
+            default -> {
+            }
         }
     }
 
