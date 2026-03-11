@@ -27,7 +27,7 @@ jobs:
       - name: Run Gradle Build for Plugin
         run: ./gradlew build
       - name: Upload Plugin
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
-          name: ArmaOraxen
-          path: build/libs/*.jar
+          path: build/libs/Oraxen-*.jar
+          archive: false
