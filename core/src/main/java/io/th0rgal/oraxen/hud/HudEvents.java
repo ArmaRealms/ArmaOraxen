@@ -2,6 +2,7 @@ package io.th0rgal.oraxen.hud;
 
 import com.jeff_media.morepersistentdatatypes.DataType;
 import io.th0rgal.oraxen.OraxenPlugin;
+import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.bukkit.GameMode;
 import org.bukkit.entity.EntityType;
@@ -17,23 +18,29 @@ public class HudEvents implements Listener {
 
     @EventHandler
     public void onJoin(final PlayerJoinEvent event) {
-        final HudManager hudManager = OraxenPlugin.get().getHudManager();
+        HudManager hudManager = OraxenPlugin.get().getHudManager();
         final Player player = event.getPlayer();
         final PersistentDataContainer pdc = player.getPersistentDataContainer();
-        final Hud hud = hudManager.hasActiveHud(player)
+        Hud hud = hudManager.hasActiveHud(player)
                 ? hudManager.getActiveHud(player) : hudManager.getDefaultEnabledHuds().stream().findFirst().orElse(null);
-        final String hudId = hudManager.getHudID(hud);
+        String hudId = hudManager.getHudID(hud);
 
         if (hud == null || hudId == null) {
-//            Logs.logWarning("[HUD] No default HUD found for player " + player.getName());
+            if (Settings.DEBUG.toBool()) {
+                Logs.logWarning("[HUD] No default HUD found for player " + player.getName());
+            }
             return;
         }
         if (!player.hasPermission(hud.getPerm())) {
-//            Logs.logWarning("[HUD] Player " + player.getName() + " doesn't have permission: " + hud.getPerm());
+            if (Settings.DEBUG.toBool()) {
+                Logs.logWarning("[HUD] Player " + player.getName() + " doesn't have permission: " + hud.getPerm());
+            }
             return;
         }
         if (!hudManager.getHudState(player)) {
-//            Logs.logWarning("[HUD] HUD is disabled for player " + player.getName());
+            if (Settings.DEBUG.toBool()) {
+                Logs.logWarning("[HUD] HUD is disabled for player " + player.getName());
+            }
             return;
         }
 
@@ -46,9 +53,9 @@ public class HudEvents implements Listener {
     public void onEnterWater(final EntityAirChangeEvent event) {
         if (event.getEntityType() != EntityType.PLAYER) return;
 
-        final HudManager hudManager = OraxenPlugin.get().getHudManager();
-        final Player player = (Player) event.getEntity();
-        final Hud hud = hudManager.getActiveHud(player);
+        HudManager hudManager = OraxenPlugin.get().getHudManager();
+        Player player = (Player) event.getEntity();
+        Hud hud = hudManager.getActiveHud(player);
 
         if (hud == null || !hud.isDisabledWhilstInWater() || !hudManager.getHudState(player)) return;
         if (event.getAmount() < player.getMaximumAir()) {
@@ -62,9 +69,9 @@ public class HudEvents implements Listener {
 
     @EventHandler
     public void onGameModeChange(final PlayerGameModeChangeEvent event) {
-        final HudManager hudManager = OraxenPlugin.get().getHudManager();
-        final Player player = event.getPlayer();
-        final Hud hud = hudManager.getActiveHud(player);
+        HudManager hudManager = OraxenPlugin.get().getHudManager();
+        Player player = event.getPlayer();
+        Hud hud = hudManager.getActiveHud(player);
         if (hud == null) return;
 
         if (player.getGameMode() == GameMode.SPECTATOR && !hud.enableInSpectatorMode()) {
@@ -76,5 +83,3 @@ public class HudEvents implements Listener {
         }
     }
 }
-
-
