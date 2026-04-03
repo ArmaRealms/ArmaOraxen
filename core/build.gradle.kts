@@ -1,15 +1,14 @@
 plugins {
     id("java")
-    //id("io.papermc.paperweight.userdev") version "1.6.0"
     id("maven-publish")
-    id("io.github.goooler.shadow") version "8.1.8"
+    // Replace goooler shadow with official johnrengelman shadow to avoid ASM incompatibilities
+    id("com.gradleup.shadow") version "9.3.0"
     id("org.ajoberstar.grgit.service") version "5.2.0"
 }
 
 val pluginVersion = project.property("pluginVersion") as String
 tasks {
-    //publish.get().dependsOn(shadowJar)
-    shadowJar.get().archiveFileName.set("oraxen-${pluginVersion}.jar")
+    shadowJar.get().archiveFileName.set("Oraxen-${pluginVersion}.jar")
     build.get().dependsOn(shadowJar)
     
     test {
@@ -23,10 +22,10 @@ tasks.register<JavaExec>("runPackMergerDebug") {
     description = "Runs the PackMerger debug tool to analyze resource pack zip files"
     classpath = sourceSets["test"].runtimeClasspath
     mainClass.set("io.th0rgal.oraxen.pack.generation.PackMergerDebugRunner")
-    
+
     // Pass command line args: ./gradlew :core:runPackMergerDebug --args="path/to/pack.zip"
     if (project.hasProperty("packFile")) {
-        args(project.property("packFile"))
+        args(project.property("packFile").toString())
     }
 }
 
@@ -77,7 +76,6 @@ publishing {
             version = publishData.getVersion()
 
             from(components["java"])
-            //artifact(tasks.shadowJar.get().apply { archiveClassifier.set("") })
         }
     }
 
@@ -96,7 +94,7 @@ publishing {
             }
 
             url = uri(publishData.getRepository())
-            name = "oraxen"
+            name = "Oraxen"
         }
     }
 }

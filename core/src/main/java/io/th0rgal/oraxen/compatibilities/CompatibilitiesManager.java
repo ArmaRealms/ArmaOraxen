@@ -17,14 +17,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class CompatibilitiesManager {
 
-    private CompatibilitiesManager() {}
+    private CompatibilitiesManager() {
+    }
 
     private static final ConcurrentHashMap<String, Class<? extends CompatibilityProvider<?>>> COMPATIBILITY_PROVIDERS = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, CompatibilityProvider<?>> ACTIVE_COMPATIBILITY_PROVIDERS = new ConcurrentHashMap<>();
 
     public static void enableNativeCompatibilities() {
-        WrappedWorldEdit.init();
-        WrappedWorldEdit.registerParser();
         new CompatibilityListener();
         addCompatibility("PlaceholderAPI", PlaceholderAPICompatibility.class, true);
         addCompatibility("BossShopPro", BossShopProCompatibility.class, true);
@@ -32,6 +31,11 @@ public class CompatibilitiesManager {
         addCompatibility("BlockLocker", BlockLockerCompatibility.class, true);
         addCompatibility("Skript", SkriptCompatibility.class, true);
         addCompatibility("Iris", IrisCompatibility.class, true);
+    }
+
+    public static void enableWorldEditCompatibilities() {
+        WrappedWorldEdit.init();
+        WrappedWorldEdit.registerParser();
     }
 
     public static void disableCompatibilities() {
@@ -52,7 +56,8 @@ public class CompatibilitiesManager {
                 Message.PLUGIN_HOOKS.log(AdventureUtils.tagResolver("plugin", pluginName));
                 return true;
             }
-        } catch (final InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+        } catch (final InstantiationException | IllegalAccessException | NoSuchMethodException |
+                       InvocationTargetException e) {
             e.printStackTrace();
             return false;
         }
@@ -114,7 +119,7 @@ public class CompatibilitiesManager {
         return ACTIVE_COMPATIBILITY_PROVIDERS;
     }
 
-    public static boolean hasPlugin(String name) {
+    public static boolean hasPlugin(final String name) {
         return PluginUtils.isEnabled(name);
     }
 }

@@ -8,6 +8,7 @@ import dev.jorel.commandapi.arguments.IntegerArgument;
 import dev.jorel.commandapi.arguments.TextArgument;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
+import io.th0rgal.oraxen.compatibilities.provided.placeholderapi.PapiAliases;
 import io.th0rgal.oraxen.config.Message;
 import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.items.ItemUpdater;
@@ -116,10 +117,13 @@ public class CommandsManager {
                     final ItemStack[] items = itemBuilder.buildArray(slots > 36 ? (amount = max * 36) : amount);
 
                     for (final Player target : targets) {
-                        final Map<Integer, ItemStack> output = target.getInventory().addItem(items);
-                        if (!output.isEmpty()) {
-                            for (final ItemStack stack : output.values())
-                                target.getWorld().dropItem(target.getLocation(), stack);
+                        for (final ItemStack item : items) {
+                            final Map<Integer, ItemStack> output = target.getInventory().addItem(PapiAliases.updateLore(target, item.clone()));
+                            if (!output.isEmpty()) {
+                                for (final ItemStack stack : output.values()) {
+                                    target.getWorld().dropItem(target.getLocation(), stack);
+                                }
+                            }
                         }
                     }
 
@@ -155,7 +159,7 @@ public class CommandsManager {
 
                     for (final Player target : targets) {
                         final Map<Integer, ItemStack> output = target.getInventory()
-                                .addItem(ItemUpdater.updateItem(itemBuilder.build()));
+                                .addItem(PapiAliases.updateLore(target, ItemUpdater.updateItem(itemBuilder.build()).clone()));
                         if (!output.isEmpty()) {
                             for (final ItemStack stack : output.values()) {
                                 target.getWorld().dropItem(target.getLocation(), stack);

@@ -5,6 +5,7 @@ import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.compatibilities.provided.ecoitems.WrappedEcoItem;
 import io.th0rgal.oraxen.compatibilities.provided.mmoitems.WrappedMMOItem;
 import io.th0rgal.oraxen.compatibilities.provided.mythiccrucible.WrappedCrucibleItem;
+import io.th0rgal.oraxen.compatibilities.provided.placeholderapi.PapiAliases;
 import io.th0rgal.oraxen.config.AppearanceMode;
 import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.mechanics.Mechanic;
@@ -12,7 +13,11 @@ import io.th0rgal.oraxen.mechanics.MechanicFactory;
 import io.th0rgal.oraxen.mechanics.MechanicsManager;
 import io.th0rgal.oraxen.nms.NMSHandler;
 import io.th0rgal.oraxen.nms.NMSHandlers;
-import io.th0rgal.oraxen.utils.*;
+import io.th0rgal.oraxen.utils.AdventureUtils;
+import io.th0rgal.oraxen.utils.OraxenYaml;
+import io.th0rgal.oraxen.utils.PotionUtils;
+import io.th0rgal.oraxen.utils.Utils;
+import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import io.th0rgal.oraxen.utils.wrappers.AttributeWrapper;
 import net.Indyuce.mmoitems.MMOItems;
@@ -20,7 +25,11 @@ import net.kyori.adventure.key.Key;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
+import org.bukkit.Tag;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.configuration.ConfigurationSection;
@@ -40,7 +49,14 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 
 public class ItemParser {
@@ -59,26 +75,20 @@ public class ItemParser {
     public ItemParser(final ConfigurationSection section) {
         this.section = section;
 
-        if (section.isString("template"))
-            templateItem = ItemTemplate.getParserTemplate(section.getString("template"));
+        if (section.isString("template")) templateItem = ItemTemplate.getParserTemplate(section.getString("template"));
 
         final ConfigurationSection crucibleSection = section.getConfigurationSection("crucible");
         final ConfigurationSection mmoSection = section.getConfigurationSection("mmoitem");
         final ConfigurationSection ecoItemSection = section.getConfigurationSection("ecoitem");
-        if (crucibleSection != null)
-            crucibleItem = new WrappedCrucibleItem(crucibleSection);
+        if (crucibleSection != null) crucibleItem = new WrappedCrucibleItem(crucibleSection);
         else if (section.isString("crucible_id"))
             crucibleItem = new WrappedCrucibleItem(section.getString("crucible_id"));
-        else if (ecoItemSection != null)
-            ecoItem = new WrappedEcoItem(ecoItemSection);
-        else if (section.isString("ecoitem_id"))
-            ecoItem = new WrappedEcoItem(section.getString("ecoitem_id"));
-        else if (mmoSection != null)
-            mmoItem = new WrappedMMOItem(mmoSection);
+        else if (ecoItemSection != null) ecoItem = new WrappedEcoItem(ecoItemSection);
+        else if (section.isString("ecoitem_id")) ecoItem = new WrappedEcoItem(section.getString("ecoitem_id"));
+        else if (mmoSection != null) mmoItem = new WrappedMMOItem(mmoSection);
 
         Material material = Material.getMaterial(section.getString("material", ""));
-        if (material == null)
-            material = usesTemplate() ? templateItem.type : Material.PAPER;
+        if (material == null) material = usesTemplate() ? templateItem.type : Material.PAPER;
         type = material;
 
         oraxenMeta = templateItem != null ? templateItem.oraxenMeta : new OraxenMeta();
@@ -111,14 +121,10 @@ public class ItemParser {
     public ItemBuilder buildItem() {
         final ItemBuilder item;
 
-        if (usesCrucibleItems())
-            item = new ItemBuilder(crucibleItem);
-        else if (usesMMOItems())
-            item = new ItemBuilder(mmoItem);
-        else if (usesEcoItems())
-            item = new ItemBuilder(ecoItem);
-        else
-            item = new ItemBuilder(type);
+        if (usesCrucibleItems()) item = new ItemBuilder(crucibleItem);
+        else if (usesMMOItems()) item = new ItemBuilder(mmoItem);
+        else if (usesEcoItems()) item = new ItemBuilder(ecoItem);
+        else item = new ItemBuilder(type);
 
         // If item has a template, apply the template ontop of the builder made above
         return applyConfig(usesTemplate() ? templateItem.applyConfig(item) : item);
@@ -140,8 +146,6 @@ public class ItemParser {
                     item.setDisplayName(section.getString("customname", ""));
             }
 
-            // if (section.contains("type"))
-            // item.setType(Material.getMaterial(section.getString("type", "PAPER")));
             if (section.contains("lore"))
                 item.setLore(section.getStringList("lore").stream().map(AdventureUtils::parseMiniMessage).toList());
             if (section.contains("unbreakable"))
@@ -171,14 +175,14 @@ public class ItemParser {
 
     private void parseDataComponents(final ItemBuilder item) {
         final ConfigurationSection section = mergeWithTemplateSection();
-        if (section.contains("itemname") && VersionUtil.atOrAbove("1.20.5"))
-            item.setItemName(section.getString("itemname"));
-        else if (section.contains("displayname"))
-            item.setItemName(section.getString("displayname"));
+        if (section.contains("itemname") && VersionUtil.atOrAbove("1.20.5")) {
+            item.setItemName(PapiAliases.setPlaceholders(section.getString("itemname")));
+        } else if (section.contains("displayname")) {
+            item.setDisplayName(PapiAliases.setPlaceholders(section.getString("displayname")));
+        }
 
         final ConfigurationSection components = section.getConfigurationSection("Components");
-        if (components == null || !VersionUtil.atOrAbove("1.20.5"))
-            return;
+        if (components == null || !VersionUtil.atOrAbove("1.20.5")) return;
 
         // Handle legacy components for backward compatibility
         handleLegacyComponents(item, components);
@@ -199,7 +203,6 @@ public class ItemParser {
     }
 
     private void handleLegacyComponents(final ItemBuilder item, final ConfigurationSection components) {
-
         if (components.contains("durability")) {
             item.setDamagedOnBlockBreak(components.getBoolean("durability.damage_block_break"));
             item.setDamagedOnEntityHit(components.getBoolean("durability.damage_entity_hit"));
@@ -226,8 +229,7 @@ public class ItemParser {
         Optional.ofNullable(components.getConfigurationSection("tool"))
                 .ifPresent(toolSection -> parseToolComponent(item, toolSection));
 
-        if (!VersionUtil.atOrAbove("1.21"))
-            return;
+        if (!VersionUtil.atOrAbove("1.21")) return;
 
         final ConfigurationSection jukeboxSection = components.getConfigurationSection("jukebox_playable");
         if (jukeboxSection != null && VersionUtil.isPaperServer()) {
@@ -261,8 +263,7 @@ public class ItemParser {
             Logs.logInfo("JukeboxPlayableComponent is only supported on Paper servers. Skipping this component.");
         }
 
-        if (!VersionUtil.atOrAbove("1.21.2"))
-            return;
+        if (!VersionUtil.atOrAbove("1.21.2")) return;
         Optional.ofNullable(components.getConfigurationSection("equippable"))
                 .ifPresent(equippable -> parseEquippableComponent(item, equippable));
 
@@ -320,25 +321,20 @@ public class ItemParser {
         final int amount = useRemainderSection.getInt("amount", 1);
 
         if (useRemainderSection.contains("oraxen_item"))
-            result = ItemUpdater
-                    .updateItem(OraxenItems.getItemById(useRemainderSection.getString("oraxen_item")).build());
+            result = ItemUpdater.updateItem(OraxenItems.getItemById(useRemainderSection.getString("oraxen_item")).build());
         else if (useRemainderSection.contains("crucible_item"))
             result = new WrappedCrucibleItem(useRemainderSection.getString("crucible_item")).build();
         else if (useRemainderSection.contains("mmoitems_id") && useRemainderSection.isString("mmoitems_type"))
-            result = MMOItems.plugin.getItem(useRemainderSection.getString("mmoitems_type"),
-                    useRemainderSection.getString("mmoitems_id"));
+            result = MMOItems.plugin.getItem(useRemainderSection.getString("mmoitems_type"), useRemainderSection.getString("mmoitems_id"));
         else if (useRemainderSection.contains("ecoitem_id"))
             result = new WrappedEcoItem(useRemainderSection.getString("ecoitem_id")).build();
         else if (useRemainderSection.contains("minecraft_type")) {
             final Material material = Material.getMaterial(useRemainderSection.getString("minecraft_type", "AIR"));
-            if (material == null || material.isAir())
-                return;
+            if (material == null || material.isAir()) return;
             result = new ItemStack(material);
-        } else
-            result = useRemainderSection.getItemStack("minecraft_item");
+        } else result = useRemainderSection.getItemStack("minecraft_item");
 
-        if (result != null)
-            result.setAmount(amount);
+        if (result != null) result.setAmount(amount);
         item.setUseRemainder(result);
     }
 
@@ -357,12 +353,11 @@ public class ItemParser {
             if (ruleEntry.containsKey("material")) {
                 try {
                     final Material material = Material.valueOf(String.valueOf(ruleEntry.get("material")));
-                    if (material.isBlock())
-                        materials.add(material);
+                    if (material.isBlock()) materials.add(material);
                 } catch (final Exception e) {
                     Logs.logWarning("Error parsing rule-entry in " + section.getName());
                     Logs.logWarning("Malformed \"material\"-section");
-                    Logs.debug(e);
+                    Logs.debug( e);
                 }
             }
 
@@ -371,25 +366,23 @@ public class ItemParser {
                     final List<String> materialIds = (List<String>) ruleEntry.get("materials");
                     for (final String materialId : materialIds) {
                         final Material material = Material.valueOf(materialId);
-                        if (material.isBlock())
-                            materials.add(material);
+                        if (material.isBlock()) materials.add(material);
                     }
                 } catch (final Exception e) {
                     Logs.logWarning("Error parsing rule-entry in " + section.getName());
                     Logs.logWarning("Malformed \"materials\"-section");
-                    Logs.debug(e);
+                    Logs.debug( e);
                 }
             }
 
             if (ruleEntry.containsKey("tag")) {
                 try {
                     final NamespacedKey tagKey = NamespacedKey.fromString(String.valueOf(ruleEntry.get("tag")));
-                    if (tagKey != null)
-                        tags.add(Bukkit.getTag(Tag.REGISTRY_BLOCKS, tagKey, Material.class));
+                    if (tagKey != null) tags.add(Bukkit.getTag(Tag.REGISTRY_BLOCKS, tagKey, Material.class));
                 } catch (final Exception e) {
                     Logs.logWarning("Error parsing rule-entry in " + section.getName());
                     Logs.logWarning("Malformed \"tag\"-section");
-                    Logs.debug(e);
+                    Logs.debug( e);
                 }
             }
 
@@ -397,20 +390,17 @@ public class ItemParser {
                 try {
                     for (final String tagString : (List<String>) ruleEntry.get("tags")) {
                         final NamespacedKey tagKey = NamespacedKey.fromString(tagString);
-                        if (tagKey != null)
-                            tags.add(Bukkit.getTag(Tag.REGISTRY_BLOCKS, tagKey, Material.class));
+                        if (tagKey != null) tags.add(Bukkit.getTag(Tag.REGISTRY_BLOCKS, tagKey, Material.class));
                     }
                 } catch (final Exception e) {
                     Logs.logWarning("Error parsing rule-entry in " + section.getName());
                     Logs.logWarning("Malformed \"tags\"-section");
-                    Logs.debug(e);
+                    Logs.debug( e);
                 }
             }
 
-            if (!materials.isEmpty())
-                toolComponent.addRule(materials, speed, correctForDrops);
-            for (final Tag<Material> tag : tags)
-                toolComponent.addRule(tag, speed, correctForDrops);
+            if (!materials.isEmpty()) toolComponent.addRule(materials, speed, correctForDrops);
+            for (final Tag<Material> tag : tags) toolComponent.addRule(tag, speed, correctForDrops);
         }
 
         item.setToolComponent(toolComponent);
@@ -429,8 +419,7 @@ public class ItemParser {
             return;
         }
 
-        final List<EntityType> entityTypes = equippableSection.getStringList("allowed_entity_types").stream()
-                .map(e -> EnumUtils.getEnum(EntityType.class, e)).toList();
+        final List<EntityType> entityTypes = equippableSection.getStringList("allowed_entity_types").stream().map(e -> EnumUtils.getEnum(EntityType.class, e)).toList();
         if (equippableSection.contains("allowed_entity_types"))
             equippableComponent.setAllowedEntities(entityTypes.isEmpty() ? null : entityTypes);
         if (equippableSection.contains("damage_on_hurt"))
@@ -484,13 +473,10 @@ public class ItemParser {
         if (section.contains("PotionEffects")) {
             final List<LinkedHashMap<String, Object>> potionEffects = (List<LinkedHashMap<String, Object>>) section
                     .getList("PotionEffects");
-            if (potionEffects == null)
-                return;
+            if (potionEffects == null) return;
             for (final Map<String, Object> serializedPotionEffect : potionEffects) {
-                final PotionEffectType effect = PotionUtils
-                        .getEffectType((String) serializedPotionEffect.getOrDefault("type", ""));
-                if (effect == null)
-                    return;
+                final PotionEffectType effect = PotionUtils.getEffectType((String) serializedPotionEffect.getOrDefault("type", ""));
+                if (effect == null) return;
                 final int duration = (int) serializedPotionEffect.getOrDefault("duration", 60);
                 final int amplifier = (int) serializedPotionEffect.getOrDefault("amplifier", 0);
                 final boolean ambient = (boolean) serializedPotionEffect.getOrDefault("ambient", true);
@@ -577,30 +563,25 @@ public class ItemParser {
     private void applyMechanics(ItemBuilder item) {
         final ConfigurationSection merged = mergeWithTemplateSection();
         final ConfigurationSection mechanicsSection = merged.getConfigurationSection("Mechanics");
-        if (mechanicsSection == null)
-            return;
-
-        for (final String mechanicID : mechanicsSection.getKeys(false)) {
-            final MechanicFactory factory = MechanicsManager.getMechanicFactory(mechanicID);
-            if (factory == null)
+        if (mechanicsSection == null)return; for (final String mechanicID : mechanicsSection.getKeys(false)) {
+            final MechanicFactory factory = MechanicsManager.getMechanicFactory(mechanicID);if (factory == null)
                 continue;
 
-            final ConfigurationSection mechanicSection = mechanicsSection.getConfigurationSection(mechanicID);
-            if (mechanicSection == null)
-                continue;
 
-            final Mechanic mechanic = factory.parse(mechanicSection);
-            if (mechanic == null)
-                continue;
+                final ConfigurationSection mechanicSection = mechanicsSection.getConfigurationSection(mechanicID);
+                if (mechanicSection == null) continue;
+                final Mechanic mechanic = factory.parse(mechanicSection);
+                if (mechanic == null) continue;
 
             if (mechanic.isConfigUpdated())
                 configUpdated = true;
 
             for (final Function<ItemBuilder, ItemBuilder> itemModifier : mechanic.getItemModifiers()) {
                 item = itemModifier.apply(item);
+                for (final Function<ItemBuilder, ItemBuilder> itemModifier : mechanic.getItemModifiers()){
+                    item = itemModifier.apply(item);
             }
-        }
-    }
+        }}
 
     private void applyAppearanceComponents(ItemBuilder item) {
         final boolean is1_21_4Plus = VersionUtil.atOrAbove("1.21.4");
@@ -701,8 +682,7 @@ public class ItemParser {
     }
 
     private ConfigurationSection mergeWithTemplateSection() {
-        if (section == null || templateItem == null || templateItem.section == null)
-            return section;
+        if (section == null || templateItem == null || templateItem.section == null) return section;
 
         final ConfigurationSection merged = new YamlConfiguration().createSection(section.getName());
         OraxenYaml.copyConfigurationSection(templateItem.section, merged);
