@@ -593,6 +593,9 @@ public class ItemParser {
             if (mechanic == null)
                 continue;
 
+            if (mechanic.isConfigUpdated())
+                configUpdated = true;
+
             for (final Function<ItemBuilder, ItemBuilder> itemModifier : mechanic.getItemModifiers()) {
                 item = itemModifier.apply(item);
             }

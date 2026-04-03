@@ -11,6 +11,7 @@ public abstract class Mechanic {
     private final ConfigurationSection section;
     private final Function<ItemBuilder, ItemBuilder>[] itemModifiers;
     private final String itemID;
+    protected boolean configUpdated = false;
 
     @SafeVarargs
     protected Mechanic(MechanicFactory mechanicFactory, ConfigurationSection section,
@@ -35,6 +36,10 @@ public abstract class Mechanic {
 
     public ConfigurationSection getSection() {
         return section;
+    }
+
+    public boolean isConfigUpdated() {
+        return configUpdated;
     }
 
 }
