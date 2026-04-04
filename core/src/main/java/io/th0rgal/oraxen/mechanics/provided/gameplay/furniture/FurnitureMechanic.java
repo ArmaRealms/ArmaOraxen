@@ -191,7 +191,15 @@ public class FurnitureMechanic extends Mechanic {
         } else hasSeat = false;
 
         ConfigurationSection dropSection = section.getConfigurationSection("drop");
-        drop = dropSection != null ? Drop.createDrop(FurnitureFactory.getInstance().toolTypes, dropSection, getItemID()) : new Drop(new ArrayList<>(), false, false, getItemID());
+        if (dropSection == null) {
+            dropSection = section.createSection("drop");
+            Map<String, Object> lootEntry = new LinkedHashMap<>();
+            lootEntry.put("oraxen_item", getItemID());
+            dropSection.set("loots", List.of(lootEntry));
+            dropSection.set("silktouch", false);
+            configUpdated = true;
+        }
+        drop = Drop.createDrop(FurnitureFactory.getInstance().toolTypes, dropSection, getItemID());
 
         // NEW: Parse inline growth stages (alternative to separate items for each stage)
         List<?> stagesList = section.getList("stages");
