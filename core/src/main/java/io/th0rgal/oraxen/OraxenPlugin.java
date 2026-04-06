@@ -169,8 +169,6 @@ public class OraxenPlugin extends JavaPlugin {
         CompatibilitiesManager.enableWorldEditCompatibilities();
         if (VersionUtil.isCompiled())
             NoticeUtils.compileNotice();
-        if (VersionUtil.isLeaked())
-            NoticeUtils.leakNotice();
     }
 
     private void postLoading() {
