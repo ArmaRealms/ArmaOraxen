@@ -12,7 +12,7 @@ pluginManagement {
 
 plugins {
     // allows for better class redefinitions with run-paper
-    id("org.gradle.toolchains.foojay-resolver-convention") version "0.9.0"
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
 dependencyResolutionManagement {
@@ -32,6 +32,7 @@ dependencyResolutionManagement {
 // Core and Paper NMS modules (always included)
 include(
     "core",
+    "v1_26_R1",
     "v1_20_R1",
     "v1_20_R2",
     "v1_20_R3",

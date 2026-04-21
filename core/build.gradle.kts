@@ -1,8 +1,7 @@
 plugins {
     id("java")
     id("maven-publish")
-    // Replace goooler shadow with official johnrengelman shadow to avoid ASM incompatibilities
-    id("com.gradleup.shadow") version "9.3.0"
+    id("com.gradleup.shadow") version "9.4.1"
     id("org.ajoberstar.grgit.service") version "5.2.0"
 }
 
@@ -61,6 +60,7 @@ dependencies {
     testImplementation("net.kyori:adventure-text-minimessage:4.17.0")
     testImplementation("net.kyori:adventure-text-serializer-legacy:4.17.0")
     testImplementation("com.google.guava:guava:33.0.0-jre")
+    testImplementation("com.google.code.gson:gson:2.10.1")
 }
 
 java {
