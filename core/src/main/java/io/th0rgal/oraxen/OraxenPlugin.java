@@ -7,6 +7,7 @@ import io.th0rgal.oraxen.compatibilities.CompatibilitiesManager;
 import io.th0rgal.oraxen.config.*;
 import io.th0rgal.oraxen.font.FontManager;
 import io.th0rgal.oraxen.hopper.OraxenHopper;
+import io.th0rgal.oraxen.introduction.IntroductionGuide;
 import io.th0rgal.oraxen.mechanics.provided.cosmetic.backpack.BackpackCosmeticManager;
 import io.th0rgal.oraxen.packets.PacketAdapter;
 import io.th0rgal.oraxen.packets.PacketEventsAdapter;
@@ -169,6 +170,10 @@ public class OraxenPlugin extends JavaPlugin {
         CompatibilitiesManager.enableWorldEditCompatibilities();
         if (VersionUtil.isCompiled())
             NoticeUtils.compileNotice();
+
+        IntroductionGuide introductionGuide = new IntroductionGuide(this);
+        Bukkit.getPluginManager().registerEvents(introductionGuide, this);
+        introductionGuide.start();
     }
 
     private void postLoading() {

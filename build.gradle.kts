@@ -265,12 +265,17 @@ bukkit {
         "packetevents",
         "LightAPI", "PlaceholderAPI", "MythicMobs", "MMOItems", "MythicCrucible", "MythicMobs", "BossShopPro",
         "CrateReloaded", "ItemBridge", "WorldEdit", "WorldGuard", "Towny", "Factions", "Lands", "PlotSquared",
-        "NBTAPI", "ModelEngine", "ViaBackwards", "HuskClaims", "HuskTowns", "BentoBox", "Skript", "Iris"
+        "NBTAPI", "ModelEngine", "ViaBackwards", "HuskClaims", "HuskTowns", "BentoBox", "Skript", "Iris",
+        "ExecutableItems"
     )
     loadBefore = listOf("Realistic_World")
     permissions.create("oraxen.command") {
         description = "Allows the player to use the /oraxen command"
         default = net.minecrell.pluginyml.bukkit.BukkitPluginDescription.Permission.Default.TRUE
+    }
+    permissions.create("oraxen.introduction") {
+        description = "Allows the player to receive Oraxen's first-run introduction guide"
+        default = net.minecrell.pluginyml.bukkit.BukkitPluginDescription.Permission.Default.OP
     }
     libraries = oraxenLibs.bundles.libraries.bukkit.get().map { it.toString() }
 }
