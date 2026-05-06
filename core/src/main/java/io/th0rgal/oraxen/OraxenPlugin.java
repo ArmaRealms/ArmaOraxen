@@ -19,7 +19,6 @@ import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureFactory;
 import io.th0rgal.oraxen.nms.GlyphHandlers;
 import io.th0rgal.oraxen.nms.NMSHandlers;
 import io.th0rgal.oraxen.pack.dispatch.PackLoadingManager;
-import io.th0rgal.oraxen.pack.generation.PackVersionManager;
 import io.th0rgal.oraxen.pack.generation.ResourcePack;
 import io.th0rgal.oraxen.pack.upload.UploadManager;
 import io.th0rgal.oraxen.recipes.builders.RecipeBuilder;
@@ -184,7 +183,7 @@ public class OraxenPlugin extends JavaPlugin {
         // Auto-generate schema in debug mode (useful for CI/CD)
         if (Settings.DEBUG.toBool()) {
             // Small delay to ensure everything is loaded
-            SchedulerUtil.runTaskLater(this, 20L, () -> SchemaGenerator.generateAndSave());
+            SchedulerUtil.runTaskLater(this, 20L, SchemaGenerator::generateAndSave);
         }
     }
 
