@@ -233,6 +233,9 @@ public class ItemParser {
         if (!VersionUtil.atOrAbove("1.21"))
             return;
 
+        Optional.ofNullable(OraxenYaml.getString(components, "painting_variant"))
+                .ifPresent(item::setPaintingVariant);
+
         final ConfigurationSection jukeboxSection = OraxenYaml.getConfigurationSection(components, "jukebox_playable");
         if (jukeboxSection != null && VersionUtil.isPaperServer()) {
             try {
@@ -310,6 +313,7 @@ public class ItemParser {
                 normalizedKey.equals("max_stack_size") ||
                 normalizedKey.equals("food") ||
                 normalizedKey.equals("tool") ||
+                normalizedKey.equals("painting_variant") ||
                 normalizedKey.equals("jukebox_playable") ||
                 normalizedKey.equals("equippable") ||
                 normalizedKey.equals("use_cooldown") ||

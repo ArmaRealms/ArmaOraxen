@@ -19,6 +19,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponentType;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -35,6 +36,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.JukeboxSong;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.DirectionalPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
@@ -370,6 +372,22 @@ public class NMSHandler implements io.th0rgal.oraxen.nms.NMSHandler {
     @Override
     public org.bukkit.inventory.ItemStack applyGenericComponents(org.bukkit.inventory.ItemStack itemStack, java.util.Map<String, Object> components) {
         return itemStack;
+    }
+
+    @Override
+    public ItemStack paintingVariantComponent(ItemStack itemStack, String paintingVariant) {
+        try {
+            net.minecraft.world.item.ItemStack nmsItem = CraftItemStack.asNMSCopy(itemStack);
+            CompoundTag entityData = new CompoundTag();
+            entityData.putString("id", "painting");
+            entityData.putString("variant", paintingVariant);
+            nmsItem.set(DataComponents.ENTITY_DATA, CustomData.of(entityData));
+            return CraftItemStack.asBukkitCopy(nmsItem);
+        } catch (Exception exception) {
+            Logs.logWarning("Failed to set painting_variant '" + paintingVariant + "'");
+            Logs.debug(exception);
+            return itemStack;
+        }
     }
 
     private void convertConfigToNBT(ConfigurationSection config, CompoundTag nbt) {

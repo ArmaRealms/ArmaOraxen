@@ -1,0 +1,13 @@
+# Defines custom painting variants for the generated Oraxen paintings datapack.
+# Texture assets are resolved as assets/<namespace>/textures/painting/<path>.png.
+#
+# paintings:
+#   oraxen:edna:
+#     author: the_jan_craft
+#     title: <red>Custom Painting
+#     asset_id: oraxen:edna
+#     width: 1
+#     height: 1
+#     include_in_random: false
+
+paintings: {}

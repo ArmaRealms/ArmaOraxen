@@ -52,6 +52,7 @@ public class ConfigsManager {
     private final YamlConfiguration defaultSettings;
     private final YamlConfiguration defaultFont;
     private final YamlConfiguration defaultSound;
+    private final YamlConfiguration defaultPaintings;
     private final YamlConfiguration defaultLanguage;
     private final YamlConfiguration defaultHud;
     private final YamlConfiguration defaultTextEffects;
@@ -59,6 +60,7 @@ public class ConfigsManager {
     private YamlConfiguration settings;
     private YamlConfiguration font;
     private YamlConfiguration sound;
+    private YamlConfiguration paintings;
     private YamlConfiguration language;
     private YamlConfiguration hud;
     private YamlConfiguration textEffects;
@@ -72,6 +74,7 @@ public class ConfigsManager {
         defaultSettings = extractDefault("settings.yml");
         defaultFont = extractDefault("font.yml");
         defaultSound = extractDefault("sound.yml");
+        defaultPaintings = extractDefault("paintings.yml");
         defaultLanguage = extractDefault("languages/english.yml");
         defaultHud = extractDefault("hud.yml");
         defaultTextEffects = extractDefault("text_effects.yml");
@@ -103,6 +106,10 @@ public class ConfigsManager {
 
     public YamlConfiguration getSound() {
         return sound != null ? sound : defaultSound;
+    }
+
+    public YamlConfiguration getPaintings() {
+        return paintings != null ? paintings : defaultPaintings;
     }
 
     public YamlConfiguration getTextEffects() {
@@ -138,6 +145,7 @@ public class ConfigsManager {
         font = validate(tempManager, "font.yml", defaultFont);
         hud = validate(tempManager, "hud.yml", defaultHud);
         sound = validate(tempManager, "sound.yml", defaultSound);
+        paintings = validate(tempManager, "paintings.yml", defaultPaintings);
         textEffects = validate(tempManager, "text_effects.yml", defaultTextEffects);
         File languagesFolder = new File(plugin.getDataFolder(), "languages");
         languagesFolder.mkdir();

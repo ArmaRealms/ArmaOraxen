@@ -44,8 +44,8 @@ public abstract class OraxenDatapack {
 
     protected void writeMCMeta() {
         try {
+            FileUtils.forceMkdir(datapackFolder);
             File packMeta = datapackFolder.toPath().resolve("pack.mcmeta").toFile();
-            packMeta.createNewFile();
             FileUtils.writeStringToFile(packMeta, datapackMeta.toString(), StandardCharsets.UTF_8);
         } catch (IOException e) {
             e.printStackTrace();

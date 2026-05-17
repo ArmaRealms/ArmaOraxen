@@ -210,3 +210,9 @@ leather_backpack:
       hide_while_gliding: true
       small: true
       visible_to_self: true
+
+# edna:
+#  itemname: "<red>Custom Painting"
+#  material: PAINTING
+#  Components:
+#    painting_variant: oraxen:edna

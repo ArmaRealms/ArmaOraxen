@@ -17,6 +17,8 @@ import io.th0rgal.oraxen.font.TextEffect;
 import net.kyori.adventure.key.Key;
 import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.items.OraxenMeta;
+import io.th0rgal.oraxen.painting.CustomPainting;
+import io.th0rgal.oraxen.painting.PaintingDatapack;
 import io.th0rgal.oraxen.pack.upload.UploadManager;
 import io.th0rgal.oraxen.utils.*;
 import io.th0rgal.oraxen.utils.customarmor.ComponentArmorModels;
@@ -27,6 +29,7 @@ import io.th0rgal.oraxen.utils.logs.Logs;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
 
 import javax.imageio.ImageIO;
 import java.awt.AlphaComposite;
@@ -211,6 +214,7 @@ public class ResourcePack {
     private void finishSinglePackOutputOnMain(ExecutorService packWorker, List<VirtualFile> output) {
         try {
             soundGenerator.generateSound(output);
+            generatePaintingDatapack(output);
 
             OraxenPackGeneratedEvent event = new OraxenPackGeneratedEvent(output);
             EventUtils.callEvent(event);
@@ -531,6 +535,38 @@ public class ResourcePack {
     private void postProcessOutput(List<VirtualFile> output) {
         postProcessOutputAsyncSafe(output);
         soundGenerator.generateSound(output);
+        generatePaintingDatapack(output);
+    }
+
+    private void generatePaintingDatapack(List<VirtualFile> output) {
+        ConfigurationSection paintingsSection = OraxenPlugin.get().getConfigsManager().getPaintings()
+                .getConfigurationSection("paintings");
+        if (paintingsSection == null) return;
+
+        List<CustomPainting> paintings = new ArrayList<>();
+        for (String key : paintingsSection.getKeys(false)) {
+            ConfigurationSection paintingSection = paintingsSection.getConfigurationSection(key);
+            if (paintingSection == null) continue;
+            if (!paintingSection.getBoolean("enabled", true)) continue;
+
+            try {
+                paintings.add(CustomPainting.fromConfig(key, paintingSection));
+            } catch (IllegalArgumentException exception) {
+                Logs.logWarning("Failed to parse custom painting '" + key + "' in paintings.yml");
+                Logs.debug(exception);
+            }
+        }
+
+        if (!VersionUtil.atOrAbove("1.21")) {
+            if (!paintings.isEmpty()) {
+                Logs.logWarning("Custom paintings require Minecraft 1.21 or newer. Skipping paintings datapack.");
+            }
+            return;
+        }
+
+        PaintingDatapack paintingDatapack = new PaintingDatapack(paintings);
+        paintingDatapack.clearOldDataPack();
+        paintingDatapack.generateAssets(output);
     }
 
     private void postProcessOutputAsyncSafe(List<VirtualFile> output) {
