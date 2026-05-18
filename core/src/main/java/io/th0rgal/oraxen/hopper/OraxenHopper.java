@@ -66,9 +66,9 @@ public final class OraxenHopper {
 
         BukkitHopper.register(plugin, deps -> {
             // We check for files in the plugins folder since plugins aren't loaded yet in constructor
-            boolean hasCommandAPI = pluginJarExists(COMMANDAPI_PATTERN);
-            boolean hasProtocolLib = pluginJarExists(PROTOCOLLIB_PATTERN);
-            boolean hasPacketEvents = pluginJarExists(PACKETEVENTS_PATTERN);
+            boolean hasCommandAPI = pluginJarExists(COMMANDAPI_PATTERN) || classExists("dev.jorel.commandapi.CommandAPI");
+            boolean hasProtocolLib = pluginJarExists(PROTOCOLLIB_PATTERN) || classExists("com.comphenix.protocol.ProtocolLib");
+            boolean hasPacketEvents = pluginJarExists(PACKETEVENTS_PATTERN) || classExists("com.github.retrooper.packetevents.PacketEvents");
 
             // CommandAPI is required for Oraxen commands
             if (!hasCommandAPI) {
@@ -194,5 +194,14 @@ public final class OraxenHopper {
         );
 
         return files != null && files.length > 0;
+    }
+
+    private static boolean classExists(String className) {
+        try {
+            Class.forName(className);
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 }
