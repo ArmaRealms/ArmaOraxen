@@ -41,6 +41,9 @@ public class CustomBlockMiningListener implements Listener {
     // (1 / 0.24 ≈ 4.17). Dividing 0.24 by the block hardness gives the per-tick fraction we
     // need to add to the player's BLOCK_BREAK_SPEED attribute to match the custom hardness.
     private static final double VANILLA_BREAK_SPEED_BASE = 0.24D;
+    private static final double HARVESTABLE_BLOCK_DIVISOR = 30.0D;
+    private static final double UNHARVESTABLE_BLOCK_DIVISOR = 100.0D;
+    private static final double FULL_BLOCK_MINING_COST = Material.NOTE_BLOCK.getHardness() * HARVESTABLE_BLOCK_DIVISOR;
     private final Map<UUID, AttributeModifier> modifierMap = new ConcurrentHashMap<>();
     // Cache of the resolved AttributeModifier constructor (varies by server version).
     private static volatile ModifierFactory cachedModifierFactory;
@@ -119,25 +122,25 @@ public class CustomBlockMiningListener implements Listener {
                 if (mechanic == null) return null;
             }
             return mechanic.hasHardness(tool) ? new MiningProfile(block, mechanic.getHardness(tool),
-                    mechanic.getAttributeSpeedMultiplier(tool, block.getType())) : null;
+                    mechanic.getAttributeSpeedMultiplier(tool, block.getType()), false) : null;
         }
 
         if (block.getType() == Material.TRIPWIRE) {
             final StringBlockMechanic mechanic = OraxenBlocks.getStringMechanic(block);
             return mechanic != null && mechanic.hasHardness(tool) ? new MiningProfile(block, mechanic.getHardness(tool),
-                    mechanic.getAttributeSpeedMultiplier(tool, block.getType())) : null;
+                    mechanic.getAttributeSpeedMultiplier(tool, block.getType()), false) : null;
         }
 
         if (block.getType() == Material.CHORUS_PLANT) {
             final ChorusBlockMechanic mechanic = OraxenBlocks.getChorusMechanic(block);
             return mechanic != null && mechanic.hasHardness(tool) ? new MiningProfile(block, mechanic.getHardness(tool),
-                    mechanic.getAttributeSpeedMultiplier(tool, block.getType())) : null;
+                    mechanic.getAttributeSpeedMultiplier(tool, block.getType()), false) : null;
         }
 
         final ShapedBlockMechanic shapedMechanic = OraxenBlocks.getShapedMechanic(block);
         if (shapedMechanic != null) {
             if (shapedMechanic.hasHardness(tool)) return new MiningProfile(block, shapedMechanic.getHardness(tool),
-                    shapedMechanic.getAttributeSpeedMultiplier(tool, block.getType()));
+                    shapedMechanic.getAttributeSpeedMultiplier(tool, block.getType()), true);
         }
 
         return null;
@@ -148,9 +151,31 @@ public class CustomBlockMiningListener implements Listener {
         final Attribute blockBreakSpeed = AttributeWrapper.BLOCK_BREAK_SPEED;
         if (BREAK_SPEED_KEY == null || blockBreakSpeed == null) return null;
 
-        final double speedFactor = Math.max(0.01D,
-                VANILLA_BREAK_SPEED_BASE / miningProfile.hardness() * miningProfile.speedMultiplier());
+        double speedFactor = VANILLA_BREAK_SPEED_BASE / miningProfile.hardness() * miningProfile.speedMultiplier();
+        if (miningProfile.normalizeNativeMiningCost()) {
+            speedFactor *= nativeMiningCostMultiplier(player.getInventory().getItemInMainHand(), miningProfile.block());
+        }
+
+        speedFactor = Math.max(0.01D, speedFactor);
         return instantiateModifier(speedFactor - 1.0D);
+    }
+
+    private double nativeMiningCostMultiplier(final ItemStack tool, final Block block) {
+        final double fullBlockMiningCost = FULL_BLOCK_MINING_COST > 0.0D
+                ? FULL_BLOCK_MINING_COST
+                : HARVESTABLE_BLOCK_DIVISOR;
+        final double nativeHardness = Math.max(0.0D, block.getType().getHardness());
+        if (nativeHardness <= 0.0D) return 1.0D;
+
+        return nativeHardness * nativeMiningDivisor(tool, block) / fullBlockMiningCost;
+    }
+
+    @SuppressWarnings({"deprecation", "removal"})
+    private double nativeMiningDivisor(final ItemStack tool, final Block block) {
+        final ItemStack hand = new ItemStack(Material.AIR);
+        return block.isPreferredTool(tool) || block.isValidTool(tool) || block.isValidTool(hand)
+                ? HARVESTABLE_BLOCK_DIVISOR
+                : UNHARVESTABLE_BLOCK_DIVISOR;
     }
 
     private void addTransientModifier(final Player player, final AttributeModifier modifier) {
@@ -255,5 +280,5 @@ public class CustomBlockMiningListener implements Listener {
         @Nullable AttributeModifier create(double amount);
     }
 
-    private record MiningProfile(Block block, double hardness, double speedMultiplier) {}
+    private record MiningProfile(Block block, double hardness, double speedMultiplier, boolean normalizeNativeMiningCost) {}
 }
