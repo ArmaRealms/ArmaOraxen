@@ -56,7 +56,7 @@ public class StringBlockMechanicListener implements Listener {
             public boolean isTriggered(final Player player, final Block block, final ItemStack tool) {
                 if (block.getType() != Material.TRIPWIRE) return false;
                 final StringBlockMechanic mechanic = OraxenBlocks.getStringMechanic(block);
-                return mechanic != null && mechanic.hasHardness();
+                return mechanic != null && mechanic.hasHardness(tool);
             }
 
             @Override
@@ -68,17 +68,9 @@ public class StringBlockMechanicListener implements Listener {
             public long getPeriod(final Player player, final Block block, final ItemStack tool) {
                 final StringBlockMechanic mechanic = OraxenBlocks.getStringMechanic(block);
                 if (mechanic == null) return 0;
-                final double hardness = mechanic.getHardness();
-                double modifier = 1;
-                if (mechanic.getDrop().canDrop(tool)) {
-                    modifier *= 0.4;
-                    if (mechanic.getDrop().isTypeEnough(tool)) {
-                        final int diff = mechanic.getDrop().getDiff(tool);
-                        if (diff >= 1) modifier *= Math.pow(0.9, diff);
-                    }
-                }
-                long period = (long) (hardness * modifier);
-                return period == 0 && mechanic.hasHardness() ? 1 : period;
+                final double hardness = mechanic.getHardness(tool);
+                long period = Math.round(hardness * 0.4D / mechanic.getPacketSpeedMultiplier(tool, block.getType()));
+                return period == 0 && mechanic.hasHardness(tool) ? 1 : period;
             }
         };
     }

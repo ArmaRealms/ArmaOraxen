@@ -3,6 +3,7 @@ package io.th0rgal.oraxen.mechanics.provided.gameplay.shaped;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockBreaking;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.light.LightMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.limitedplacing.LimitedPlacing;
 import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
@@ -11,10 +12,8 @@ import io.th0rgal.oraxen.utils.drops.Loot;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.inventory.ItemStack;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
 
 /**
  * Mechanic for custom shaped block variants (stairs, slabs, doors, trapdoors, grates).
@@ -22,13 +21,13 @@ import java.util.List;
  */
 public class ShapedBlockMechanic extends Mechanic {
 
-    public static final NamespacedKey SHAPED_BLOCK_KEY = new NamespacedKey(OraxenPlugin.get(), "shaped_block");
+    public static final NamespacedKey SHAPED_BLOCK_KEY = new NamespacedKey(OraxenPlugin.get(), "block");
 
     private final ShapedBlockType blockType;
     private final int customVariation;
     private final Material placedMaterial;
-    private final Drop drop;
-    private final int hardness;
+    private final BlockBreaking breaking;
+    private final double hardness;
     private final LightMechanic light;
     private final LimitedPlacing limitedPlacing;
     private final BlockSounds blockSounds;
@@ -59,34 +58,12 @@ public class ShapedBlockMechanic extends Mechanic {
         // Parse model
         this.model = section.getString("model");
 
-        // Parse hardness
-        this.hardness = section.getInt("hardness", 3);
+        // Parse breaking
+        this.breaking = new BlockBreaking(section, getItemID());
+        this.hardness = -1.0D;
 
         // Parse light
         this.light = new LightMechanic(section);
-
-        // Parse drop configuration
-        ConfigurationSection dropSection = section.getConfigurationSection("drop");
-        if (dropSection != null) {
-            List<Loot> loots = new ArrayList<>();
-            for (LinkedHashMap<String, Object> lootConfig : (List<LinkedHashMap<String, Object>>) dropSection.getList("loots", new ArrayList<>())) {
-                loots.add(new Loot(lootConfig, getItemID()));
-            }
-            ShapedBlockMechanicFactory factory = (ShapedBlockMechanicFactory) mechanicFactory;
-            if (dropSection.isString("minimal_type")) {
-                this.drop = new Drop(factory.getToolTypes(), loots,
-                    dropSection.getBoolean("silktouch"),
-                    dropSection.getBoolean("fortune"),
-                    getItemID(),
-                    dropSection.getString("minimal_type"),
-                    new ArrayList<>());
-            } else {
-                this.drop = new Drop(loots, dropSection.getBoolean("silktouch"),
-                    dropSection.getBoolean("fortune"), getItemID());
-            }
-        } else {
-            this.drop = new Drop(new ArrayList<>(), false, false, getItemID());
-        }
 
         // Parse limited placing
         ConfigurationSection limitedPlacingSection = section.getConfigurationSection("limited_placing");
@@ -119,15 +96,35 @@ public class ShapedBlockMechanic extends Mechanic {
     }
 
     public Drop getDrop() {
-        return drop;
+        return getDrop(new ItemStack(Material.AIR));
     }
 
-    public int getHardness() {
-        return hardness;
+    public Drop getDrop(ItemStack tool) {
+        return breaking.drop(tool);
+    }
+
+    public double getHardness() {
+        return getHardness(new ItemStack(Material.AIR));
+    }
+
+    public double getHardness(ItemStack tool) {
+        return breaking.hardness(tool);
     }
 
     public boolean hasHardness() {
-        return hardness != -1;
+        return hasHardness(new ItemStack(Material.AIR));
+    }
+
+    public boolean hasHardness(ItemStack tool) {
+        return breaking.hasHardness(tool);
+    }
+
+    public double getAttributeSpeedMultiplier(ItemStack tool, Material blockType) {
+        return breaking.attributeSpeedMultiplier(tool, blockType);
+    }
+
+    public double getPacketSpeedMultiplier(ItemStack tool, Material blockType) {
+        return breaking.packetSpeedMultiplier(tool, blockType);
     }
 
     public LightMechanic getLight() {

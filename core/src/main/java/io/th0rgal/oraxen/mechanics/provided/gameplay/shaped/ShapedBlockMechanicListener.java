@@ -9,6 +9,8 @@ import io.th0rgal.oraxen.utils.BlockHelpers;
 import io.th0rgal.oraxen.utils.SchedulerUtil;
 import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
 import io.th0rgal.oraxen.utils.drops.Drop;
+import io.th0rgal.oraxen.utils.breaker.BreakerSystem;
+import io.th0rgal.oraxen.utils.breaker.HardnessModifier;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import io.th0rgal.protectionlib.ProtectionLib;
 import org.jetbrains.annotations.Nullable;
@@ -57,6 +59,32 @@ public class ShapedBlockMechanicListener implements Listener {
 
     public ShapedBlockMechanicListener(ShapedBlockMechanicFactory factory) {
         this.factory = factory;
+        if (OraxenPlugin.get().getPacketAdapter().isEnabled())
+            BreakerSystem.MODIFIERS.add(getHardnessModifier());
+    }
+
+    private HardnessModifier getHardnessModifier() {
+        return new HardnessModifier() {
+            @Override
+            public boolean isTriggered(final Player player, final Block block, final ItemStack tool) {
+                ShapedBlockMechanic mechanic = getMechanicFromBlock(block);
+                return mechanic != null && mechanic.hasHardness(tool);
+            }
+
+            @Override
+            public void breakBlock(final Player player, final Block block, final ItemStack tool) {
+                block.setType(Material.AIR);
+            }
+
+            @Override
+            public long getPeriod(final Player player, final Block block, final ItemStack tool) {
+                ShapedBlockMechanic mechanic = getMechanicFromBlock(block);
+                if (mechanic == null) return 0;
+                long period = Math.round(mechanic.getHardness(tool) * 0.4D
+                        / mechanic.getPacketSpeedMultiplier(tool, block.getType()));
+                return period == 0 && mechanic.hasHardness(tool) ? 1 : period;
+            }
+        };
     }
 
     // ==================== VANILLA COPPER HANDLING ====================
@@ -461,11 +489,11 @@ public class ShapedBlockMechanicListener implements Listener {
     private void handleBlockDrops(Block block, Player player, ShapedBlockMechanic mechanic) {
         if (player.getGameMode() == GameMode.CREATIVE) return;
 
-        Drop drop = mechanic.getDrop();
+        ItemStack tool = player.getInventory().getItemInMainHand();
+        Drop drop = mechanic.getDrop(tool);
         if (drop == null) return;
 
         int dropCount = getDropCount(block, mechanic);
-        ItemStack tool = player.getInventory().getItemInMainHand();
         for (int i = 0; i < dropCount; i++) {
             drop.spawns(block.getLocation(), tool);
         }

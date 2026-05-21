@@ -68,6 +68,8 @@ public class BlockSounds {
         ConfigurationSection soundSection = section.getConfigurationSection(key);
         return section.isString(key + "_sound")
                 ? section.getString(key + "_sound")
+                : section.isString(key + "-sound")
+                ? section.getString(key + "-sound")
                 : soundSection != null
                 ? soundSection.getString("sound")
                 : null;

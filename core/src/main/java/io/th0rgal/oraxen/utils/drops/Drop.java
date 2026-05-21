@@ -34,9 +34,13 @@ public class Drop {
     @SuppressWarnings("unchecked")
     public static Drop createDrop(List<String> toolTypes, @NotNull ConfigurationSection dropSection, String sourceID) {
         List<Loot> loots = ((List<LinkedHashMap<String, Object>>) dropSection.getList("loots", new ArrayList<>())).stream().map(c -> new Loot(c, sourceID)).toList();
+        String minimalType = dropSection.getString("minimal-type", dropSection.getString("minimal_type", ""));
+        List<String> bestTools = dropSection.isList("best-tools")
+                ? dropSection.getStringList("best-tools")
+                : dropSection.getStringList("best_tools");
         return new Drop(toolTypes, loots, dropSection.getBoolean("silktouch"),
                 dropSection.getBoolean("fortune"), sourceID,
-                dropSection.getString("minimal_type", ""), dropSection.getStringList("best_tools"));
+                minimalType, bestTools);
     }
 
     public Drop(List<String> hierarchy, List<Loot> loots, boolean silktouch, boolean fortune, String sourceID,
@@ -153,7 +157,7 @@ public class Drop {
                 && itemInHand.getItemMeta().hasEnchant(EnchantmentWrapper.SILK_TOUCH)) {
             ItemStack baseItem = OraxenItems.getItemById(sourceID).build();
             location.getWorld().dropItemNaturally(BlockHelpers.toCenterBlockLocation(location), baseItem);
-        } else dropLoot(loots, location, getFortuneMultiplier(itemInHand));
+        } else dropLoot(loots, location, getFortuneMultiplier(itemInHand), itemInHand);
     }
 
     public void furnitureSpawns(Entity baseEntity, ItemStack itemInHand) {
@@ -180,7 +184,7 @@ public class Drop {
                 if (lootItem == null) return false;
                 String lootItemId = OraxenItems.getIdByItem(lootItem);
                 return !lootItem.isSimilar(baseItem) && !sourceID.equals(lootItemId);
-            }).toList(), location, getFortuneMultiplier(itemInHand));
+            }).toList(), location, getFortuneMultiplier(itemInHand), itemInHand);
             // Filter loots down to only the furniture item and drop the item in the actual Furniture to preseve color etc.
             dropLoot(loots.stream()
                     .filter(loot -> {
@@ -190,7 +194,7 @@ public class Drop {
                         return lootItem.isSimilar(baseItem) || sourceID.equals(lootItemId);
                     })
                     .map(loot -> new Loot(sourceID, furnitureItem, loot.getProbability(), 1, loot.getMaxAmount()))
-                    .toList(), location, getFortuneMultiplier(itemInHand));
+                    .toList(), location, getFortuneMultiplier(itemInHand), itemInHand);
         }
     }
 
@@ -210,6 +214,10 @@ public class Drop {
         for (Loot loot : loots) loot.dropNaturally(location, fortuneMultiplier);
     }
 
+    private void dropLoot(List<Loot> loots, Location location, int fortuneMultiplier, ItemStack itemInHand) {
+        for (Loot loot : loots) loot.dropNaturally(location, fortuneMultiplier, itemInHand);
+    }
+
     /**
      * Get the loots that will drop based on a given Player
      * @param player the player that triggered this drop
@@ -220,9 +228,9 @@ public class Drop {
         int fortuneMultiplier = getFortuneMultiplier(itemInHand);
         List<Loot> droppedLoots = new ArrayList<>();
         for (Loot loot : loots) {
-            ItemStack item = loot.getItem(fortuneMultiplier);
+            ItemStack item = loot.getItem(fortuneMultiplier, itemInHand);
 
-            if (!canDrop(itemInHand) || item == null) continue;
+            if (!canDrop(itemInHand) || !loot.canDropWith(itemInHand) || item == null) continue;
             if (Math.random() > loot.getProbability()) continue;
 
             droppedLoots.add(loot);

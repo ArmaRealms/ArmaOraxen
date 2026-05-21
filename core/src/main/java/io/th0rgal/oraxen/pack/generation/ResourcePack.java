@@ -916,7 +916,12 @@ public class ResourcePack {
 
     @SafeVarargs
     public final void addModifiers(String groupName, final Consumer<File>... modifiers) {
-        packModifiers.put(groupName, Arrays.asList(modifiers));
+        packModifiers.compute(groupName, (key, existing) -> {
+            List<Consumer<File>> merged = new ArrayList<>();
+            if (existing != null) merged.addAll(existing);
+            merged.addAll(Arrays.asList(modifiers));
+            return merged;
+        });
     }
 
     public static void addOutputFiles(final VirtualFile... files) {

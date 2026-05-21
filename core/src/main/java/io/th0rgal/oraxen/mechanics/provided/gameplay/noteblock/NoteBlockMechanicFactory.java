@@ -155,13 +155,13 @@ public class NoteBlockMechanicFactory extends MechanicFactory {
     }
 
     public static boolean isEnabled() {
-        return instance != null && MechanicsManager.isMechanicEnabled("noteblock");
+        return instance != null && MechanicsManager.isMechanicEnabled("block");
     }
 
     public static boolean areCustomSoundsEnabled() {
         ConfigurationSection customSoundsSection = OraxenPlugin.get().getConfigsManager().getMechanics()
                 .getConfigurationSection("custom_block_sounds");
-        return customSoundsSection == null || customSoundsSection.getBoolean("noteblock_and_block", true);
+        return customSoundsSection == null || customSoundsSection.getBoolean("block", true);
     }
 
     public static NoteBlockMechanicFactory getInstance() {

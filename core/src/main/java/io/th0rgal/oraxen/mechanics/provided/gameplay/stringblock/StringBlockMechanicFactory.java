@@ -98,7 +98,7 @@ public class StringBlockMechanicFactory extends MechanicFactory {
     }
 
     public static boolean isEnabled() {
-        return instance != null && MechanicsManager.isMechanicEnabled("stringblock");
+        return instance != null && MechanicsManager.isMechanicEnabled("block");
     }
 
     public static boolean areCustomSoundsEnabled() {
@@ -107,7 +107,7 @@ public class StringBlockMechanicFactory extends MechanicFactory {
 
         ConfigurationSection customSoundsSection = plugin.getConfigsManager().getMechanics()
                 .getConfigurationSection("custom_block_sounds");
-        return customSoundsSection == null || customSoundsSection.getBoolean("stringblock_and_furniture", true);
+        return customSoundsSection == null || customSoundsSection.getBoolean("block", true);
     }
 
     public static StringBlockMechanicFactory getInstance() {
@@ -122,8 +122,7 @@ public class StringBlockMechanicFactory extends MechanicFactory {
      * @param itemId The Oraxen item ID.
      */
     public static void setBlockModel(Block block, String itemId) {
-        final MechanicFactory mechanicFactory = MechanicsManager.getMechanicFactory("stringblock");
-        StringBlockMechanic stringBlockMechanic = (StringBlockMechanic) mechanicFactory.getMechanic(itemId);
+        StringBlockMechanic stringBlockMechanic = getInstance().getMechanic(itemId);
         block.setBlockData(createTripwireData(stringBlockMechanic.getCustomVariation()));
     }
 

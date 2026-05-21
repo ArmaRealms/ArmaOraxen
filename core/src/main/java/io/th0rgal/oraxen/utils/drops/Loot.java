@@ -9,6 +9,7 @@ import io.th0rgal.oraxen.items.ItemUpdater;
 import io.th0rgal.oraxen.utils.OraxenYaml;
 import io.th0rgal.oraxen.utils.Utils;
 import io.th0rgal.oraxen.utils.logs.Logs;
+import io.th0rgal.oraxen.utils.wrappers.EnchantmentWrapper;
 import net.Indyuce.mmoitems.MMOItems;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -23,6 +24,8 @@ public class Loot {
     private ItemStack itemStack;
     private final double probability;
     private final IntegerRange amount;
+    private final boolean requiresSilkTouch;
+    private final double fortuneBonus;
     private LinkedHashMap<String, Object> config;
 
     public Loot(LinkedHashMap<String, Object> config, String sourceID) {
@@ -30,6 +33,8 @@ public class Loot {
         if (config.getOrDefault("amount", "") instanceof String amount && amount.contains("..")) {
             this.amount = Utils.parseToRange(amount);
         } else this.amount = new IntegerRange(1,1);
+        this.requiresSilkTouch = Boolean.parseBoolean(config.getOrDefault("silk-touch", false).toString());
+        this.fortuneBonus = Double.parseDouble(config.getOrDefault("fortune", 0).toString());
         this.config = config;
         this.sourceID = sourceID;
     }
@@ -38,6 +43,8 @@ public class Loot {
         this.itemStack = itemStack;
         this.probability = Math.min(1.0, probability);
         this.amount = new IntegerRange(1,1);
+        this.requiresSilkTouch = false;
+        this.fortuneBonus = 0.0D;
         this.sourceID = null;
     }
 
@@ -46,6 +53,8 @@ public class Loot {
         this.itemStack = itemStack;
         this.probability = Math.min(1.0, probability);
         this.amount = new IntegerRange(minAmount, maxAmount);
+        this.requiresSilkTouch = false;
+        this.fortuneBonus = 0.0D;
     }
 
     public Loot(String sourceID, ItemStack itemStack, double probability, IntegerRange amount) {
@@ -53,6 +62,8 @@ public class Loot {
         this.itemStack = itemStack;
         this.probability = Math.min(1.0, probability);
         this.amount = amount;
+        this.requiresSilkTouch = false;
+        this.fortuneBonus = 0.0D;
     }
 
     public ItemStack getItemStack() {
@@ -65,8 +76,11 @@ public class Loot {
         String ecoItemId = getConfigString("ecoitem");
         String executableItemId = getConfigString("executableitem");
         String minecraftType = getConfigString("minecraft_type");
+        String itemId = getConfigString("item");
 
-        if (oraxenItemId != null) {
+        if (itemId != null) {
+            itemStack = resolveItem(itemId);
+        } else if (oraxenItemId != null) {
             if (OraxenItems.getItemById(oraxenItemId) != null)
                 itemStack = OraxenItems.getItemById(oraxenItemId).build();
         } else if (crucibleItemId != null) {
@@ -95,6 +109,16 @@ public class Loot {
         return itemStack != null ? ItemUpdater.updateItem(itemStack) : null;
     }
 
+    private ItemStack resolveItem(String itemId) {
+        String normalized = itemId.startsWith("oraxen:") ? itemId.substring("oraxen:".length()) : itemId;
+        if (OraxenItems.getItemById(normalized) != null)
+            return OraxenItems.getItemById(normalized).build();
+
+        String materialId = itemId.toLowerCase().startsWith("minecraft:") ? itemId.substring("minecraft:".length()) : itemId;
+        Material material = Material.matchMaterial(materialId);
+        return material != null ? new ItemStack(material) : null;
+    }
+
     public void setItemStack(ItemStack itemStack) {
         this.itemStack = itemStack;
     }
@@ -116,18 +140,50 @@ public class Loot {
             dropItems(location, amountMultiplier);
     }
 
+    public void dropNaturally(Location location, int amountMultiplier, ItemStack tool) {
+        if (!canDropWith(tool)) return;
+        if (Math.random() <= probability)
+            dropItems(location, amountMultiplier, tool);
+    }
+
     public ItemStack getItem(int amountMultiplier) {
+        return getItem(amountMultiplier, null);
+    }
+
+    public ItemStack getItem(int amountMultiplier, ItemStack tool) {
         ItemStack baseStack = getItemStack();
         if (baseStack == null) return null;
 
         ItemStack stack = baseStack.clone();
         int dropAmount = ThreadLocalRandom.current().nextInt(amount.getLowerBound(), amount.getUpperBound() + 1);
-        stack.setAmount(stack.getAmount() * amountMultiplier * dropAmount);
+        stack.setAmount(stack.getAmount() * amountMultiplier * applyFortune(dropAmount, tool));
         return ItemUpdater.updateItem(stack);
+    }
+
+    public boolean canDropWith(ItemStack tool) {
+        return !requiresSilkTouch || tool != null && tool.containsEnchantment(EnchantmentWrapper.SILK_TOUCH);
+    }
+
+    private int applyFortune(int amount, ItemStack tool) {
+        if (fortuneBonus <= 0 || tool == null) return amount;
+
+        int fortuneLevel = tool.getEnchantmentLevel(EnchantmentWrapper.FORTUNE);
+        if (fortuneLevel <= 0) return amount;
+
+        double multiplier = 1.0D + fortuneBonus * fortuneLevel;
+        double exactAmount = amount * multiplier;
+        int roundedAmount = (int) Math.floor(exactAmount);
+        if (Math.random() < exactAmount - roundedAmount) roundedAmount++;
+        return Math.max(1, roundedAmount);
     }
 
     private void dropItems(Location location, int amountMultiplier) {
         ItemStack item = getItem(amountMultiplier);
+        if (location.getWorld() != null && item != null) location.getWorld().dropItemNaturally(location, item);
+    }
+
+    private void dropItems(Location location, int amountMultiplier, ItemStack tool) {
+        ItemStack item = getItem(amountMultiplier, tool);
         if (location.getWorld() != null && item != null) location.getWorld().dropItemNaturally(location, item);
     }
 

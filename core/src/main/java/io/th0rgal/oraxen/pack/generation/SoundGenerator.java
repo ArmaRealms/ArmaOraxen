@@ -83,13 +83,11 @@ class SoundGenerator {
     private Collection<CustomSound> handleCustomSoundEntries(Collection<CustomSound> sounds) {
         ConfigurationSection mechanic = OraxenPlugin.get().getConfigsManager().getMechanics();
         ConfigurationSection customSounds = mechanic.getConfigurationSection("custom_block_sounds");
-        ConfigurationSection noteblock = mechanic.getConfigurationSection("noteblock");
-        ConfigurationSection stringblock = mechanic.getConfigurationSection("stringblock");
         ConfigurationSection furniture = mechanic.getConfigurationSection("furniture");
         ConfigurationSection block = mechanic.getConfigurationSection("block");
 
-        handleWoodSoundEntries(sounds, customSounds, noteblock, block);
-        handleStoneSoundEntries(sounds, customSounds, stringblock, furniture);
+        handleWoodSoundEntries(sounds, customSounds, block);
+        handleStoneSoundEntries(sounds, customSounds, block, furniture);
 
         // Clear the sounds.json file of yaml configuration entries that should not be
         // there
@@ -104,7 +102,7 @@ class SoundGenerator {
      * @param sounds The sound collection to filter
      * @param customSounds The custom block sounds config section
      * @param soundPrefix The sound prefix to filter (e.g., "wood" or "stone")
-     * @param configKey The config key to check in customSounds (e.g., "noteblock_and_block")
+     * @param configKey The config key to check in customSounds
      * @param section1 First mechanic section to check
      * @param section1EnabledDefault Default enabled value for section1
      * @param section2 Second mechanic section to check
@@ -138,16 +136,29 @@ class SoundGenerator {
 
     private void handleWoodSoundEntries(Collection<CustomSound> sounds,
             ConfigurationSection customSounds,
-            ConfigurationSection noteblock,
             ConfigurationSection block) {
-        handleSoundEntries(sounds, customSounds, "wood", "noteblock_and_block", noteblock, true, block, false);
+        handleSoundEntries(sounds, customSounds, "wood", "block", block, true, null, true);
     }
 
     private void handleStoneSoundEntries(Collection<CustomSound> sounds,
             ConfigurationSection customSounds,
-            ConfigurationSection stringblock,
+            ConfigurationSection block,
             ConfigurationSection furniture) {
-        handleSoundEntries(sounds, customSounds, "stone", "stringblock_and_furniture", stringblock, true, furniture, true);
+        Predicate<CustomSound> soundFilter =
+                s -> s.getName().startsWith("required.stone") || s.getName().startsWith("block.stone");
+
+        if (customSounds == null) {
+            sounds.removeIf(soundFilter);
+            return;
+        }
+
+        boolean blockNeedsSounds = customSounds.getBoolean("block", true)
+                && (block == null || block.getBoolean("enabled", true));
+        boolean furnitureNeedsSounds = customSounds.getBoolean("furniture", true)
+                && (furniture == null || furniture.getBoolean("enabled", true));
+
+        if (!blockNeedsSounds && !furnitureNeedsSounds)
+            sounds.removeIf(soundFilter);
     }
 
     private void removeUnwantedSoundEntries(Collection<CustomSound> sounds) {
