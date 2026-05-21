@@ -174,25 +174,29 @@ public class BlockBreaking {
     private static double nativeToolSpeed(final ItemStack tool, final Material blockType) {
         if (tool == null) return 1.0D;
 
-        Material toolType = tool.getType();
-        String toolName = toolType.name();
+        final Material toolType = tool.getType();
+        final String toolName = toolType.name();
 
-        if (toolType == Material.SHEARS) {
-            if (blockType == Material.COBWEB || Tag.LEAVES.isTagged(blockType)) return 15.0D;
-            if (Tag.WOOL.isTagged(blockType)) return 5.0D;
-            return 2.0D;
-        }
+        if (usesNativeSpeed(toolType, toolName, blockType)) return tierToolSpeed(tool, blockType);
 
-        if (toolName.endsWith("_SWORD")) {
-            if (blockType == Material.COBWEB || blockType.name().contains("BAMBOO")) return 15.0D;
-            return 1.5D;
-        }
-
-        if (toolName.endsWith("_PICKAXE") && isMineable(blockType, "mineable/pickaxe")) return tierToolSpeed(tool, blockType);
-        if (toolName.endsWith("_AXE") && isMineable(blockType, "mineable/axe")) return tierToolSpeed(tool, blockType);
-        if (toolName.endsWith("_SHOVEL") && isMineable(blockType, "mineable/shovel")) return tierToolSpeed(tool, blockType);
-        if (toolName.endsWith("_HOE") && isMineable(blockType, "mineable/hoe")) return tierToolSpeed(tool, blockType);
         return 1.0D;
+    }
+
+    private static boolean usesNativeSpeed(Material toolType, String toolName, Material blockType) {
+        if (toolType == Material.SHEARS) return true;
+        if (toolName.endsWith("_SWORD")) return true;
+
+        final String mineableTag = mineableTagName(toolName);
+        return mineableTag != null && isMineable(blockType, mineableTag);
+    }
+
+    @Nullable
+    private static String mineableTagName(String toolName) {
+        if (toolName.endsWith("_PICKAXE")) return "mineable/pickaxe";
+        if (toolName.endsWith("_AXE")) return "mineable/axe";
+        if (toolName.endsWith("_SHOVEL")) return "mineable/shovel";
+        if (toolName.endsWith("_HOE")) return "mineable/hoe";
+        return null;
     }
 
     private static boolean isMineable(Material blockType, String tagName) {
