@@ -137,7 +137,7 @@ class SoundGenerator {
     private void handleWoodSoundEntries(Collection<CustomSound> sounds,
             ConfigurationSection customSounds,
             ConfigurationSection block) {
-        handleSoundEntries(sounds, customSounds, "wood", "block", block, true, null, true);
+        handleSoundEntries(sounds, customSounds, "wood", "block", block, true, block, true);
     }
 
     private void handleStoneSoundEntries(Collection<CustomSound> sounds,
