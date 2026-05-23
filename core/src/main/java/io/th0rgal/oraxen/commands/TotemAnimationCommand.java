@@ -4,8 +4,6 @@ import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.ArgumentSuggestions;
 import dev.jorel.commandapi.arguments.EntitySelectorArgument;
 import dev.jorel.commandapi.arguments.TextArgument;
-import io.papermc.paper.datacomponent.DataComponentTypes;
-import io.papermc.paper.datacomponent.item.DeathProtection;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.config.Message;
 import io.th0rgal.oraxen.items.ItemBuilder;
@@ -17,6 +15,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.stream.Stream;
@@ -100,11 +100,21 @@ public class TotemAnimationCommand {
     }
 
     private ItemStack addDeathProtection(ItemStack itemStack) {
-        if (!VersionUtil.atOrAbove("1.21.2") || itemStack.getType() == Material.AIR) {
+        if (!supportsDeathProtectionComponent() || itemStack.getType() == Material.AIR) {
             return itemStack;
         }
 
-        itemStack.setData(DataComponentTypes.DEATH_PROTECTION, DeathProtection.deathProtection());
+        try {
+            Class<?> dataComponentTypeClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType");
+            Object deathProtectionType = getDeathProtectionType();
+            Object deathProtection = Class.forName("io.papermc.paper.datacomponent.item.DeathProtection")
+                    .getMethod("deathProtection")
+                    .invoke(null);
+            Method setData = ItemStack.class.getMethod("setData", dataComponentTypeClass, Object.class);
+            setData.invoke(itemStack, deathProtectionType, deathProtection);
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+        }
+
         return itemStack;
     }
 
@@ -113,6 +123,26 @@ public class TotemAnimationCommand {
             return true;
         }
 
-        return VersionUtil.atOrAbove("1.21.2") && itemStack.hasData(DataComponentTypes.DEATH_PROTECTION);
+        if (!supportsDeathProtectionComponent()) {
+            return false;
+        }
+
+        try {
+            Class<?> dataComponentTypeClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType");
+            Method hasData = ItemStack.class.getMethod("hasData", dataComponentTypeClass);
+            return (boolean) hasData.invoke(itemStack, getDeathProtectionType());
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            return false;
+        }
+    }
+
+    private boolean supportsDeathProtectionComponent() {
+        return VersionUtil.isPaperServer() && VersionUtil.atOrAbove("1.21.2");
+    }
+
+    private Object getDeathProtectionType() throws ReflectiveOperationException {
+        Field deathProtectionType = Class.forName("io.papermc.paper.datacomponent.DataComponentTypes")
+                .getField("DEATH_PROTECTION");
+        return deathProtectionType.get(null);
     }
 }
