@@ -4,6 +4,7 @@ import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.compatibilities.provided.ecoitems.WrappedEcoItem;
 import io.th0rgal.oraxen.compatibilities.provided.mythiccrucible.WrappedCrucibleItem;
+import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.items.ItemUpdater;
 import io.th0rgal.oraxen.recipes.CustomRecipe;
 import io.th0rgal.oraxen.recipes.listeners.RecipesEventsManager;
@@ -36,9 +37,13 @@ public abstract class RecipeLoader {
         ItemStack result;
         int amount = resultSection.getInt("amount", 1);
 
-        if (resultSection.isString("oraxen_item"))
-            result = ItemUpdater.updateItem(OraxenItems.getItemById(resultSection.getString("oraxen_item")).build());
-        else if (resultSection.isString("crucible_item"))
+        if (resultSection.isString("oraxen_item")) {
+            String itemId = resultSection.getString("oraxen_item");
+            ItemBuilder builder = OraxenItems.getItemById(itemId);
+            if (builder == null)
+                throw new IllegalArgumentException("Recipe result references unknown Oraxen item: " + itemId);
+            result = ItemUpdater.updateItem(builder.build());
+        } else if (resultSection.isString("crucible_item"))
             result = new WrappedCrucibleItem(resultSection.getString("crucible_item")).build();
         else if (resultSection.isString("mmoitems_id") && resultSection.isString("mmoitems_type"))
             result = MMOItems.plugin.getItem(resultSection.getString("mmoitems_type"), resultSection.getString("mmoitems_id"));
