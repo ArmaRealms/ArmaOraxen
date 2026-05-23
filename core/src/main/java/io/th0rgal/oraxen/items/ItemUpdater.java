@@ -211,15 +211,19 @@ public class ItemUpdater implements Listener {
         }
     }
 
-    private static void updateLoadedContents() {
-        updateLoadedEntityContents();
+    public static void updateLoadedTileEntityContents() {
+        if (!Settings.UPDATE_ITEMS.toBool() || !Settings.UPDATE_TILE_ENTITY_CONTENTS.toBool()) return;
 
-        if (!Settings.UPDATE_TILE_ENTITY_CONTENTS.toBool()) return;
         for (World world : Bukkit.getWorlds()) {
             for (Chunk chunk : world.getLoadedChunks()) {
                 SchedulerUtil.runAtLocation(chunkLocation(chunk), () -> updateTileEntityInventories(chunk));
             }
         }
+    }
+
+    private static void updateLoadedContents() {
+        updateLoadedEntityContents();
+        updateLoadedTileEntityContents();
     }
 
     private static Location chunkLocation(Chunk chunk) {

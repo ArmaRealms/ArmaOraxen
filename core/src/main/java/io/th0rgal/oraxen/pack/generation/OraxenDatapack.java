@@ -42,13 +42,15 @@ public abstract class OraxenDatapack {
         this.datapackEnabled = isDatapackEnabled();
     }
 
-    protected void writeMCMeta() {
+    protected boolean writeMCMeta() {
         try {
             FileUtils.forceMkdir(datapackFolder);
             File packMeta = datapackFolder.toPath().resolve("pack.mcmeta").toFile();
             FileUtils.writeStringToFile(packMeta, datapackMeta.toString(), StandardCharsets.UTF_8);
+            return true;
         } catch (IOException e) {
             e.printStackTrace();
+            return false;
         }
     }
 

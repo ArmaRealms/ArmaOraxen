@@ -962,20 +962,6 @@ public class ShapedBlockMechanicListener implements Listener {
      * Get the mechanic for a placed shaped block.
      */
     public ShapedBlockMechanic getMechanicFromBlock(Block block) {
-        Material material = block.getType();
-
-        // First check if it's a registered shaped block material
-        if (!factory.isCustomShapedBlock(material)) return null;
-
-        // Check if it has our custom marker
-        CustomBlockData blockData = new CustomBlockData(block, OraxenPlugin.get());
-        String itemId = ShapedBlockMechanic.getItemId(blockData);
-        if (itemId == null) return null;
-
-        Mechanic mechanic = factory.getMechanic(itemId);
-        if (mechanic instanceof ShapedBlockMechanic shapedMechanic) {
-            return shapedMechanic;
-        }
-        return null;
+        return factory.getMechanicFromBlock(block);
     }
 }

@@ -107,12 +107,12 @@ public class TotemAnimationCommand {
         }
 
         try {
-            Class<?> dataComponentTypeClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType");
+            Class<?> valuedDataComponentTypeClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType$Valued");
             Object deathProtectionType = getDeathProtectionType();
             Object deathProtection = Class.forName("io.papermc.paper.datacomponent.item.DeathProtection")
                     .getMethod("deathProtection")
                     .invoke(null);
-            Method setData = ItemStack.class.getMethod("setData", dataComponentTypeClass, Object.class);
+            Method setData = ItemStack.class.getMethod("setData", valuedDataComponentTypeClass, Object.class);
             setData.invoke(itemStack, deathProtectionType, deathProtection);
         } catch (ReflectiveOperationException | LinkageError ignored) {
         }

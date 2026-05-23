@@ -50,6 +50,7 @@ public class ReloadCommand {
                 });
             }
             ItemUpdater.updateLoadedEntityContents();
+            ItemUpdater.updateLoadedTileEntityContents();
         }
 
         if (Settings.UPDATE_FURNITURE.toBool() && Settings.UPDATE_FURNITURE_ON_RELOAD.toBool()) {

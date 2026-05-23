@@ -41,9 +41,9 @@ public class PaintingDatapack extends OraxenDatapack {
             return;
         }
 
-        writeMCMeta();
-        writePaintingVariants();
-        writePlaceableTag();
+        if (!writeMCMeta() || !writePaintingVariants() || !writePlaceableTag()) {
+            return;
+        }
 
         if (isFirstInstall || !datapackEnabled) {
             Message.DATAPACK_GENERATED.send(Bukkit.getConsoleSender(),
@@ -53,7 +53,7 @@ public class PaintingDatapack extends OraxenDatapack {
         enableDatapack(true);
     }
 
-    private void writePaintingVariants() {
+    private boolean writePaintingVariants() {
         for (CustomPainting painting : paintings) {
             File paintingFile = datapackFolder.toPath()
                     .resolve("data/" + painting.variantKey().namespace()
@@ -66,11 +66,13 @@ public class PaintingDatapack extends OraxenDatapack {
                 FileUtils.writeStringToFile(paintingFile, painting.toJson().toString(), StandardCharsets.UTF_8);
             } catch (IOException e) {
                 e.printStackTrace();
+                return false;
             }
         }
+        return true;
     }
 
-    private void writePlaceableTag() {
+    private boolean writePlaceableTag() {
         JsonArray values = new JsonArray();
         paintings.stream()
                 .filter(CustomPainting::includeInRandom)
@@ -78,7 +80,7 @@ public class PaintingDatapack extends OraxenDatapack {
                 .forEach(values::add);
 
         if (values.isEmpty()) {
-            return;
+            return true;
         }
 
         JsonObject tag = new JsonObject();
@@ -95,6 +97,8 @@ public class PaintingDatapack extends OraxenDatapack {
             FileUtils.writeStringToFile(tagFile, tag.toString(), StandardCharsets.UTF_8);
         } catch (IOException e) {
             e.printStackTrace();
+            return false;
         }
+        return true;
     }
 }
