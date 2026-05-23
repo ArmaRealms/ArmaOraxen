@@ -313,7 +313,8 @@ public abstract class BreakerSystem {
             case BARRIER -> {
                 FurnitureMechanic mechanic = OraxenFurniture.getFurnitureMechanic(block);
                 if (mechanic == null || !mechanic.hasBlockSounds()) return null;
-                if (!soundSection.getBoolean("furniture", true)) return null;
+                if (!soundSection.getBoolean("furniture",
+                        soundSection.getBoolean("stringblock_and_furniture", true))) return null;
                 else return mechanic.getBlockSounds();
             }
             default -> {

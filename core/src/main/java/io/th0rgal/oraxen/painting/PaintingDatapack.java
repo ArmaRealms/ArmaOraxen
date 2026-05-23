@@ -16,6 +16,7 @@ import org.bukkit.Bukkit;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 
@@ -57,10 +58,18 @@ public class PaintingDatapack extends OraxenDatapack {
 
     private boolean writePaintingVariants() {
         for (CustomPainting painting : paintings) {
-            File paintingFile = datapackFolder.toPath()
-                    .resolve("data/" + painting.variantKey().namespace()
-                            + "/painting_variant/" + painting.variantKey().value() + ".json")
-                    .toFile();
+            Path paintingFolder = datapackFolder.toPath()
+                    .resolve("data")
+                    .resolve(painting.variantKey().namespace())
+                    .resolve("painting_variant")
+                    .normalize();
+            Path paintingPath = paintingFolder.resolve(painting.variantKey().value() + ".json").normalize();
+            if (!paintingPath.startsWith(paintingFolder)) {
+                Logs.logError("Invalid painting variant path " + painting.variantKey().asString());
+                return false;
+            }
+
+            File paintingFile = paintingPath.toFile();
 
             try {
                 paintingFile.getParentFile().mkdirs();

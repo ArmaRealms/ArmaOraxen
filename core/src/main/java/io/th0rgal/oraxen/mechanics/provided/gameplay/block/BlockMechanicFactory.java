@@ -120,7 +120,8 @@ public class BlockMechanicFactory extends MechanicFactory {
     @Override
     public @NotNull List<MechanicConfigProperty> getConfigSchema() {
         return List.of(
-                MechanicConfigProperty.string("type", "Backing block type"),
+                MechanicConfigProperty.enumType("type", "Backing block type",
+                        List.of("FULL", "STAIR", "SLAB", "DOOR", "TRAPDOOR", "GRATE", "BULB", "STRING", "CHORUS")),
                 MechanicConfigProperty.object("appearance", "Placed block appearance", Map.of(
                         "model", MechanicConfigProperty.string("model", "Placed block model path"),
                         "textures", MechanicConfigProperty.list("textures", "Placed block textures")

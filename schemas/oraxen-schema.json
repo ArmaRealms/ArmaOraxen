@@ -8488,7 +8488,18 @@
       "properties": {
         "type": {
           "type": "string",
-          "description": "Backing block type"
+          "description": "Backing block type",
+          "values": [
+            "FULL",
+            "STAIR",
+            "SLAB",
+            "DOOR",
+            "TRAPDOOR",
+            "GRATE",
+            "BULB",
+            "STRING",
+            "CHORUS"
+          ]
         },
         "appearance": {
           "type": "object",
@@ -8511,7 +8522,38 @@
         },
         "breaking": {
           "type": "array",
-          "description": "Ordered block breaking rules"
+          "description": "Ordered block breaking rules",
+          "items": {
+            "type": "object",
+            "properties": {
+              "when": {
+                "type": "array",
+                "description": "Tool materials or item tags that match this rule",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "else": {
+                "type": "boolean",
+                "description": "Fallback rule when no previous tool rule matched"
+              },
+              "hardness": {
+                "type": "number",
+                "description": "Block hardness for this rule"
+              },
+              "drops": {
+                "type": "array",
+                "description": "Loot entries dropped by this rule",
+                "items": {
+                  "type": "object"
+                }
+              }
+            },
+            "required": [
+              "hardness"
+            ],
+            "additionalProperties": false
+          }
         },
         "light": {
           "type": "integer",

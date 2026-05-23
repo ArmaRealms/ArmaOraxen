@@ -85,8 +85,9 @@ public class BlockHelpers {
         sound = sound.replace("minecraft:", "");
         if (sound.startsWith("block.wood") && mechanics.getBoolean("block", true)) {
             return sound.replace("block.wood", "required.wood");
-        } else if (sound.startsWith("block.stone") && (mechanics.getBoolean("block", true) || mechanics.getBoolean("furniture", true))) {
-                return sound.replace("block.stone", "required.stone");
+        } else if (sound.startsWith("block.stone") && (mechanics.getBoolean("block", true) ||
+                mechanics.getBoolean("furniture", mechanics.getBoolean("stringblock_and_furniture", true)))) {
+            return sound.replace("block.stone", "required.stone");
         } else return sound;
     }
 

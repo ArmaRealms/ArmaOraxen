@@ -128,8 +128,13 @@ class SoundGenerator {
             sounds.removeIf(soundFilter);
         }
 
-        if (section1 != null && !section1.getBoolean("enabled", section1EnabledDefault) &&
-                section2 != null && !section2.getBoolean("enabled", section2EnabledDefault)) {
+        boolean section1NeedsSounds = section1 == null
+                ? section1EnabledDefault
+                : section1.getBoolean("enabled", section1EnabledDefault);
+        boolean section2NeedsSounds = section2 == null
+                ? section2EnabledDefault
+                : section2.getBoolean("enabled", section2EnabledDefault);
+        if (!section1NeedsSounds && !section2NeedsSounds) {
             sounds.removeIf(soundFilter);
         }
     }
@@ -154,7 +159,8 @@ class SoundGenerator {
 
         boolean blockNeedsSounds = customSounds.getBoolean("block", true)
                 && (block == null || block.getBoolean("enabled", true));
-        boolean furnitureNeedsSounds = customSounds.getBoolean("furniture", true)
+        boolean furnitureNeedsSounds = customSounds.getBoolean("furniture",
+                customSounds.getBoolean("stringblock_and_furniture", true))
                 && (furniture == null || furniture.getBoolean("enabled", true));
 
         if (!blockNeedsSounds && !furnitureNeedsSounds)

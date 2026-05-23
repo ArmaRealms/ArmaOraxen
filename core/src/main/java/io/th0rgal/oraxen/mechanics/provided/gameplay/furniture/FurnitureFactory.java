@@ -82,7 +82,8 @@ public class FurnitureFactory extends MechanicFactory {
     public static boolean areCustomSoundsEnabled() {
         ConfigurationSection customSoundsSection = OraxenPlugin.get().getConfigsManager().getMechanics()
                 .getConfigurationSection("custom_block_sounds");
-        return customSoundsSection == null || customSoundsSection.getBoolean("furniture", true);
+        return customSoundsSection == null || customSoundsSection.getBoolean("furniture",
+                customSoundsSection.getBoolean("stringblock_and_furniture", true));
     }
 
     public static FurnitureFactory getInstance() {
