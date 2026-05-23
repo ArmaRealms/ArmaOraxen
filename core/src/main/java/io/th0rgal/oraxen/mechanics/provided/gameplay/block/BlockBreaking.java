@@ -68,7 +68,7 @@ public class BlockBreaking {
 
     private List<Rule> parseRules(List<?> ruleConfigs, String sourceID) {
         if (ruleConfigs == null || ruleConfigs.isEmpty())
-            return List.of(new Rule(List.of(), true, 1.0D, Drop.emptyDrop()));
+            return List.of();
 
         List<Rule> parsedRules = new ArrayList<>();
         for (Object entry : ruleConfigs) {
@@ -81,7 +81,7 @@ public class BlockBreaking {
             parsedRules.add(new Rule(matchers, fallback, hardness, drop));
         }
 
-        return parsedRules.isEmpty() ? List.of(new Rule(List.of(), true, 1.0D, Drop.emptyDrop())) : List.copyOf(parsedRules);
+        return List.copyOf(parsedRules);
     }
 
     private List<ToolMatcher> parseMatchers(Object value) {
