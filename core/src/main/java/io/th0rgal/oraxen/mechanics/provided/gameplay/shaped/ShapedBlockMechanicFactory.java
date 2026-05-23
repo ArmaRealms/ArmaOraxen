@@ -14,7 +14,6 @@ import io.th0rgal.oraxen.mechanics.PropertyType;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -893,7 +892,7 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
     public ShapedBlockMechanic getMechanicFromBlock(org.bukkit.block.Block block) {
         if (!isCustomShapedBlock(block.getType())) return null;
         CustomBlockData blockData = new CustomBlockData(block, OraxenPlugin.get());
-        String itemId = blockData.get(ShapedBlockMechanic.SHAPED_BLOCK_KEY, PersistentDataType.STRING);
+        String itemId = ShapedBlockMechanic.getItemId(blockData);
         Mechanic mechanic = itemId != null ? getMechanic(itemId) : null;
         return mechanic instanceof ShapedBlockMechanic shapedMechanic ? shapedMechanic : null;
     }

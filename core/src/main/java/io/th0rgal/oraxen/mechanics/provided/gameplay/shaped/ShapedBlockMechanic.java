@@ -1,5 +1,6 @@
 package io.th0rgal.oraxen.mechanics.provided.gameplay.shaped;
 
+import com.jeff_media.customblockdata.CustomBlockData;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
@@ -13,6 +14,7 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 
 
 /**
@@ -22,6 +24,7 @@ import org.bukkit.inventory.ItemStack;
 public class ShapedBlockMechanic extends Mechanic {
 
     public static final NamespacedKey SHAPED_BLOCK_KEY = new NamespacedKey(OraxenPlugin.get(), "block");
+    private static final NamespacedKey LEGACY_SHAPED_BLOCK_KEY = new NamespacedKey(OraxenPlugin.get(), "shaped_block");
 
     private final ShapedBlockType blockType;
     private final int customVariation;
@@ -149,5 +152,27 @@ public class ShapedBlockMechanic extends Mechanic {
 
     public BlockSounds getBlockSounds() {
         return blockSounds;
+    }
+
+    public static String getItemId(CustomBlockData blockData) {
+        String itemId = blockData.get(SHAPED_BLOCK_KEY, PersistentDataType.STRING);
+        if (itemId != null) return itemId;
+
+        itemId = blockData.get(LEGACY_SHAPED_BLOCK_KEY, PersistentDataType.STRING);
+        if (itemId == null) return null;
+
+        blockData.set(SHAPED_BLOCK_KEY, PersistentDataType.STRING, itemId);
+        blockData.remove(LEGACY_SHAPED_BLOCK_KEY);
+        return itemId;
+    }
+
+    public static void setItemId(CustomBlockData blockData, String itemId) {
+        blockData.set(SHAPED_BLOCK_KEY, PersistentDataType.STRING, itemId);
+        blockData.remove(LEGACY_SHAPED_BLOCK_KEY);
+    }
+
+    public static void removeItemId(CustomBlockData blockData) {
+        blockData.remove(SHAPED_BLOCK_KEY);
+        blockData.remove(LEGACY_SHAPED_BLOCK_KEY);
     }
 }

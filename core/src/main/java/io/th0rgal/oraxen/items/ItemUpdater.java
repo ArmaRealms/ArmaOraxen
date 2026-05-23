@@ -94,6 +94,8 @@ public class ItemUpdater implements Listener {
         if (!Settings.UPDATE_ITEMS.toBool() || !Settings.UPDATE_ENTITY_CONTENTS.toBool()) return;
 
         Entity entity = event.getEntity();
+        if (!shouldUpdateEntityContents(entity)) return;
+
         SchedulerUtil.runForEntityLater(entity, 2L, () -> updateEntityInventories(entity), () -> {});
     }
 
@@ -203,6 +205,7 @@ public class ItemUpdater implements Listener {
 
         for (World world : Bukkit.getWorlds()) {
             for (Entity entity : world.getEntities()) {
+                if (!shouldUpdateEntityContents(entity)) continue;
                 SchedulerUtil.runForEntity(entity, () -> updateEntityInventories(entity), () -> {});
             }
         }
@@ -237,6 +240,15 @@ public class ItemUpdater implements Listener {
         if (entity instanceof InventoryHolder holder) updateInventory(holder.getInventory());
         if (entity instanceof Player player) updateInventory(player.getEnderChest());
         if (entity instanceof LivingEntity livingEntity) updateEquipment(livingEntity);
+    }
+
+    private static boolean shouldUpdateEntityContents(Entity entity) {
+        if (entity instanceof Player) return false;
+        return entity instanceof ItemFrame
+                || entity instanceof ItemDisplay
+                || entity instanceof Item
+                || entity instanceof InventoryHolder
+                || entity instanceof LivingEntity;
     }
 
     private static void updateEquipment(LivingEntity livingEntity) {

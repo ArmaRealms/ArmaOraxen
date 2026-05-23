@@ -432,7 +432,7 @@ public class ShapedBlockMechanicListener implements Listener {
     private void revertPlacement(Block targetBlock, ShapedBlockMechanic mechanic, org.bukkit.block.BlockState replacedState) {
         // Clean up PDC data before removing blocks
         CustomBlockData blockData = new CustomBlockData(targetBlock, OraxenPlugin.get());
-        blockData.remove(ShapedBlockMechanic.SHAPED_BLOCK_KEY);
+        ShapedBlockMechanic.removeItemId(blockData);
 
         // Restore original block state instead of just setting to AIR
         replacedState.update(true, false);
@@ -440,7 +440,7 @@ public class ShapedBlockMechanicListener implements Listener {
         if (mechanic.getBlockType() == ShapedBlockType.DOOR) {
             Block upperBlock = targetBlock.getRelative(BlockFace.UP);
             CustomBlockData upperBlockData = new CustomBlockData(upperBlock, OraxenPlugin.get());
-            upperBlockData.remove(ShapedBlockMechanic.SHAPED_BLOCK_KEY);
+            ShapedBlockMechanic.removeItemId(upperBlockData);
             // Upper block was always air/replaceable before door placement
             upperBlock.setType(Material.AIR);
         }
@@ -532,7 +532,7 @@ public class ShapedBlockMechanicListener implements Listener {
 
     private void clearCustomBlockData(Block block) {
         CustomBlockData blockData = new CustomBlockData(block, OraxenPlugin.get());
-        blockData.remove(ShapedBlockMechanic.SHAPED_BLOCK_KEY);
+        ShapedBlockMechanic.removeItemId(blockData);
     }
 
     private void cleanupDoorOtherHalfIfNeeded(Block block, ShapedBlockMechanic mechanic) {
@@ -554,7 +554,7 @@ public class ShapedBlockMechanicListener implements Listener {
         }
 
         CustomBlockData otherBlockData = new CustomBlockData(otherHalf, OraxenPlugin.get());
-        otherBlockData.remove(ShapedBlockMechanic.SHAPED_BLOCK_KEY);
+        ShapedBlockMechanic.removeItemId(otherBlockData);
     }
 
     private void schedulePostBreakUpdates(Block block, ShapedBlockMechanic mechanic) {
@@ -718,7 +718,7 @@ public class ShapedBlockMechanicListener implements Listener {
 
     private void markAsCustomBlock(Block block, ShapedBlockMechanic mechanic) {
         CustomBlockData blockData = new CustomBlockData(block, OraxenPlugin.get());
-        blockData.set(ShapedBlockMechanic.SHAPED_BLOCK_KEY, PersistentDataType.STRING, mechanic.getItemID());
+        ShapedBlockMechanic.setItemId(blockData, mechanic.getItemID());
     }
 
     // ==================== STAIR SHAPE CALCULATION ====================
@@ -970,7 +970,7 @@ public class ShapedBlockMechanicListener implements Listener {
 
         // Check if it has our custom marker
         CustomBlockData blockData = new CustomBlockData(block, OraxenPlugin.get());
-        String itemId = blockData.get(ShapedBlockMechanic.SHAPED_BLOCK_KEY, PersistentDataType.STRING);
+        String itemId = ShapedBlockMechanic.getItemId(blockData);
         if (itemId == null) return null;
 
         Mechanic mechanic = factory.getMechanic(itemId);

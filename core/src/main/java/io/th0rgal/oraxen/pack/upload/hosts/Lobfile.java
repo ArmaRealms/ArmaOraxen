@@ -164,7 +164,7 @@ public class Lobfile implements HostingProvider {
 
     @Override
     public byte[] getSHA1() {
-        return SHA1Utils.hexToBytes(sha1);
+        return sha1 != null ? SHA1Utils.hexToBytes(sha1) : null;
     }
 
     @Override

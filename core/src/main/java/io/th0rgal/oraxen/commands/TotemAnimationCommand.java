@@ -23,6 +23,8 @@ import java.util.stream.Stream;
 
 public class TotemAnimationCommand {
 
+    private static volatile Object cachedDeathProtectionType;
+
     CommandAPICommand getTotemAnimationCommand() {
         return new CommandAPICommand("totem-animation")
                 .withPermission("oraxen.command.totem-animation")
@@ -141,8 +143,11 @@ public class TotemAnimationCommand {
     }
 
     private Object getDeathProtectionType() throws ReflectiveOperationException {
+        if (cachedDeathProtectionType != null) return cachedDeathProtectionType;
+
         Field deathProtectionType = Class.forName("io.papermc.paper.datacomponent.DataComponentTypes")
                 .getField("DEATH_PROTECTION");
-        return deathProtectionType.get(null);
+        cachedDeathProtectionType = deathProtectionType.get(null);
+        return cachedDeathProtectionType;
     }
 }

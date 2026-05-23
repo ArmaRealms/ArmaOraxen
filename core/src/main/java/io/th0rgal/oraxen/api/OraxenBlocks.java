@@ -487,7 +487,7 @@ public class OraxenBlocks {
     }
 
     private static void clearShapedBlockData(Block block) {
-        new CustomBlockData(block, OraxenPlugin.get()).remove(ShapedBlockMechanic.SHAPED_BLOCK_KEY);
+        ShapedBlockMechanic.removeItemId(new CustomBlockData(block, OraxenPlugin.get()));
     }
 
     /**
