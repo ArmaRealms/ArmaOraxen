@@ -560,8 +560,7 @@ public class ShapedBlockMechanicListener implements Listener {
     private void schedulePostBreakUpdates(Block block, ShapedBlockMechanic mechanic) {
         if (mechanic.getBlockType() != ShapedBlockType.STAIR) return;
 
-        Block blockRef = block;
-        SchedulerUtil.runTaskLater(1L, () -> updateAdjacentStairShapes(blockRef));
+        SchedulerUtil.runAtLocationLater(block.getLocation(), 1L, () -> updateAdjacentStairShapes(block));
     }
 
     // ==================== HELPER METHODS ====================
