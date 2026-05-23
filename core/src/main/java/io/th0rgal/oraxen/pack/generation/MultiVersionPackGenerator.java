@@ -7,6 +7,7 @@ import io.th0rgal.oraxen.api.events.OraxenPackGeneratedEvent;
 import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.utils.EventUtils;
 import io.th0rgal.oraxen.utils.MinecraftVersion;
+import io.th0rgal.oraxen.utils.SHA1Utils;
 import io.th0rgal.oraxen.utils.SchedulerUtil;
 import io.th0rgal.oraxen.utils.VirtualFile;
 import io.th0rgal.oraxen.utils.ZipUtils;
@@ -17,8 +18,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Generates multiple versions of resource packs for different Minecraft client versions.
@@ -75,10 +80,16 @@ public class MultiVersionPackGenerator {
 
     private final File packFolder;
     private final PackVersionManager versionManager;
+    private final Map<String, String> generatedCoreShaderHashes;
 
     public MultiVersionPackGenerator(File packFolder) {
+        this(packFolder, Collections.emptyMap());
+    }
+
+    public MultiVersionPackGenerator(File packFolder, Map<String, String> generatedCoreShaderHashes) {
         this.packFolder = packFolder;
         this.versionManager = new PackVersionManager(packFolder);
+        this.generatedCoreShaderHashes = Map.copyOf(generatedCoreShaderHashes);
     }
 
     /**
@@ -164,6 +175,9 @@ public class MultiVersionPackGenerator {
             if (isPackMcmeta(mFile.path)) {
                 continue;
             }
+            if (shouldExcludeGeneratedCoreShader(packVersion, mFile.path, mFile.content)) {
+                continue;
+            }
             // Create fresh InputStream for this pack version
             java.io.ByteArrayInputStream freshStream = new java.io.ByteArrayInputStream(mFile.content);
             String path = mFile.path;
@@ -244,6 +258,27 @@ public class MultiVersionPackGenerator {
 
     private boolean isPackMcmeta(String path) {
         return "pack.mcmeta".equals(path) || path.endsWith("/pack.mcmeta");
+    }
+
+    private boolean shouldExcludeGeneratedCoreShader(PackVersion packVersion, String path, byte[] content) {
+        if (generatedCoreShaderHashes.isEmpty()) {
+            return false;
+        }
+
+        if (new MinecraftVersion(packVersion.getMinecraftVersion()).isAtLeast(new MinecraftVersion("1.21.4"))) {
+            return false;
+        }
+
+        String generatedHash = generatedCoreShaderHashes.get(path);
+        return generatedHash != null && generatedHash.equals(sha256(content));
+    }
+
+    private String sha256(byte[] content) {
+        try {
+            return SHA1Utils.bytesToHex(MessageDigest.getInstance("SHA-256").digest(content));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is not available", e);
+        }
     }
 
     private boolean isMcmetaGenerationDisabled() {

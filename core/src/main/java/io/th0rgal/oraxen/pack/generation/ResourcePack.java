@@ -36,6 +36,8 @@ import java.awt.AlphaComposite;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -230,6 +232,7 @@ public class ResourcePack {
         try {
             packWorker.submit(() -> {
                 try {
+                    filterGeneratedCoreShadersBelow1214(output, MinecraftVersion.getCurrentVersion());
                     ZipUtils.writeZipFile(pack, output);
                     SchedulerUtil.runTask(this::uploadGeneratedPackAndFinish);
                 } catch (Exception exception) {
@@ -611,8 +614,34 @@ public class ResourcePack {
         }
 
         // Use MultiVersionPackGenerator for multi-version zip and upload
-        MultiVersionPackGenerator multiVersionGenerator = new MultiVersionPackGenerator(packFolder);
+        MultiVersionPackGenerator multiVersionGenerator = new MultiVersionPackGenerator(packFolder,
+                textShaderGenerator.getGeneratedCoreShaderHashes());
         multiVersionGenerator.generateMultipleVersions(output, switchingFromSinglePack);
+    }
+
+    private void filterGeneratedCoreShadersBelow1214(List<VirtualFile> output, MinecraftVersion targetVersion) {
+        if (targetVersion.isAtLeast(new MinecraftVersion("1.21.4"))) {
+            return;
+        }
+
+        Map<String, String> generatedShaderHashes = textShaderGenerator.getGeneratedCoreShaderHashes();
+        if (generatedShaderHashes.isEmpty()) {
+            return;
+        }
+
+        output.removeIf(file -> generatedShaderHashes.containsKey(file.getPath())
+                && generatedShaderHashes.get(file.getPath()).equals(sha256(file)));
+    }
+
+    private String sha256(VirtualFile file) {
+        try {
+            byte[] content = file.getInputStream().readAllBytes();
+            file.setInputStream(new ByteArrayInputStream(content));
+            return SHA1Utils.bytesToHex(MessageDigest.getInstance("SHA-256").digest(content));
+        } catch (IOException | NoSuchAlgorithmException e) {
+            Logs.logWarning("Failed to hash " + file.getPath() + " while filtering generated shaders: " + e.getMessage());
+            return "";
+        }
     }
 
     /**

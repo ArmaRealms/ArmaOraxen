@@ -3,13 +3,19 @@ package io.th0rgal.oraxen.pack.generation;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.font.TextEffect;
+import io.th0rgal.oraxen.utils.SHA1Utils;
 import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Generates text shaders (animation + text effects) and scoreboard shaders.
@@ -49,6 +55,7 @@ class TextShaderGenerator {
     private TextEffectSnippets textEffectSnippets = null;
     private TextShaderTarget textEffectSnippetsTarget = null;
     private final List<ShaderOverlay> generatedOverlays = new ArrayList<>();
+    private final Map<String, String> generatedCoreShaderHashes = new HashMap<>();
 
     // Common uniform definitions for shader JSON
     private static final String UNIFORM_MATRIX = """
@@ -75,6 +82,7 @@ class TextShaderGenerator {
         textEffectSnippets = null;
         textEffectSnippetsTarget = null;
         generatedOverlays.clear();
+        generatedCoreShaderHashes.clear();
     }
 
     boolean wereTextShadersGenerated() {
@@ -99,6 +107,10 @@ class TextShaderGenerator {
 
     List<ShaderOverlay> getGeneratedOverlays() {
         return List.copyOf(generatedOverlays);
+    }
+
+    Map<String, String> getGeneratedCoreShaderHashes() {
+        return Map.copyOf(generatedCoreShaderHashes);
     }
 
     /**
@@ -174,9 +186,9 @@ class TextShaderGenerator {
                         TextShaderTarget overlayTarget = TextShaderTarget.forVersion(overlay.representativeVersion());
                         if (overlayTarget.isAtLeast("26")) continue; // 26+ uses pipeline metadata, not shader override
                         String overlayShaderPath = overlay.directory() + "/assets/minecraft/shaders/core/";
-                        ResourcePack.writeStringToVirtual(overlayShaderPath, "rendertype_text.vsh",
+                        writeGeneratedCoreShader(overlayShaderPath, "rendertype_text.vsh",
                                 getCombinedVertexShader(overlayTarget, textShaderFeatures));
-                        ResourcePack.writeStringToVirtual(overlayShaderPath, "rendertype_text.json",
+                        writeGeneratedCoreShader(overlayShaderPath, "rendertype_text.json",
                                 getCombinedShaderJson(overlayTarget));
                     }
                 }
@@ -185,9 +197,9 @@ class TextShaderGenerator {
                 TextShaderFeatures features = textShaderFeatures != null
                         ? textShaderFeatures
                         : resolveTextShaderFeatures(hasAnimatedGlyphs);
-                ResourcePack.writeStringToVirtual("assets/minecraft/shaders/core/", "rendertype_text.vsh",
+                writeGeneratedCoreShader("assets/minecraft/shaders/core/", "rendertype_text.vsh",
                         getCombinedVertexShader(target, features));
-                ResourcePack.writeStringToVirtual("assets/minecraft/shaders/core/", "rendertype_text.json",
+                writeGeneratedCoreShader("assets/minecraft/shaders/core/", "rendertype_text.json",
                         getCombinedShaderJson(target));
                 Logs.logInfo("Using combined text + scoreboard hiding shaders");
             } else {
@@ -318,37 +330,52 @@ class TextShaderGenerator {
         String shaderPath = pathPrefix + "assets/minecraft/shaders/core";
 
         // Write shaders for both rendertype_text and rendertype_text_see_through
-        ResourcePack.writeStringToVirtual(shaderPath, "rendertype_text.vsh", vshContent);
-        ResourcePack.writeStringToVirtual(shaderPath, "rendertype_text.fsh", fshContent);
+        writeGeneratedCoreShader(shaderPath, "rendertype_text.vsh", vshContent);
+        writeGeneratedCoreShader(shaderPath, "rendertype_text.fsh", fshContent);
         if (jsonContent != null)
-            ResourcePack.writeStringToVirtual(shaderPath, "rendertype_text.json", jsonContent);
+            writeGeneratedCoreShader(shaderPath, "rendertype_text.json", jsonContent);
         else
             ResourcePack.deleteFileFromVirtualAndDisk(shaderPath, "rendertype_text.json");
 
-        ResourcePack.writeStringToVirtual(shaderPath, "rendertype_text_see_through.vsh", vshSeeThrough);
-        ResourcePack.writeStringToVirtual(shaderPath, "rendertype_text_see_through.fsh", fshSeeThrough);
+        writeGeneratedCoreShader(shaderPath, "rendertype_text_see_through.vsh", vshSeeThrough);
+        writeGeneratedCoreShader(shaderPath, "rendertype_text_see_through.fsh", fshSeeThrough);
         if (jsonSeeThrough != null)
-            ResourcePack.writeStringToVirtual(shaderPath, "rendertype_text_see_through.json", jsonSeeThrough);
+            writeGeneratedCoreShader(shaderPath, "rendertype_text_see_through.json", jsonSeeThrough);
         else
             ResourcePack.deleteFileFromVirtualAndDisk(shaderPath, "rendertype_text_see_through.json");
 
-        ResourcePack.writeStringToVirtual(shaderPath, "rendertype_text_intensity.vsh", vshIntensity);
-        ResourcePack.writeStringToVirtual(shaderPath, "rendertype_text_intensity.fsh", fshIntensity);
+        writeGeneratedCoreShader(shaderPath, "rendertype_text_intensity.vsh", vshIntensity);
+        writeGeneratedCoreShader(shaderPath, "rendertype_text_intensity.fsh", fshIntensity);
         if (jsonIntensity != null)
-            ResourcePack.writeStringToVirtual(shaderPath, "rendertype_text_intensity.json", jsonIntensity);
+            writeGeneratedCoreShader(shaderPath, "rendertype_text_intensity.json", jsonIntensity);
         else
             ResourcePack.deleteFileFromVirtualAndDisk(shaderPath, "rendertype_text_intensity.json");
 
-        ResourcePack.writeStringToVirtual(shaderPath, "rendertype_text_intensity_see_through.vsh", vshIntensitySeeThrough);
-        ResourcePack.writeStringToVirtual(shaderPath, "rendertype_text_intensity_see_through.fsh", fshIntensitySeeThrough);
+        writeGeneratedCoreShader(shaderPath, "rendertype_text_intensity_see_through.vsh", vshIntensitySeeThrough);
+        writeGeneratedCoreShader(shaderPath, "rendertype_text_intensity_see_through.fsh", fshIntensitySeeThrough);
         if (jsonIntensitySeeThrough != null)
-            ResourcePack.writeStringToVirtual(shaderPath, "rendertype_text_intensity_see_through.json", jsonIntensitySeeThrough);
+            writeGeneratedCoreShader(shaderPath, "rendertype_text_intensity_see_through.json", jsonIntensitySeeThrough);
         else
             ResourcePack.deleteFileFromVirtualAndDisk(shaderPath, "rendertype_text_intensity_see_through.json");
 
         if (Settings.DEBUG.toBool()) {
             Logs.logSuccess("Generated text shaders for " + target.displayName()
                     + " (shader " + getShaderVersion(target) + ")" + (pathPrefix.isEmpty() ? "" : " [overlay]"));
+        }
+    }
+
+    private void writeGeneratedCoreShader(String folder, String name, String content) {
+        ResourcePack.writeStringToVirtual(folder, name, content);
+        folder = !folder.endsWith("/") ? folder : folder.substring(0, folder.length() - 1);
+        generatedCoreShaderHashes.put(folder.isEmpty() ? name : folder + "/" + name, sha256(content.getBytes(StandardCharsets.UTF_8)));
+    }
+
+    private String sha256(byte[] content) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return SHA1Utils.bytesToHex(digest.digest(content));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is not available", e);
         }
     }
 
