@@ -5,6 +5,7 @@ import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.compatibilities.provided.ecoitems.WrappedEcoItem;
 import io.th0rgal.oraxen.compatibilities.provided.executableitems.WrappedExecutableItem;
 import io.th0rgal.oraxen.compatibilities.provided.mythiccrucible.WrappedCrucibleItem;
+import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.items.ItemUpdater;
 import io.th0rgal.oraxen.utils.OraxenYaml;
 import io.th0rgal.oraxen.utils.Utils;
@@ -111,8 +112,9 @@ public class Loot {
 
     private ItemStack resolveItem(String itemId) {
         String normalized = itemId.startsWith("oraxen:") ? itemId.substring("oraxen:".length()) : itemId;
-        if (OraxenItems.getItemById(normalized) != null)
-            return OraxenItems.getItemById(normalized).build();
+        ItemBuilder builder = OraxenItems.getItemById(normalized);
+        if (builder != null)
+            return builder.build();
 
         String materialId = itemId.toLowerCase().startsWith("minecraft:") ? itemId.substring("minecraft:".length()) : itemId;
         Material material = Material.matchMaterial(materialId);

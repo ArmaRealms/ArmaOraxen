@@ -13,7 +13,10 @@ import io.th0rgal.oraxen.mechanics.MechanicsManager;
 import io.th0rgal.oraxen.mechanics.PropertyType;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -889,7 +892,8 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
     /**
      * Get the mechanic for a placed shaped block.
      */
-    public ShapedBlockMechanic getMechanicFromBlock(org.bukkit.block.Block block) {
+    @Nullable
+    public ShapedBlockMechanic getMechanicFromBlock(@NotNull Block block) {
         if (!isCustomShapedBlock(block.getType())) return null;
         CustomBlockData blockData = new CustomBlockData(block, OraxenPlugin.get());
         String itemId = ShapedBlockMechanic.getItemId(blockData);

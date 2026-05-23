@@ -176,7 +176,7 @@ public interface NMSHandler {
      */
     ItemStack applyGenericComponents(ItemStack itemStack, Map<String, Object> components);
 
-    default ItemStack paintingVariantComponent(ItemStack itemStack, String paintingVariant) {
+    default @NotNull ItemStack paintingVariantComponent(@NotNull ItemStack itemStack, @NotNull String paintingVariant) {
         return itemStack;
     }
 

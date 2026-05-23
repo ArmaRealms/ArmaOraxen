@@ -637,7 +637,7 @@ public class ResourcePack {
         try {
             byte[] content = file.getInputStream().readAllBytes();
             file.setInputStream(new ByteArrayInputStream(content));
-            return SHA1Utils.bytesToHex(MessageDigest.getInstance("SHA-256").digest(content));
+            return java.util.HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
         } catch (IOException | NoSuchAlgorithmException e) {
             Logs.logWarning("Failed to hash " + file.getPath() + " while filtering generated shaders: " + e.getMessage());
             return "";

@@ -30,7 +30,6 @@ public class ShapedBlockMechanic extends Mechanic {
     private final int customVariation;
     private final Material placedMaterial;
     private final BlockBreaking breaking;
-    private final double hardness;
     private final LightMechanic light;
     private final LimitedPlacing limitedPlacing;
     private final BlockSounds blockSounds;
@@ -63,7 +62,6 @@ public class ShapedBlockMechanic extends Mechanic {
 
         // Parse breaking
         this.breaking = new BlockBreaking(section, getItemID());
-        this.hardness = -1.0D;
 
         // Parse light
         this.light = new LightMechanic(section);

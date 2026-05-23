@@ -31,7 +31,6 @@ public class NoteBlockMechanic extends Mechanic {
     private final StorageMechanic storage;
     private final BlockSounds blockSounds;
     private String model;
-    private final double hardness;
     private final LightMechanic light;
     private final boolean canIgnite;
     private final boolean isFalling;
@@ -55,7 +54,6 @@ public class NoteBlockMechanic extends Mechanic {
         model = section.getString("model");
         customVariation = section.getInt("custom_variation");
         breaking = new BlockBreaking(section, getItemID());
-        hardness = -1.0D;
 
         light = new LightMechanic(section);
         clickActions = ClickAction.parseList(section);

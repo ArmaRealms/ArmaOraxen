@@ -9,6 +9,7 @@ import io.th0rgal.oraxen.config.Message;
 import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.VersionUtil;
+import io.th0rgal.oraxen.utils.logs.Logs;
 import org.bukkit.EntityEffect;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -114,7 +115,8 @@ public class TotemAnimationCommand {
                     .invoke(null);
             Method setData = ItemStack.class.getMethod("setData", valuedDataComponentTypeClass, Object.class);
             setData.invoke(itemStack, deathProtectionType, deathProtection);
-        } catch (ReflectiveOperationException | LinkageError ignored) {
+        } catch (ReflectiveOperationException | LinkageError e) {
+            Logs.debug(e);
         }
 
         return itemStack;

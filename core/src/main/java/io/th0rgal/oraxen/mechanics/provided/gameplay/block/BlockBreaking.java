@@ -105,7 +105,9 @@ public class BlockBreaking {
         String key = value.toString().trim();
         if (key.isEmpty()) return null;
         if (key.startsWith("#")) {
-            Tag<Material> tag = Bukkit.getTag(Tag.REGISTRY_ITEMS, namespacedKey(key.substring(1)), Material.class);
+            NamespacedKey namespacedKey = namespacedKey(key.substring(1));
+            if (namespacedKey == null) return null;
+            Tag<Material> tag = Bukkit.getTag(Tag.REGISTRY_ITEMS, namespacedKey, Material.class);
             return tag == null ? null : tool -> tool != null && tag.isTagged(tool.getType());
         }
 
@@ -116,7 +118,7 @@ public class BlockBreaking {
     private NamespacedKey namespacedKey(String key) {
         String normalized = key.toLowerCase(Locale.ROOT);
         if (normalized.contains(":")) return NamespacedKey.fromString(normalized);
-        return NamespacedKey.minecraft(normalized);
+        return NamespacedKey.fromString("minecraft:" + normalized);
     }
 
     private String stripMinecraftNamespace(String key) {

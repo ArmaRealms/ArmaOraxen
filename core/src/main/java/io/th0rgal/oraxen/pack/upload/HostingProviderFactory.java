@@ -38,6 +38,10 @@ public final class HostingProviderFactory {
             case "lobfile" -> {
                 ConfigurationSection lobfileConfig = OraxenPlugin.get().getConfigsManager().getSettings()
                         .getConfigurationSection("Pack.upload.lobfile");
+                if (lobfileConfig == null) {
+                    Logs.logError("Missing config section 'Pack.upload.lobfile', falling back to Polymath");
+                    yield new Polymath(Settings.POLYMATH_SERVER.toString());
+                }
                 yield new Lobfile(lobfileConfig);
             }
             case "self-host" -> {

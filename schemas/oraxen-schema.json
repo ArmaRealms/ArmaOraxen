@@ -7834,72 +7834,12 @@
                   "max": 15
                 },
                 "block": {
-      "category": "gameplay",
-      "description": "Creates custom blocks using the configured backing block type",
-      "_source": "factory",
-      "properties": {
-        "type": {
-          "type": "string",
-          "description": "Backing block type"
-        },
-        "appearance": {
-          "type": "object",
-          "description": "Placed block appearance",
-          "properties": {
-            "model": {
-              "type": "string",
-              "description": "Placed block model path"
-            },
-            "textures": {
-              "type": "array",
-              "description": "Placed block textures"
-            }
-          }
-        },
-        "custom-variation": {
-          "type": "integer",
-          "description": "Backing-state variation ID",
-          "default": 1
-        },
-        "breaking": {
-          "type": "array",
-          "description": "Ordered block breaking rules"
-        },
-        "light": {
-          "type": "integer",
-          "description": "Light level emitted (0-15)",
-          "default": 0,
-          "min": 0,
-          "max": 15
-        },
-        "block-sounds": {
-          "type": "object",
-          "description": "Custom block sounds",
-          "properties": {
-            "place-sound": {
-              "type": "string",
-              "description": "Sound when placed"
-            },
-            "break-sound": {
-              "type": "string",
-              "description": "Sound when broken"
-            },
-            "step-sound": {
-              "type": "string",
-              "description": "Sound when stepped on"
-            },
-            "hit-sound": {
-              "type": "string",
-              "description": "Sound when hit"
-            },
-            "fall-sound": {
-              "type": "string",
-              "description": "Sound when fallen on"
-            }
-          }
-        }
-      }
-    }
+                  "type": "integer",
+                  "description": "Block light level",
+                  "default": 0,
+                  "min": 0,
+                  "max": 15
+                }
               }
             },
             "scale": {
@@ -8543,7 +8483,70 @@
     },
     "block": {
       "category": "gameplay",
-      "description": "Custom block mechanic"
+      "description": "Creates custom blocks using the configured backing block type",
+      "_source": "factory",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Backing block type"
+        },
+        "appearance": {
+          "type": "object",
+          "description": "Placed block appearance",
+          "properties": {
+            "model": {
+              "type": "string",
+              "description": "Placed block model path"
+            },
+            "textures": {
+              "type": "array",
+              "description": "Placed block textures"
+            }
+          }
+        },
+        "custom-variation": {
+          "type": "integer",
+          "description": "Backing-state variation ID",
+          "default": 1
+        },
+        "breaking": {
+          "type": "array",
+          "description": "Ordered block breaking rules"
+        },
+        "light": {
+          "type": "integer",
+          "description": "Light level emitted (0-15)",
+          "default": 0,
+          "min": 0,
+          "max": 15
+        },
+        "block-sounds": {
+          "type": "object",
+          "description": "Custom block sounds",
+          "properties": {
+            "place-sound": {
+              "type": "string",
+              "description": "Sound when placed"
+            },
+            "break-sound": {
+              "type": "string",
+              "description": "Sound when broken"
+            },
+            "step-sound": {
+              "type": "string",
+              "description": "Sound when stepped on"
+            },
+            "hit-sound": {
+              "type": "string",
+              "description": "Sound when hit"
+            },
+            "fall-sound": {
+              "type": "string",
+              "description": "Sound when fallen on"
+            }
+          }
+        }
+      }
     }
   },
   "pack": {

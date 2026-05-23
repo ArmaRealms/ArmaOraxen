@@ -781,7 +781,8 @@ public class SchemaGenerator {
 
         addMechanicIfAbsent(mechanics, "block", "gameplay", "Custom block mechanic",
                 Map.of(
-                        "type", prop("string", "FULL, STAIR, SLAB, DOOR, TRAPDOOR, GRATE, BULB, STRING, or CHORUS", null, null),
+                        "type", propEnum("string", "Block type",
+                                new String[]{"FULL", "STAIR", "SLAB", "DOOR", "TRAPDOOR", "GRATE", "BULB", "STRING", "CHORUS"}),
                         "hardness", prop("number", "Block hardness", 0, null),
                         "light", prop("integer", "Light level (0-15)", 0, null)));
 

@@ -6,6 +6,7 @@ import io.th0rgal.oraxen.config.Message;
 import io.th0rgal.oraxen.pack.generation.OraxenDatapack;
 import io.th0rgal.oraxen.utils.ResourcePackFormatUtil;
 import io.th0rgal.oraxen.utils.VirtualFile;
+import io.th0rgal.oraxen.utils.logs.Logs;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
@@ -38,6 +39,7 @@ public class PaintingDatapack extends OraxenDatapack {
     @Override
     public void generateAssets(List<VirtualFile> output) {
         if (paintings.isEmpty()) {
+            enableDatapack(false);
             return;
         }
 
@@ -62,10 +64,10 @@ public class PaintingDatapack extends OraxenDatapack {
 
             try {
                 paintingFile.getParentFile().mkdirs();
-                paintingFile.createNewFile();
                 FileUtils.writeStringToFile(paintingFile, painting.toJson().toString(), StandardCharsets.UTF_8);
             } catch (IOException e) {
-                e.printStackTrace();
+                Logs.logError("Failed to write painting variant file " + paintingFile.getPath() + ": " + e.getMessage());
+                Logs.debug(e);
                 return false;
             }
         }
@@ -93,10 +95,10 @@ public class PaintingDatapack extends OraxenDatapack {
 
         try {
             tagFile.getParentFile().mkdirs();
-            tagFile.createNewFile();
             FileUtils.writeStringToFile(tagFile, tag.toString(), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            e.printStackTrace();
+            Logs.logError("Failed to write placeable painting tag " + tagFile.getPath() + ": " + e.getMessage());
+            Logs.debug(e);
             return false;
         }
         return true;

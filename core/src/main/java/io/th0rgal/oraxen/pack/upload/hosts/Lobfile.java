@@ -7,6 +7,7 @@ import com.google.gson.JsonSyntaxException;
 import io.th0rgal.oraxen.utils.SHA1Utils;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.apache.http.HttpEntity;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
@@ -29,6 +30,9 @@ public class Lobfile implements HostingProvider {
 
     private static final String UPLOAD_URL = "https://lobfile.com/api/v3/upload";
     private static final String DEFAULT_PACK_NAME = "Oraxen";
+    private static final int CONNECT_TIMEOUT_MS = 5_000;
+    private static final int CONNECTION_REQUEST_TIMEOUT_MS = 5_000;
+    private static final int SOCKET_TIMEOUT_MS = 30_000;
 
     private final String apiKey;
     private final String packName;
@@ -65,11 +69,14 @@ public class Lobfile implements HostingProvider {
         }
 
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            calculateSHA1(resourcePack);
+            PackHashes packHashes = calculateHashes(resourcePack);
+            sha1 = packHashes.sha1();
+            packUUID = UUID.nameUUIDFromBytes(sha1.getBytes());
 
             HttpPost request = new HttpPost(UPLOAD_URL);
+            request.setConfig(requestConfig());
             request.setHeader("X-API-Key", apiKey);
-            request.setEntity(createUploadEntity(resourcePack, uploadPackName));
+            request.setEntity(createUploadEntity(resourcePack, uploadPackName, packHashes.sha256()));
 
             try (CloseableHttpResponse response = httpClient.execute(request)) {
                 String responseString = EntityUtils.toString(response.getEntity());
@@ -92,28 +99,36 @@ public class Lobfile implements HostingProvider {
         }
     }
 
-    private HttpEntity createUploadEntity(File resourcePack, String uploadPackName) throws IOException, NoSuchAlgorithmException {
+    private HttpEntity createUploadEntity(File resourcePack, String uploadPackName, String sha256) {
         return MultipartEntityBuilder.create()
                 .addBinaryBody("file", resourcePack, ContentType.APPLICATION_OCTET_STREAM, buildUploadFileName(uploadPackName))
-                .addTextBody("sha_256", digest(resourcePack, "SHA-256"))
+                .addTextBody("sha_256", sha256)
                 .build();
     }
 
-    private void calculateSHA1(File file) throws IOException, NoSuchAlgorithmException {
-        sha1 = digest(file, "SHA-1");
-        packUUID = UUID.nameUUIDFromBytes(sha1.getBytes());
+    private static RequestConfig requestConfig() {
+        return RequestConfig.custom()
+                .setConnectTimeout(CONNECT_TIMEOUT_MS)
+                .setConnectionRequestTimeout(CONNECTION_REQUEST_TIMEOUT_MS)
+                .setSocketTimeout(SOCKET_TIMEOUT_MS)
+                .build();
     }
 
-    private static String digest(File file, String algorithm) throws IOException, NoSuchAlgorithmException {
-        MessageDigest digest = MessageDigest.getInstance(algorithm);
+    private static PackHashes calculateHashes(File file) throws IOException, NoSuchAlgorithmException {
+        MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
+        MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
         try (FileInputStream inputStream = new FileInputStream(file)) {
             byte[] buffer = new byte[8192];
             int read;
             while ((read = inputStream.read(buffer)) != -1) {
-                digest.update(buffer, 0, read);
+                sha1.update(buffer, 0, read);
+                sha256.update(buffer, 0, read);
             }
         }
-        return SHA1Utils.bytesToHex(digest.digest());
+        return new PackHashes(SHA1Utils.bytesToHex(sha1.digest()), SHA1Utils.bytesToHex(sha256.digest()));
+    }
+
+    private record PackHashes(String sha1, String sha256) {
     }
 
     private JsonObject parseResponse(String responseString) {

@@ -29,7 +29,6 @@ public class StringBlockMechanic extends Mechanic {
     private final LimitedPlacing limitedPlacing;
     private final StorageMechanic storage;
     private String model;
-    private final double hardness;
     private final LightMechanic light;
     private final boolean blastResistant;
     private final boolean immovable;
@@ -64,7 +63,6 @@ public class StringBlockMechanic extends Mechanic {
         customVariation = section.getInt("custom_variation");
         isTall = section.getBoolean("is_tall", false);
         breaking = new BlockBreaking(section, getItemID());
-        hardness = -1.0D;
         light = new LightMechanic(section);
         blastResistant = section.getBoolean("blast_resistant", false);
         immovable = section.getBoolean("immovable", false);
