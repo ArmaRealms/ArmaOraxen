@@ -45,6 +45,7 @@ public class PaintingDatapack extends OraxenDatapack {
         }
 
         if (!writeMCMeta() || !writePaintingVariants() || !writePlaceableTag()) {
+            enableDatapack(false);
             return;
         }
 

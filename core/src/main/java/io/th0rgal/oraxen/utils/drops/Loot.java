@@ -30,12 +30,12 @@ public class Loot {
     private LinkedHashMap<String, Object> config;
 
     public Loot(LinkedHashMap<String, Object> config, String sourceID) {
-        this.probability = Double.parseDouble(config.getOrDefault("probability", 1).toString());
+        this.probability = parseDouble(config.get("probability"), 1.0D);
         if (config.getOrDefault("amount", "") instanceof String amount && amount.contains("..")) {
             this.amount = Utils.parseToRange(amount);
         } else this.amount = new IntegerRange(1,1);
         this.requiresSilkTouch = Boolean.parseBoolean(config.getOrDefault("silk-touch", false).toString());
-        this.fortuneBonus = Double.parseDouble(config.getOrDefault("fortune", 0).toString());
+        this.fortuneBonus = parseDouble(config.get("fortune"), 0.0D);
         this.config = config;
         this.sourceID = sourceID;
     }
@@ -119,6 +119,15 @@ public class Loot {
         String materialId = itemId.toLowerCase().startsWith("minecraft:") ? itemId.substring("minecraft:".length()) : itemId;
         Material material = Material.matchMaterial(materialId);
         return material != null ? new ItemStack(material) : null;
+    }
+
+    private static double parseDouble(Object value, double fallback) {
+        if (value == null) return fallback;
+        try {
+            return Double.parseDouble(value.toString());
+        } catch (NumberFormatException ignored) {
+            return fallback;
+        }
     }
 
     public void setItemStack(ItemStack itemStack) {
