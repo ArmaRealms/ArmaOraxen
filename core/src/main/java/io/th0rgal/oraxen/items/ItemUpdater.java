@@ -213,6 +213,7 @@ public class ItemUpdater implements Listener {
 
     public static void updateLoadedEntityContents() {
         if (!Settings.UPDATE_ITEMS.toBool() || !Settings.UPDATE_ENTITY_CONTENTS.toBool()) return;
+        if (VersionUtil.isFoliaServer()) return;
 
         for (World world : Bukkit.getWorlds()) {
             for (Entity entity : world.getEntities()) {
@@ -224,6 +225,7 @@ public class ItemUpdater implements Listener {
 
     public static void updateLoadedTileEntityContents() {
         if (!Settings.UPDATE_ITEMS.toBool() || !Settings.UPDATE_TILE_ENTITY_CONTENTS.toBool()) return;
+        if (VersionUtil.isFoliaServer()) return;
 
         for (World world : Bukkit.getWorlds()) {
             for (Chunk chunk : world.getLoadedChunks()) {

@@ -8539,7 +8539,8 @@
               },
               "hardness": {
                 "type": "number",
-                "description": "Block hardness for this rule"
+                "description": "Block hardness for this rule",
+                "min": 0.0
               },
               "drops": {
                 "type": "array",
