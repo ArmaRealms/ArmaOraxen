@@ -233,7 +233,10 @@ public class ItemUpdater implements Listener {
         SchedulerUtil.runTask(() -> {
             for (World world : Bukkit.getWorlds()) {
                 for (Chunk chunk : world.getLoadedChunks()) {
-                    SchedulerUtil.runAtLocation(chunkLocation(chunk), () -> updateTileEntityInventories(chunk));
+                    SchedulerUtil.runAtLocation(chunkLocation(chunk), () -> {
+                        if (!chunk.isLoaded()) return;
+                        updateTileEntityInventories(chunk);
+                    });
                 }
             }
         });
