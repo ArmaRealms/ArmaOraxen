@@ -253,9 +253,21 @@ public class ItemUpdater implements Listener {
     }
 
     public static void updateEntityInventories(Entity entity) {
-        if (entity instanceof ItemFrame itemFrame) itemFrame.setItem(updateItem(itemFrame.getItem()), false);
-        if (entity instanceof ItemDisplay itemDisplay) itemDisplay.setItemStack(updateItem(itemDisplay.getItemStack()));
-        if (entity instanceof Item item) item.setItemStack(updateItem(item.getItemStack()));
+        if (entity instanceof ItemFrame itemFrame) {
+            ItemStack oldItem = itemFrame.getItem();
+            ItemStack newItem = updateItem(oldItem);
+            if (!Objects.equals(oldItem, newItem)) itemFrame.setItem(newItem, false);
+        }
+        if (entity instanceof ItemDisplay itemDisplay) {
+            ItemStack oldItem = itemDisplay.getItemStack();
+            ItemStack newItem = updateItem(oldItem);
+            if (!Objects.equals(oldItem, newItem)) itemDisplay.setItemStack(newItem);
+        }
+        if (entity instanceof Item item) {
+            ItemStack oldItem = item.getItemStack();
+            ItemStack newItem = updateItem(oldItem);
+            if (!Objects.equals(oldItem, newItem)) item.setItemStack(newItem);
+        }
         if (entity instanceof InventoryHolder holder) updateInventory(holder.getInventory());
         if (entity instanceof Player player) updateInventory(player.getEnderChest());
         if (entity instanceof LivingEntity livingEntity) updateEquipment(livingEntity);

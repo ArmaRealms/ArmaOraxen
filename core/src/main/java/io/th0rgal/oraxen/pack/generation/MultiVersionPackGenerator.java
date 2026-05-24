@@ -78,6 +78,8 @@ import java.util.Map;
  */
 public class MultiVersionPackGenerator {
 
+    private static final MinecraftVersion GENERATED_CORE_SHADER_MIN_VERSION = new MinecraftVersion("1.21.4");
+
     private final File packFolder;
     private final PackVersionManager versionManager;
     private final Map<String, String> generatedCoreShaderHashes;
@@ -169,13 +171,15 @@ public class MultiVersionPackGenerator {
     private void generatePackVersion(PackVersion packVersion, List<MaterializedFile> materializedFiles, JsonObject originalMcmeta) throws IOException {
         Logs.logInfo("Generating pack for Minecraft " + packVersion.getMinecraftVersion() + " (format " + packVersion.getPackFormat() + ")");
 
+        MinecraftVersion minecraftVersion = new MinecraftVersion(packVersion.getMinecraftVersion());
+
         // Create fresh VirtualFiles for this pack version
         List<VirtualFile> versionOutput = new java.util.ArrayList<>();
         for (MaterializedFile mFile : materializedFiles) {
             if (isPackMcmeta(mFile.path)) {
                 continue;
             }
-            if (shouldExcludeGeneratedCoreShader(packVersion, mFile.path, mFile.content)) {
+            if (shouldExcludeGeneratedCoreShader(minecraftVersion, mFile.path, mFile.content)) {
                 continue;
             }
             // Create fresh InputStream for this pack version
@@ -260,12 +264,12 @@ public class MultiVersionPackGenerator {
         return "pack.mcmeta".equals(path) || path.endsWith("/pack.mcmeta");
     }
 
-    private boolean shouldExcludeGeneratedCoreShader(PackVersion packVersion, String path, byte[] content) {
+    private boolean shouldExcludeGeneratedCoreShader(MinecraftVersion minecraftVersion, String path, byte[] content) {
         if (generatedCoreShaderHashes.isEmpty()) {
             return false;
         }
 
-        if (new MinecraftVersion(packVersion.getMinecraftVersion()).isAtLeast(new MinecraftVersion("1.21.4"))) {
+        if (minecraftVersion.isAtLeast(GENERATED_CORE_SHADER_MIN_VERSION)) {
             return false;
         }
 
