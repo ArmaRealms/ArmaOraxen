@@ -115,7 +115,7 @@ public class ItemUpdater implements Listener {
         if (!Settings.UPDATE_ITEMS.toBool() || !Settings.UPDATE_TILE_ENTITY_CONTENTS.toBool() || event.isNewChunk()) return;
 
         Chunk chunk = event.getChunk();
-        SchedulerUtil.runAtLocation(chunkLocation(chunk), () -> updateTileEntityInventories(chunk));
+        SchedulerUtil.runAtLocationLater(chunkLocation(chunk), 2L, () -> updateTileEntityInventories(chunk));
     }
 
     @EventHandler
@@ -409,7 +409,7 @@ public class ItemUpdater implements Listener {
 
             if (VersionUtil.atOrAbove("1.21.2")) {
                 if (newMeta.hasEquippable()) itemMeta.setEquippable(newMeta.getEquippable());
-                else if (oldMeta.hasEquippable()) itemMeta.setEquippable(newMeta.getEquippable());
+                else if (oldMeta.hasEquippable()) itemMeta.setEquippable(oldMeta.getEquippable());
 
                 if (newMeta.isGlider()) itemMeta.setGlider(true);
                 else if (oldMeta.isGlider()) itemMeta.setGlider(true);

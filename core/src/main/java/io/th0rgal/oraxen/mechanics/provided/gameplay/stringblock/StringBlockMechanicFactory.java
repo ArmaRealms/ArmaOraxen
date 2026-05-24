@@ -43,6 +43,10 @@ public class StringBlockMechanicFactory extends MechanicFactory {
     public final boolean disableVanillaString;
 
     public StringBlockMechanicFactory(ConfigurationSection section) {
+        this(section, true);
+    }
+
+    public StringBlockMechanicFactory(ConfigurationSection section, boolean registerListeners) {
         super(section);
         instance = this;
         variants = new JsonObject();
@@ -61,6 +65,8 @@ public class StringBlockMechanicFactory extends MechanicFactory {
                                 .writeStringToVirtual("assets/minecraft/blockstates",
                                         "tripwire.json", getBlockstateContent())
         );
+        if (!registerListeners) return;
+
         MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new StringBlockMechanicListener(), new SaplingListener());
         if (customSounds) MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new StringBlockSoundListener());
 

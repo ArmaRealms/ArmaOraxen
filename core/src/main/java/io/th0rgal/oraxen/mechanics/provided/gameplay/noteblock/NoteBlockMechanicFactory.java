@@ -45,6 +45,10 @@ public class NoteBlockMechanicFactory extends MechanicFactory {
     private final boolean removeMineableTag;
 
     public NoteBlockMechanicFactory(ConfigurationSection section) {
+        this(section, true);
+    }
+
+    public NoteBlockMechanicFactory(ConfigurationSection section, boolean registerListeners) {
         super(section);
         instance = this;
         variants = new JsonObject();
@@ -61,6 +65,8 @@ public class NoteBlockMechanicFactory extends MechanicFactory {
                 OraxenPlugin.get().getResourcePack().writeStringToVirtual(
                         "assets/minecraft/blockstates", "note_block.json", getBlockstateContent())
         );
+        if (!registerListeners) return;
+
         MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(),
                 new NoteBlockMechanicListener(),
                 new LogStripListener()

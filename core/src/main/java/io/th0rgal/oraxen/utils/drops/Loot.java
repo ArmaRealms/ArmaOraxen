@@ -118,7 +118,10 @@ public class Loot {
 
         String materialId = itemId.toLowerCase().startsWith("minecraft:") ? itemId.substring("minecraft:".length()) : itemId;
         Material material = Material.matchMaterial(materialId);
-        return material != null ? new ItemStack(material) : null;
+        if (material != null) return new ItemStack(material);
+
+        Logs.logWarning("Failed to resolve loot item '" + itemId + "' for source " + sourceID);
+        return null;
     }
 
     private static double parseDouble(Object value, double fallback) {

@@ -63,6 +63,10 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
     public static final String PROP_HARDNESS = "hardness";
 
     public ShapedBlockMechanicFactory(ConfigurationSection section) {
+        this(section, true);
+    }
+
+    public ShapedBlockMechanicFactory(ConfigurationSection section, boolean registerListeners) {
         super(section);
         instance = this;
         toolTypes = section.getStringList("tool_types");
@@ -79,8 +83,10 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
             generateBlockstates();
         });
 
-        MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(),
-            new ShapedBlockMechanicListener(this));
+        if (registerListeners) {
+            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(),
+                new ShapedBlockMechanicListener(this));
+        }
 
         if (Settings.DEBUG.toBool()) {
             Logs.logSuccess("ShapedBlockMechanicFactory initialized with tool types: " + toolTypes);

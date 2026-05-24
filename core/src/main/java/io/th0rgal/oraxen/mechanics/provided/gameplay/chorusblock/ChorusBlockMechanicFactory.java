@@ -37,6 +37,10 @@ public class ChorusBlockMechanicFactory extends MechanicFactory {
     public final boolean customSounds;
 
     public ChorusBlockMechanicFactory(ConfigurationSection section) {
+        this(section, true);
+    }
+
+    public ChorusBlockMechanicFactory(ConfigurationSection section, boolean registerListeners) {
         super(section);
         instance = this;
         variants = new JsonObject();
@@ -51,6 +55,8 @@ public class ChorusBlockMechanicFactory extends MechanicFactory {
                 packFolder -> OraxenPlugin.get().getResourcePack()
                         .writeStringToVirtual("assets/minecraft/blockstates",
                                 "chorus_plant.json", getBlockstateContent()));
+
+        if (!registerListeners) return;
 
         // Register listeners
         MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(),
