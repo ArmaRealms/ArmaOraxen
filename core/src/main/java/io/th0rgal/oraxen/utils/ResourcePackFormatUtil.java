@@ -35,6 +35,27 @@ public final class ResourcePackFormatUtil {
             new PackFormatThreshold("1.19", 9),
             new PackFormatThreshold("1.18", 8)
     };
+    private static final PackFormatThreshold[] DATA_PACK_FORMAT_THRESHOLDS = {
+            new PackFormatThreshold("26.1", 84),
+            new PackFormatThreshold("1.26.1", 84),
+            new PackFormatThreshold("1.21.11", 89),
+            new PackFormatThreshold("1.21.10", 88),
+            new PackFormatThreshold("1.21.9", 87),
+            new PackFormatThreshold("1.21.7", 81),
+            new PackFormatThreshold("1.21.6", 80),
+            new PackFormatThreshold("1.21.5", 71),
+            new PackFormatThreshold("1.21.4", 61),
+            new PackFormatThreshold("1.21.2", 57),
+            new PackFormatThreshold("1.21", 48),
+            new PackFormatThreshold("1.20.5", 41),
+            new PackFormatThreshold("1.20.3", 26),
+            new PackFormatThreshold("1.20.2", 18),
+            new PackFormatThreshold("1.20", 15),
+            new PackFormatThreshold("1.19.4", 12),
+            new PackFormatThreshold("1.19.3", 10),
+            new PackFormatThreshold("1.19", 10),
+            new PackFormatThreshold("1.18", 9)
+    };
 
     private ResourcePackFormatUtil() {
     }
@@ -62,7 +83,7 @@ public final class ResourcePackFormatUtil {
         if (resolved == null) {
             // Best-effort fallback. Supported servers should resolve this from
             // Minecraft's own runtime constants.
-            resolved = getPackFormatForVersion(MinecraftVersion.getCurrentVersion());
+            resolved = getDataPackFormatForVersion(MinecraftVersion.getCurrentVersion());
         }
 
         cachedDataPackFormat = resolved;
@@ -78,14 +99,22 @@ public final class ResourcePackFormatUtil {
      * @return Pack format number
      */
     public static int getPackFormatForVersion(MinecraftVersion version) {
-        for (PackFormatThreshold threshold : PACK_FORMAT_THRESHOLDS) {
+        return getFormatForVersion(version, PACK_FORMAT_THRESHOLDS, 6);
+    }
+
+    public static int getDataPackFormatForVersion(MinecraftVersion version) {
+        return getFormatForVersion(version, DATA_PACK_FORMAT_THRESHOLDS, 8);
+    }
+
+    private static int getFormatForVersion(MinecraftVersion version, PackFormatThreshold[] thresholds, int fallback) {
+        for (PackFormatThreshold threshold : thresholds) {
             if (version.isAtLeast(threshold.minimumVersion)) {
                 return threshold.packFormat;
             }
         }
 
         // Very old / unknown
-        return 6;
+        return fallback;
     }
 
     private record PackFormatThreshold(MinecraftVersion minimumVersion, int packFormat) {

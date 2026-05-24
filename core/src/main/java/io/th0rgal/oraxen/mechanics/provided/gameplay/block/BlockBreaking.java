@@ -2,6 +2,7 @@ package io.th0rgal.oraxen.mechanics.provided.gameplay.block;
 
 import io.th0rgal.oraxen.utils.drops.Drop;
 import io.th0rgal.oraxen.utils.drops.Loot;
+import io.th0rgal.oraxen.utils.wrappers.EnchantmentWrapper;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -76,7 +77,7 @@ public class BlockBreaking {
 
             boolean fallback = map.containsKey("else");
             List<ToolMatcher> matchers = parseMatchers(map.get("when"));
-            double hardness = parseDouble(map.get("hardness"), 1.0D);
+            double hardness = parseDouble(map.get("hardness"), 1.0D, sourceID);
             Drop drop = parseDrop(map.get("drops"), sourceID);
             parsedRules.add(new Rule(matchers, fallback, hardness, drop));
         }
@@ -138,12 +139,12 @@ public class BlockBreaking {
         return Drop.emptyDrop(loots);
     }
 
-    private double parseDouble(Object value, double fallback) {
+    private double parseDouble(Object value, double fallback, String sourceID) {
         if (value == null) return fallback;
         try {
             return Double.parseDouble(value.toString());
-        } catch (NumberFormatException ignored) {
-            return fallback;
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException("Invalid hardness value '" + value + "' in block mechanic " + sourceID, exception);
         }
     }
 
@@ -153,24 +154,28 @@ public class BlockBreaking {
         final Material toolType = tool.getType();
         final String toolName = toolType.name();
 
+        double speed;
         if (toolType == Material.SHEARS) {
             if (blockType == Material.COBWEB || Tag.LEAVES.isTagged(blockType)) return 15.0D;
             if (Tag.WOOL.isTagged(blockType)) return 5.0D;
-            return 2.0D;
-        }
-
-        if (toolName.endsWith("_SWORD")) {
+            speed = 2.0D;
+        } else if (toolName.endsWith("_SWORD")) {
             if (blockType == Material.COBWEB || blockType.name().contains("BAMBOO")) return 15.0D;
-            return 1.5D;
-        }
+            speed = 1.5D;
+        } else if (toolName.startsWith("GOLDEN_")) speed = 12.0D;
+        else if (toolName.startsWith("NETHERITE_")) speed = 9.0D;
+        else if (toolName.startsWith("DIAMOND_")) speed = 8.0D;
+        else if (toolName.startsWith("IRON_")) speed = 6.0D;
+        else if (toolName.startsWith("STONE_")) speed = 4.0D;
+        else if (toolName.startsWith("WOODEN_")) speed = 2.0D;
+        else speed = 1.0D;
 
-        if (toolName.startsWith("GOLDEN_")) return 12.0D;
-        if (toolName.startsWith("NETHERITE_")) return 9.0D;
-        if (toolName.startsWith("DIAMOND_")) return 8.0D;
-        if (toolName.startsWith("IRON_")) return 6.0D;
-        if (toolName.startsWith("STONE_")) return 4.0D;
-        if (toolName.startsWith("WOODEN_")) return 2.0D;
-        return 1.0D;
+        return speed + efficiencySpeedBonus(tool);
+    }
+
+    private static double efficiencySpeedBonus(ItemStack tool) {
+        int level = tool.getEnchantmentLevel(EnchantmentWrapper.EFFICIENCY);
+        return level > 0 ? level * level + 1.0D : 0.0D;
     }
 
     private static double nativeToolSpeed(final ItemStack tool, final Material blockType) {

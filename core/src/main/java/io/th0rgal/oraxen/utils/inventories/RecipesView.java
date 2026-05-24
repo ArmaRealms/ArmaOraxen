@@ -9,6 +9,8 @@ import io.th0rgal.oraxen.font.FontManager;
 import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.recipes.CustomRecipe;
 import io.th0rgal.oraxen.utils.AdventureUtils;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -49,7 +51,7 @@ public class RecipesView {
             gui.setItem(4, 2, new GuiItem((OraxenItems.getItemById("arrow_previous_icon") == null
                     ? new ItemBuilder(Material.ARROW)
                     : OraxenItems.getItemById("arrow_previous_icon"))
-                    .setDisplayName(ChatColor.YELLOW + "Open page " + page)
+                    .setDisplayName(pageName(page))
                     .build(),
                     event -> create(page - 1,
                             filteredRecipes).open(event.getWhoClicked())));
@@ -59,7 +61,7 @@ public class RecipesView {
             gui.setItem(4, 8, new GuiItem((OraxenItems.getItemById("arrow_next_icon") == null
                     ? new ItemBuilder(Material.ARROW)
                     : OraxenItems.getItemById("arrow_next_icon"))
-                    .setDisplayName(ChatColor.YELLOW + "Open page " + (page + 2))
+                    .setDisplayName(pageName(page + 2))
                     .build(),
                     event -> create(page + 1, filteredRecipes)
                             .open(event.getWhoClicked())));
@@ -68,6 +70,10 @@ public class RecipesView {
         gui.setOutsideClickAction(event -> event.setCancelled(true));
         gui.setDragAction(event -> event.setCancelled(true));
         return gui;
+    }
+
+    private String pageName(int page) {
+        return AdventureUtils.LEGACY_SERIALIZER.serialize(Component.text("Open page " + page, NamedTextColor.YELLOW));
     }
 
 }

@@ -129,6 +129,8 @@ public class NoteBlockMechanic extends Mechanic {
     }
 
     public Drop getDrop(ItemStack tool) {
+        if (isDirectional() && !getDirectional().isParentBlock() && !breaking.hasHardness(tool))
+            return directionalBlock.getParentMechanic().getDrop(tool);
         return breaking.drop(tool);
     }
 

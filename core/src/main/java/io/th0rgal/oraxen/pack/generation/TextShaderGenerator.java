@@ -366,6 +366,7 @@ class TextShaderGenerator {
 
     private void writeGeneratedCoreShader(String folder, String name, String content) {
         ResourcePack.writeStringToVirtual(folder, name, content);
+        if (!name.startsWith("rendertype_text")) return;
         folder = !folder.endsWith("/") ? folder : folder.substring(0, folder.length() - 1);
         generatedCoreShaderHashes.put(folder.isEmpty() ? name : folder + "/" + name, sha256(content.getBytes(StandardCharsets.UTF_8)));
     }

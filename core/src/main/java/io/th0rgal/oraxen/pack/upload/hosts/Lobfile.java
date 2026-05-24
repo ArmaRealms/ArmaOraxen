@@ -94,7 +94,7 @@ public class Lobfile implements HostingProvider {
         } catch (IllegalStateException | IOException | NoSuchAlgorithmException ex) {
             Logs.logError("The resource pack has not been uploaded to Lobfile.");
             if (ex.getMessage() != null) Logs.logWarning(ex.getMessage());
-            if (io.th0rgal.oraxen.config.Settings.DEBUG.toBool()) ex.printStackTrace();
+            Logs.debug(ex);
             return false;
         }
     }

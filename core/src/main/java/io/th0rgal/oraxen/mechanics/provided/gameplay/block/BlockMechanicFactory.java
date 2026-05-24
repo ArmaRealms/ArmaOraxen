@@ -53,7 +53,7 @@ public class BlockMechanicFactory extends MechanicFactory {
 
         BlockType type = BlockType.fromConfig(itemMechanicConfiguration.getString("type"));
         if (type == null) {
-            Logs.logError("The block mechanic of " + itemMechanicConfiguration.getParent().getParent().getName()
+            Logs.logError("The block mechanic of " + itemId(itemMechanicConfiguration)
                     + " requires a valid type.");
             Logs.logWarning("Valid block types are: FULL, STAIR, SLAB, DOOR, TRAPDOOR, GRATE, BULB, STRING, CHORUS");
             return null;
@@ -101,6 +101,11 @@ public class BlockMechanicFactory extends MechanicFactory {
 
     private void copyIfPresent(ConfigurationSection section, String from, String to) {
         if (!section.contains(to) && section.contains(from)) section.set(to, section.get(from));
+    }
+
+    private String itemId(ConfigurationSection section) {
+        ConfigurationSection itemSection = section.getParent() != null ? section.getParent().getParent() : null;
+        return itemSection != null ? itemSection.getName() : section.getCurrentPath();
     }
 
     public ShapedBlockMechanicFactory getShapedBlockFactory() {

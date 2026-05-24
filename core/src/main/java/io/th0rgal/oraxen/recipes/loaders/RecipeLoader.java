@@ -68,8 +68,10 @@ public abstract class RecipeLoader {
 
     protected ItemStack getIndredientItemStack(ConfigurationSection ingredientSection) {
         if (ingredientSection.isString("oraxen_item")) {
-            ItemBuilder builder = OraxenItems.getItemById(ingredientSection.getString("oraxen_item"));
-            if (builder == null) return null;
+            String itemId = ingredientSection.getString("oraxen_item");
+            ItemBuilder builder = OraxenItems.getItemById(itemId);
+            if (builder == null)
+                throw new IllegalArgumentException("Recipe " + section.getName() + " references unknown Oraxen ingredient: " + itemId);
             return ItemUpdater.updateItem(builder.build());
         }
 
@@ -97,8 +99,10 @@ public abstract class RecipeLoader {
     protected RecipeChoice getRecipeChoice(ConfigurationSection ingredientSection) {
 
         if (ingredientSection.isString("oraxen_item")) {
-            ItemBuilder builder = OraxenItems.getItemById(ingredientSection.getString("oraxen_item"));
-            if (builder == null) return null;
+            String itemId = ingredientSection.getString("oraxen_item");
+            ItemBuilder builder = OraxenItems.getItemById(itemId);
+            if (builder == null)
+                throw new IllegalArgumentException("Recipe " + section.getName() + " references unknown Oraxen ingredient: " + itemId);
             return new RecipeChoice.ExactChoice(ItemUpdater.updateItem(builder.build()));
         }
 

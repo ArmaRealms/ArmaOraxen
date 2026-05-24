@@ -2,6 +2,7 @@ package io.th0rgal.oraxen.mechanics.provided.gameplay.shaped;
 
 import com.jeff_media.customblockdata.CustomBlockData;
 import io.th0rgal.oraxen.OraxenPlugin;
+import io.th0rgal.oraxen.api.OraxenBlocks;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.mechanics.Mechanic;
@@ -55,19 +56,26 @@ import org.bukkit.persistence.PersistentDataType;
 public class ShapedBlockMechanicListener implements Listener {
 
     private static final NamespacedKey VANILLA_WAXED_KEY = new NamespacedKey(OraxenPlugin.get(), "vanilla_waxed");
+    private static final HardnessModifier HARDNESS_MODIFIER = createHardnessModifier();
     private final ShapedBlockMechanicFactory factory;
 
     public ShapedBlockMechanicListener(ShapedBlockMechanicFactory factory) {
         this.factory = factory;
         if (OraxenPlugin.get().getPacketAdapter().isEnabled())
-            BreakerSystem.MODIFIERS.add(getHardnessModifier());
+            registerHardnessModifier();
     }
 
-    private HardnessModifier getHardnessModifier() {
+    private static void registerHardnessModifier() {
+        if (!BreakerSystem.MODIFIERS.contains(HARDNESS_MODIFIER)) {
+            BreakerSystem.MODIFIERS.add(HARDNESS_MODIFIER);
+        }
+    }
+
+    private static HardnessModifier createHardnessModifier() {
         return new HardnessModifier() {
             @Override
             public boolean isTriggered(final Player player, final Block block, final ItemStack tool) {
-                ShapedBlockMechanic mechanic = getMechanicFromBlock(block);
+                ShapedBlockMechanic mechanic = OraxenBlocks.getShapedMechanic(block);
                 return mechanic != null && mechanic.hasHardness(tool);
             }
 
@@ -78,7 +86,7 @@ public class ShapedBlockMechanicListener implements Listener {
 
             @Override
             public long getPeriod(final Player player, final Block block, final ItemStack tool) {
-                ShapedBlockMechanic mechanic = getMechanicFromBlock(block);
+                ShapedBlockMechanic mechanic = OraxenBlocks.getShapedMechanic(block);
                 if (mechanic == null) return 0;
                 long period = Math.round(mechanic.getHardness(tool) * 0.4D
                         / mechanic.getPacketSpeedMultiplier(tool, block.getType()));

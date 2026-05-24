@@ -16,6 +16,7 @@ import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.NoteBlockMechanic
 import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.NoteBlockMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.shaped.ShapedBlockMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.shaped.ShapedBlockMechanicFactory;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.shaped.ShapedBlockType;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.storage.StorageMechanic;
 import io.th0rgal.oraxen.mechanics.MechanicsManager;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.stringblock.StringBlockMechanic;
@@ -459,10 +460,10 @@ public class OraxenBlocks {
         Drop drop = overrideDrop != null ? overrideDrop : mechanic.getDrop(itemInHand);
 
         if (player != null) sendBreakEffects(block, player);
-        if (player == null || player.getGameMode() != GameMode.CREATIVE) {
+        if (drop != null && (overrideDrop != null || player == null || player.getGameMode() != GameMode.CREATIVE)) {
             int dropCount = getShapedDropCount(block);
             for (int i = 0; i < dropCount; i++) {
-                if (drop != null) drop.spawns(block.getLocation(), itemInHand);
+                drop.spawns(block.getLocation(), itemInHand);
             }
         }
 
@@ -594,6 +595,7 @@ public class OraxenBlocks {
 
     @org.jetbrains.annotations.Nullable
     public static ShapedBlockMechanic getShapedMechanic(Block block) {
+        if (ShapedBlockType.fromMaterial(block.getType()) == null) return null;
         BlockMechanicFactory blockFactory = BlockMechanicFactory.getInstance();
         if (blockFactory == null) return null;
         ShapedBlockMechanicFactory shapedFactory = blockFactory.getShapedBlockFactory();

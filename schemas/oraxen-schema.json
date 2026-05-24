@@ -8467,6 +8467,7 @@
     "bedrockbreak": {
       "category": "farming",
       "description": "Allows breaking bedrock (requires ProtocolLib)",
+      "_source": "factory",
       "properties": {
         "probability": {
           "type": "number",

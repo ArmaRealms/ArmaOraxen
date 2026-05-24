@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 public class TotemAnimationCommand {
 
     private static volatile Object cachedDeathProtectionType;
+    private static final Object DEATH_PROTECTION_INIT_LOCK = new Object();
 
     CommandAPICommand getTotemAnimationCommand() {
         return new CommandAPICommand("totem-animation")
@@ -135,7 +136,8 @@ public class TotemAnimationCommand {
             Class<?> dataComponentTypeClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType");
             Method hasData = ItemStack.class.getMethod("hasData", dataComponentTypeClass);
             return (boolean) hasData.invoke(itemStack, getDeathProtectionType());
-        } catch (ReflectiveOperationException | LinkageError ignored) {
+        } catch (ReflectiveOperationException | LinkageError e) {
+            Logs.debug(e);
             return false;
         }
     }
@@ -147,9 +149,13 @@ public class TotemAnimationCommand {
     private Object getDeathProtectionType() throws ReflectiveOperationException {
         if (cachedDeathProtectionType != null) return cachedDeathProtectionType;
 
-        Field deathProtectionType = Class.forName("io.papermc.paper.datacomponent.DataComponentTypes")
-                .getField("DEATH_PROTECTION");
-        cachedDeathProtectionType = deathProtectionType.get(null);
-        return cachedDeathProtectionType;
+        synchronized (DEATH_PROTECTION_INIT_LOCK) {
+            if (cachedDeathProtectionType != null) return cachedDeathProtectionType;
+
+            Field deathProtectionType = Class.forName("io.papermc.paper.datacomponent.DataComponentTypes")
+                    .getField("DEATH_PROTECTION");
+            cachedDeathProtectionType = deathProtectionType.get(null);
+            return cachedDeathProtectionType;
+        }
     }
 }
