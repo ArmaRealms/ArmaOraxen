@@ -115,7 +115,10 @@ public class ItemUpdater implements Listener {
         if (!Settings.UPDATE_ITEMS.toBool() || !Settings.UPDATE_TILE_ENTITY_CONTENTS.toBool() || event.isNewChunk()) return;
 
         Chunk chunk = event.getChunk();
-        SchedulerUtil.runAtLocationLater(chunkLocation(chunk), 2L, () -> updateTileEntityInventories(chunk));
+        SchedulerUtil.runAtLocationLater(chunkLocation(chunk), 2L, () -> {
+            if (!chunk.isLoaded()) return;
+            updateTileEntityInventories(chunk);
+        });
     }
 
     @EventHandler
