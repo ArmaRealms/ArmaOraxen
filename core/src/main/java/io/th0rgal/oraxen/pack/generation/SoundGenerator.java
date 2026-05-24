@@ -8,6 +8,7 @@ import io.th0rgal.oraxen.sound.CustomSound;
 import io.th0rgal.oraxen.sound.JukeboxDatapack;
 import io.th0rgal.oraxen.sound.SoundManager;
 import io.th0rgal.oraxen.utils.VirtualFile;
+import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
 import org.apache.commons.io.IOUtils;
 import org.bukkit.configuration.ConfigurationSection;
 
@@ -124,7 +125,7 @@ class SoundGenerator {
             return;
         }
 
-        if (!customSounds.getBoolean(configKey, true)) {
+        if (!isCustomSoundEnabled(customSounds, configKey)) {
             sounds.removeIf(soundFilter);
         }
 
@@ -157,14 +158,19 @@ class SoundGenerator {
             return;
         }
 
-        boolean blockNeedsSounds = customSounds.getBoolean("block", true)
+        boolean blockNeedsSounds = BlockSounds.isBlockSoundEnabled(customSounds)
                 && (block == null || block.getBoolean("enabled", true));
-        boolean furnitureNeedsSounds = customSounds.getBoolean("furniture",
-                customSounds.getBoolean("stringblock_and_furniture", true))
+        boolean furnitureNeedsSounds = BlockSounds.isFurnitureSoundEnabled(customSounds)
                 && (furniture == null || furniture.getBoolean("enabled", true));
 
         if (!blockNeedsSounds && !furnitureNeedsSounds)
             sounds.removeIf(soundFilter);
+    }
+
+    private boolean isCustomSoundEnabled(ConfigurationSection customSounds, String configKey) {
+        if ("block".equals(configKey)) return BlockSounds.isBlockSoundEnabled(customSounds);
+        if ("furniture".equals(configKey)) return BlockSounds.isFurnitureSoundEnabled(customSounds);
+        return customSounds.getBoolean(configKey, true);
     }
 
     private void removeUnwantedSoundEntries(Collection<CustomSound> sounds) {

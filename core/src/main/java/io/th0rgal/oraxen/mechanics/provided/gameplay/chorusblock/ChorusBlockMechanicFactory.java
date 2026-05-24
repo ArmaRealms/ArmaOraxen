@@ -9,6 +9,7 @@ import io.th0rgal.oraxen.mechanics.MechanicsManager;
 import io.th0rgal.oraxen.nms.NMSHandlers;
 import io.th0rgal.oraxen.utils.PaperConfigUpdater;
 import io.th0rgal.oraxen.utils.VersionUtil;
+import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.apache.commons.lang3.Range;
 import org.bukkit.Bukkit;
@@ -109,7 +110,7 @@ public class ChorusBlockMechanicFactory extends MechanicFactory {
     public static boolean areCustomSoundsEnabled() {
         ConfigurationSection customSoundsSection = OraxenPlugin.get().getConfigsManager().getMechanics()
                 .getConfigurationSection("custom_block_sounds");
-        return customSoundsSection == null || customSoundsSection.getBoolean("block", true);
+        return BlockSounds.isBlockSoundEnabled(customSoundsSection);
     }
 
     public static ChorusBlockMechanicFactory getInstance() {

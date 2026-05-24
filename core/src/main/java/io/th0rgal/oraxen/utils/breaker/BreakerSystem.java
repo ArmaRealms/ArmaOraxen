@@ -301,25 +301,24 @@ public abstract class BreakerSystem {
             case NOTE_BLOCK -> {
                 NoteBlockMechanic mechanic = OraxenBlocks.getNoteBlockMechanic(block);
                 if (mechanic == null || !mechanic.hasBlockSounds()) return null;
-                if (!soundSection.getBoolean("block", true)) return null;
+                if (!BlockSounds.isBlockSoundEnabled(soundSection)) return null;
                 else return mechanic.getBlockSounds();
             }
             case TRIPWIRE -> {
                 StringBlockMechanic mechanic = OraxenBlocks.getStringMechanic(block);
                 if (mechanic == null || !mechanic.hasBlockSounds()) return null;
-                if (!soundSection.getBoolean("block", true)) return null;
+                if (!BlockSounds.isStringBlockSoundEnabled(soundSection)) return null;
                 else return mechanic.getBlockSounds();
             }
             case BARRIER -> {
                 FurnitureMechanic mechanic = OraxenFurniture.getFurnitureMechanic(block);
                 if (mechanic == null || !mechanic.hasBlockSounds()) return null;
-                if (!soundSection.getBoolean("furniture",
-                        soundSection.getBoolean("stringblock_and_furniture", true))) return null;
+                if (!BlockSounds.isFurnitureSoundEnabled(soundSection)) return null;
                 else return mechanic.getBlockSounds();
             }
             default -> {
                 ShapedBlockMechanic mechanic = OraxenBlocks.getShapedMechanic(block);
-                return mechanic != null && mechanic.hasBlockSounds() && soundSection.getBoolean("block", true)
+                return mechanic != null && mechanic.hasBlockSounds() && BlockSounds.isBlockSoundEnabled(soundSection)
                         ? mechanic.getBlockSounds()
                         : null;
             }

@@ -11,6 +11,7 @@ import io.th0rgal.oraxen.mechanics.provided.gameplay.stringblock.sapling.Sapling
 import io.th0rgal.oraxen.nms.NMSHandlers;
 import io.th0rgal.oraxen.utils.PaperConfigUpdater;
 import io.th0rgal.oraxen.utils.VersionUtil;
+import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.apache.commons.lang3.Range;
 import org.bukkit.Bukkit;
@@ -107,7 +108,7 @@ public class StringBlockMechanicFactory extends MechanicFactory {
 
         ConfigurationSection customSoundsSection = plugin.getConfigsManager().getMechanics()
                 .getConfigurationSection("custom_block_sounds");
-        return customSoundsSection == null || customSoundsSection.getBoolean("block", true);
+        return BlockSounds.isStringBlockSoundEnabled(customSoundsSection);
     }
 
     public static StringBlockMechanicFactory getInstance() {
