@@ -67,8 +67,11 @@ public abstract class RecipeLoader {
     }
 
     protected ItemStack getIndredientItemStack(ConfigurationSection ingredientSection) {
-        if (ingredientSection.isString("oraxen_item"))
-            return ItemUpdater.updateItem(OraxenItems.getItemById(ingredientSection.getString("oraxen_item")).build());
+        if (ingredientSection.isString("oraxen_item")) {
+            ItemBuilder builder = OraxenItems.getItemById(ingredientSection.getString("oraxen_item"));
+            if (builder == null) return null;
+            return ItemUpdater.updateItem(builder.build());
+        }
 
         if (ingredientSection.isString("crucible_item")) {
             return new WrappedCrucibleItem(ingredientSection.getString("crucible_item")).build();
@@ -93,8 +96,11 @@ public abstract class RecipeLoader {
 
     protected RecipeChoice getRecipeChoice(ConfigurationSection ingredientSection) {
 
-        if (ingredientSection.isString("oraxen_item"))
-            return new RecipeChoice.ExactChoice(ItemUpdater.updateItem(OraxenItems.getItemById(ingredientSection.getString("oraxen_item")).build()));
+        if (ingredientSection.isString("oraxen_item")) {
+            ItemBuilder builder = OraxenItems.getItemById(ingredientSection.getString("oraxen_item"));
+            if (builder == null) return null;
+            return new RecipeChoice.ExactChoice(ItemUpdater.updateItem(builder.build()));
+        }
 
         if (ingredientSection.isString("crucible_item")) {
             ItemStack ingredient = new WrappedCrucibleItem(section.getString("crucible_item")).build();
