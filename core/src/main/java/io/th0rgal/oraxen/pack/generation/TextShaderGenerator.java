@@ -3,7 +3,7 @@ package io.th0rgal.oraxen.pack.generation;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.font.TextEffect;
-import io.th0rgal.oraxen.utils.SHA1Utils;
+import io.th0rgal.oraxen.utils.HashUtils;
 import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.jetbrains.annotations.Nullable;
@@ -378,7 +378,7 @@ class TextShaderGenerator {
     }
 
     private String sha256(byte[] content) {
-        return SHA1Utils.sha256(content);
+        return HashUtils.sha256(content);
     }
 
     private String getShaderVersion(TextShaderTarget target) {

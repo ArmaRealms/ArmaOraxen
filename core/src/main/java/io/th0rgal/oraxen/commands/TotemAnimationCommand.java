@@ -26,6 +26,11 @@ public class TotemAnimationCommand {
 
     private static volatile Object cachedDeathProtectionType;
     private static final Object DEATH_PROTECTION_INIT_LOCK = new Object();
+    private static volatile Class<?> cachedDataComponentTypeClass;
+    private static volatile Class<?> cachedValuedDataComponentTypeClass;
+    private static volatile Method cachedSetDataMethod;
+    private static volatile Method cachedHasDataMethod;
+    private static volatile Method cachedDeathProtectionMethod;
 
     CommandAPICommand getTotemAnimationCommand() {
         return new CommandAPICommand("totem-animation")
@@ -109,13 +114,9 @@ public class TotemAnimationCommand {
         }
 
         try {
-            Class<?> valuedDataComponentTypeClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType$Valued");
             Object deathProtectionType = getDeathProtectionType();
-            Object deathProtection = Class.forName("io.papermc.paper.datacomponent.item.DeathProtection")
-                    .getMethod("deathProtection")
-                    .invoke(null);
-            Method setData = ItemStack.class.getMethod("setData", valuedDataComponentTypeClass, Object.class);
-            setData.invoke(itemStack, deathProtectionType, deathProtection);
+            Object deathProtection = getDeathProtectionMethod().invoke(null);
+            getSetDataMethod().invoke(itemStack, deathProtectionType, deathProtection);
         } catch (ReflectiveOperationException | LinkageError e) {
             Logs.debug(e);
         }
@@ -133,9 +134,7 @@ public class TotemAnimationCommand {
         }
 
         try {
-            Class<?> dataComponentTypeClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType");
-            Method hasData = ItemStack.class.getMethod("hasData", dataComponentTypeClass);
-            return (boolean) hasData.invoke(itemStack, getDeathProtectionType());
+            return (boolean) getHasDataMethod().invoke(itemStack, getDeathProtectionType());
         } catch (ReflectiveOperationException | LinkageError e) {
             Logs.debug(e);
             return false;
@@ -156,6 +155,62 @@ public class TotemAnimationCommand {
                     .getField("DEATH_PROTECTION");
             cachedDeathProtectionType = deathProtectionType.get(null);
             return cachedDeathProtectionType;
+        }
+    }
+
+    private static Method getDeathProtectionMethod() throws ReflectiveOperationException {
+        if (cachedDeathProtectionMethod != null) return cachedDeathProtectionMethod;
+
+        synchronized (DEATH_PROTECTION_INIT_LOCK) {
+            if (cachedDeathProtectionMethod != null) return cachedDeathProtectionMethod;
+
+            cachedDeathProtectionMethod = Class.forName("io.papermc.paper.datacomponent.item.DeathProtection")
+                    .getMethod("deathProtection");
+            return cachedDeathProtectionMethod;
+        }
+    }
+
+    private static Method getSetDataMethod() throws ReflectiveOperationException {
+        if (cachedSetDataMethod != null) return cachedSetDataMethod;
+
+        synchronized (DEATH_PROTECTION_INIT_LOCK) {
+            if (cachedSetDataMethod != null) return cachedSetDataMethod;
+
+            cachedSetDataMethod = ItemStack.class.getMethod("setData", getValuedDataComponentTypeClass(), Object.class);
+            return cachedSetDataMethod;
+        }
+    }
+
+    private static Method getHasDataMethod() throws ReflectiveOperationException {
+        if (cachedHasDataMethod != null) return cachedHasDataMethod;
+
+        synchronized (DEATH_PROTECTION_INIT_LOCK) {
+            if (cachedHasDataMethod != null) return cachedHasDataMethod;
+
+            cachedHasDataMethod = ItemStack.class.getMethod("hasData", getDataComponentTypeClass());
+            return cachedHasDataMethod;
+        }
+    }
+
+    private static Class<?> getDataComponentTypeClass() throws ClassNotFoundException {
+        if (cachedDataComponentTypeClass != null) return cachedDataComponentTypeClass;
+
+        synchronized (DEATH_PROTECTION_INIT_LOCK) {
+            if (cachedDataComponentTypeClass != null) return cachedDataComponentTypeClass;
+
+            cachedDataComponentTypeClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType");
+            return cachedDataComponentTypeClass;
+        }
+    }
+
+    private static Class<?> getValuedDataComponentTypeClass() throws ClassNotFoundException {
+        if (cachedValuedDataComponentTypeClass != null) return cachedValuedDataComponentTypeClass;
+
+        synchronized (DEATH_PROTECTION_INIT_LOCK) {
+            if (cachedValuedDataComponentTypeClass != null) return cachedValuedDataComponentTypeClass;
+
+            cachedValuedDataComponentTypeClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType$Valued");
+            return cachedValuedDataComponentTypeClass;
         }
     }
 }

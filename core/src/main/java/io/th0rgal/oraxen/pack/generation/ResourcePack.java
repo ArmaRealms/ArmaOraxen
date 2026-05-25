@@ -635,7 +635,7 @@ public class ResourcePack {
         try {
             byte[] content = file.getInputStream().readAllBytes();
             file.setInputStream(new ByteArrayInputStream(content));
-            return SHA1Utils.sha256(content);
+            return HashUtils.sha256(content);
         } catch (IOException | IllegalStateException e) {
             Logs.logWarning("Failed to hash " + file.getPath() + " while filtering generated shaders: " + e.getMessage());
             return "";

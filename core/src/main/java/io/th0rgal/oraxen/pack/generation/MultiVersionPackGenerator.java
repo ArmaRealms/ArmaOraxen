@@ -7,7 +7,7 @@ import io.th0rgal.oraxen.api.events.OraxenPackGeneratedEvent;
 import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.utils.EventUtils;
 import io.th0rgal.oraxen.utils.MinecraftVersion;
-import io.th0rgal.oraxen.utils.SHA1Utils;
+import io.th0rgal.oraxen.utils.HashUtils;
 import io.th0rgal.oraxen.utils.SchedulerUtil;
 import io.th0rgal.oraxen.utils.VirtualFile;
 import io.th0rgal.oraxen.utils.ZipUtils;
@@ -280,7 +280,7 @@ public class MultiVersionPackGenerator {
     }
 
     private String sha256(byte[] content) {
-        return SHA1Utils.sha256(content);
+        return HashUtils.sha256(content);
     }
 
     private boolean isMcmetaGenerationDisabled() {
