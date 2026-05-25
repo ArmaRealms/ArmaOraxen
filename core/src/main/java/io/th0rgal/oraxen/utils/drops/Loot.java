@@ -150,8 +150,7 @@ public class Loot {
     }
 
     public void dropNaturally(Location location, int amountMultiplier) {
-        if (Math.random() <= probability)
-            dropItems(location, amountMultiplier);
+        dropNaturally(location, amountMultiplier, null);
     }
 
     public void dropNaturally(Location location, int amountMultiplier, ItemStack tool) {
