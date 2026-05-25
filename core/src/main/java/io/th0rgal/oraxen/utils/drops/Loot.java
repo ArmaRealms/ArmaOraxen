@@ -125,8 +125,14 @@ public class Loot {
 
         if (material != null) return new ItemStack(material);
 
-        Logs.logWarning("Failed to resolve loot item '" + itemId + "' for source " + sourceID);
+        Logs.logWarning("Failed to resolve loot item '" + itemId + "' for source " + sourceID + " (tried as " + getAttemptedLookupTypes(itemId) + ")");
         return null;
+    }
+
+    private String getAttemptedLookupTypes(String itemId) {
+        if (itemId.toLowerCase().startsWith("minecraft:")) return "vanilla material";
+        if (itemId.toLowerCase().startsWith("oraxen:")) return "Oraxen item";
+        return "Oraxen item and vanilla material";
     }
 
     private Material getMaterial(String itemId) {

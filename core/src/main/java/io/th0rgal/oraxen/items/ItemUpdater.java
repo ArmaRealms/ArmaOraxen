@@ -367,8 +367,9 @@ public class ItemUpdater implements Listener {
         for (EquipmentSlot slot : EquipmentSlot.values()) {
             try {
                 ItemStack oldItem = equipment.getItem(slot);
+                if (oldItem == null) continue;
                 ItemStack newItem = updateItem(oldItem);
-                if (oldItem == null || oldItem.equals(newItem)) continue;
+                if (oldItem.equals(newItem)) continue;
                 equipment.setItem(slot, newItem);
             } catch (IllegalArgumentException ignored) {
                 // Some entity types do not support every slot exposed by the API.

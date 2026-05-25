@@ -185,10 +185,10 @@ public class TotemAnimationCommand {
     private static Method getHasDataMethod() throws ReflectiveOperationException {
         if (cachedHasDataMethod != null) return cachedHasDataMethod;
 
-        Class<?> dataComponentTypeClass = getDataComponentTypeClass();
         synchronized (DEATH_PROTECTION_INIT_LOCK) {
             if (cachedHasDataMethod != null) return cachedHasDataMethod;
 
+            Class<?> dataComponentTypeClass = getDataComponentTypeClass();
             cachedHasDataMethod = ItemStack.class.getMethod("hasData", dataComponentTypeClass);
             return cachedHasDataMethod;
         }
