@@ -146,7 +146,7 @@ public class TotemAnimationCommand {
         return VersionUtil.isPaperServer() && VersionUtil.atOrAbove("1.21.2");
     }
 
-    private Object getDeathProtectionType() throws ReflectiveOperationException {
+    private static Object getDeathProtectionType() throws ReflectiveOperationException {
         if (cachedDeathProtectionType != null) return cachedDeathProtectionType;
 
         synchronized (DEATH_PROTECTION_INIT_LOCK) {

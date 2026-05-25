@@ -67,6 +67,7 @@ public class BlockMechanicFactory extends MechanicFactory {
         };
 
         if (mechanic != null) addToImplemented(mechanic);
+        else Logs.logWarning("Failed to parse block mechanic for " + itemId(itemMechanicConfiguration));
         return mechanic;
     }
 

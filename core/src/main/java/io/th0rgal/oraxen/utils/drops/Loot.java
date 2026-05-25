@@ -194,6 +194,7 @@ public class Loot {
     }
 
     private int applyFortune(int amount, ItemStack tool) {
+        if (amount <= 0) return amount;
         if (fortuneBonus <= 0 || tool == null) return amount;
 
         int fortuneLevel = tool.getEnchantmentLevel(EnchantmentWrapper.FORTUNE);
