@@ -163,7 +163,9 @@ public class BlockBreaking {
         try {
             return Double.parseDouble(value.toString());
         } catch (NumberFormatException exception) {
-            throw new IllegalArgumentException("Invalid hardness value '" + value + "' in block mechanic " + sourceID, exception);
+            Logs.logWarning("Invalid hardness value '" + value + "' in block mechanic " + sourceID + "; using " + fallback + " instead.");
+            Logs.debug(exception);
+            return fallback;
         }
     }
 

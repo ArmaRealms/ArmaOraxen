@@ -11,6 +11,7 @@ import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.ItemUtils;
 import io.th0rgal.oraxen.utils.SchedulerUtil;
 import io.th0rgal.oraxen.utils.VersionUtil;
+import io.th0rgal.oraxen.utils.logs.Logs;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.GameMode;
@@ -216,6 +217,10 @@ public class ItemUpdater implements Listener {
 
     public static void updateLoadedEntityContents() {
         if (!Settings.UPDATE_ITEMS.toBool() || !Settings.UPDATE_ENTITY_CONTENTS.toBool()) return;
+        if (VersionUtil.isFoliaServer()) {
+            Logs.logWarning("Skipping loaded entity item updates on Folia; entities are updated when they load instead.");
+            return;
+        }
 
         SchedulerUtil.runTask(() -> {
             for (World world : Bukkit.getWorlds()) {
@@ -229,6 +234,10 @@ public class ItemUpdater implements Listener {
 
     public static void updateLoadedTileEntityContents() {
         if (!Settings.UPDATE_ITEMS.toBool() || !Settings.UPDATE_TILE_ENTITY_CONTENTS.toBool()) return;
+        if (VersionUtil.isFoliaServer()) {
+            Logs.logWarning("Skipping loaded tile entity item updates on Folia; tile entities are updated when their chunks load instead.");
+            return;
+        }
 
         SchedulerUtil.runTask(() -> {
             for (World world : Bukkit.getWorlds()) {
