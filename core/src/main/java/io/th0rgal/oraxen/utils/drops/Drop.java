@@ -210,10 +210,6 @@ public class Drop {
         return fortuneMultiplier;
     }
 
-    private void dropLoot(List<Loot> loots, Location location, int fortuneMultiplier) {
-        for (Loot loot : loots) loot.dropNaturally(location, fortuneMultiplier);
-    }
-
     private void dropLoot(List<Loot> loots, Location location, int fortuneMultiplier, ItemStack itemInHand) {
         for (Loot loot : loots) loot.dropNaturally(location, fortuneMultiplier, itemInHand);
     }
