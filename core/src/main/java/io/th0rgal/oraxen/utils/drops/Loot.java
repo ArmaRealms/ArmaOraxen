@@ -16,7 +16,9 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Loot {
@@ -208,8 +210,28 @@ public class Loot {
     }
 
     private void dropItems(Location location, int amountMultiplier, ItemStack tool) {
+        if (location.getWorld() == null) return;
+        for (ItemStack item : getDropItems(amountMultiplier, tool)) {
+            location.getWorld().dropItemNaturally(location, item);
+        }
+    }
+
+    private List<ItemStack> getDropItems(int amountMultiplier, ItemStack tool) {
         ItemStack item = getItem(amountMultiplier, tool);
-        if (location.getWorld() != null && item != null) location.getWorld().dropItemNaturally(location, item);
+        if (item == null) return List.of();
+
+        int maxStackSize = Math.max(1, item.getMaxStackSize());
+        if (item.getAmount() <= maxStackSize) return List.of(item);
+
+        List<ItemStack> items = new ArrayList<>();
+        int remainingAmount = item.getAmount();
+        while (remainingAmount > 0) {
+            ItemStack splitItem = item.clone();
+            splitItem.setAmount(Math.min(maxStackSize, remainingAmount));
+            items.add(splitItem);
+            remainingAmount -= splitItem.getAmount();
+        }
+        return items;
     }
 
     private String getConfigString(String key) {

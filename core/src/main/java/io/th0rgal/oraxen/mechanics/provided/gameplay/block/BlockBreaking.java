@@ -93,6 +93,9 @@ public class BlockBreaking {
                 ToolMatcher matcher = parseMatcher(entry, sourceID);
                 if (matcher != null) matchers.add(matcher);
             }
+            if (matchers.isEmpty() && !values.isEmpty()) {
+                Logs.logWarning("Block mechanic " + sourceID + " has a 'when' rule with no valid tool entries; the rule will never match.");
+            }
             return matchers;
         }
 

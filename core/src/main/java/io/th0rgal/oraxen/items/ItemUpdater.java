@@ -112,7 +112,10 @@ public class ItemUpdater implements Listener {
         Entity entity = event.getEntity();
         if (!shouldUpdateEntityContents(entity)) return;
 
-        SchedulerUtil.runForEntityLater(entity, 2L, () -> updateEntityInventories(entity), () -> {});
+        SchedulerUtil.runForEntityLater(entity, 2L, () -> {
+            if (!entity.isValid()) return;
+            updateEntityInventories(entity);
+        }, () -> {});
     }
 
     @EventHandler
