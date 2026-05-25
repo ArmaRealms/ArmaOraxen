@@ -53,6 +53,7 @@ import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +66,9 @@ import static io.th0rgal.oraxen.items.ItemBuilder.ORIGINAL_NAME_KEY;
 import static io.th0rgal.oraxen.items.ItemBuilder.UNSTACKABLE_KEY;
 
 public class ItemUpdater implements Listener {
+
+    private static final int STARTUP_ENTITY_BATCH_SIZE = 50;
+    private static final int STARTUP_CHUNK_BATCH_SIZE = 10;
 
     private static final Set<Material> TILE_ENTITY_TYPES = EnumSet.of(
             Material.BARREL,
@@ -223,12 +227,14 @@ public class ItemUpdater implements Listener {
         }
 
         SchedulerUtil.runTask(() -> {
+            List<Entity> entities = new ArrayList<>();
             for (World world : Bukkit.getWorlds()) {
                 for (Entity entity : world.getEntities()) {
                     if (!shouldUpdateEntityContents(entity)) continue;
-                    SchedulerUtil.runForEntity(entity, () -> updateEntityInventories(entity), () -> {});
+                    entities.add(entity);
                 }
             }
+            processLoadedEntities(entities);
         });
     }
 
@@ -240,14 +246,47 @@ public class ItemUpdater implements Listener {
         }
 
         SchedulerUtil.runTask(() -> {
+            List<Chunk> chunks = new ArrayList<>();
             for (World world : Bukkit.getWorlds()) {
                 for (Chunk chunk : world.getLoadedChunks()) {
-                    SchedulerUtil.runAtLocation(chunkLocation(chunk), () -> {
-                        if (!chunk.isLoaded()) return;
-                        updateTileEntityInventories(chunk);
-                    });
+                    chunks.add(chunk);
                 }
             }
+            processLoadedChunks(chunks);
+        });
+    }
+
+    private static void processLoadedEntities(List<Entity> entities) {
+        if (entities.isEmpty()) return;
+
+        final int[] index = {0};
+        final SchedulerUtil.ScheduledTask[] task = new SchedulerUtil.ScheduledTask[1];
+        task[0] = SchedulerUtil.runTaskTimer(0L, 1L, () -> {
+            int batchEnd = Math.min(index[0] + STARTUP_ENTITY_BATCH_SIZE, entities.size());
+            while (index[0] < batchEnd) {
+                Entity entity = entities.get(index[0]++);
+                if (!shouldUpdateEntityContents(entity)) continue;
+                SchedulerUtil.runForEntity(entity, () -> updateEntityInventories(entity), () -> {});
+            }
+            if (index[0] >= entities.size()) task[0].cancel();
+        });
+    }
+
+    private static void processLoadedChunks(List<Chunk> chunks) {
+        if (chunks.isEmpty()) return;
+
+        final int[] index = {0};
+        final SchedulerUtil.ScheduledTask[] task = new SchedulerUtil.ScheduledTask[1];
+        task[0] = SchedulerUtil.runTaskTimer(0L, 1L, () -> {
+            int batchEnd = Math.min(index[0] + STARTUP_CHUNK_BATCH_SIZE, chunks.size());
+            while (index[0] < batchEnd) {
+                Chunk chunk = chunks.get(index[0]++);
+                SchedulerUtil.runAtLocation(chunkLocation(chunk), () -> {
+                    if (!chunk.isLoaded()) return;
+                    updateTileEntityInventories(chunk);
+                });
+            }
+            if (index[0] >= chunks.size()) task[0].cancel();
         });
     }
 
@@ -435,6 +474,7 @@ public class ItemUpdater implements Listener {
 
             if (VersionUtil.atOrAbove("1.21.2")) {
                 if (newMeta.hasEquippable()) itemMeta.setEquippable(newMeta.getEquippable());
+                // Preserve old item's equippable data when the new template has none.
                 else if (oldMeta.hasEquippable()) itemMeta.setEquippable(oldMeta.getEquippable());
 
                 if (newMeta.isGlider()) itemMeta.setGlider(true);

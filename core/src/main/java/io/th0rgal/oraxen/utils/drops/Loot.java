@@ -177,6 +177,10 @@ public class Loot {
         return !requiresSilkTouch || tool != null && tool.containsEnchantment(EnchantmentWrapper.SILK_TOUCH);
     }
 
+    public boolean hasFortuneBonus() {
+        return fortuneBonus > 0;
+    }
+
     private int applyFortune(int amount, ItemStack tool) {
         if (fortuneBonus <= 0 || tool == null) return amount;
 

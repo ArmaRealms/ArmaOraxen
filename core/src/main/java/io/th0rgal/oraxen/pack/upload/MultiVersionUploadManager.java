@@ -20,6 +20,7 @@ import org.bukkit.event.HandlerList;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Locale;
@@ -128,9 +129,14 @@ public class MultiVersionUploadManager {
         Logs.logInfo("Uploading " + versions.size() + " pack versions...");
 
         Map<String, String> currentSHA1s = new HashMap<>();
+        HostingProvider sharedProvider = HostingProviderFactory.createHostingProvider(false);
+        boolean createProviderPerVersion = overridesVersionedUpload(sharedProvider);
         for (PackVersion packVersion : versions) {
             try {
-                uploadPackVersion(packVersion);
+                HostingProvider provider = createProviderPerVersion
+                        ? HostingProviderFactory.createHostingProvider(false)
+                        : sharedProvider;
+                uploadPackVersion(packVersion, provider);
                 String sha1Hex = packVersion.getPackSHA1Hex();
                 if (sha1Hex != null) {
                     currentSHA1s.put(packVersion.getMinecraftVersion(), sha1Hex);
@@ -157,14 +163,21 @@ public class MultiVersionUploadManager {
         return anyChanged;
     }
 
-    private void uploadPackVersion(PackVersion packVersion) throws IOException {
+    private boolean overridesVersionedUpload(HostingProvider provider) {
+        try {
+            Method method = provider.getClass().getMethod("uploadPack", File.class, String.class);
+            return method.getDeclaringClass() != HostingProvider.class;
+        } catch (NoSuchMethodException exception) {
+            return false;
+        }
+    }
+
+    private void uploadPackVersion(PackVersion packVersion, HostingProvider provider) throws IOException {
         Logs.logInfo("Uploading pack for Minecraft " + packVersion.getMinecraftVersion() + "...");
 
         // Fire pre-upload event
         OraxenPackPreUploadEvent event = new OraxenPackPreUploadEvent();
         EventUtils.callEvent(event);
-
-        HostingProvider provider = HostingProviderFactory.createHostingProvider(false);
 
         // Upload pack (provider calculates SHA-1 internally)
         boolean success = provider.uploadPack(packVersion.getPackFile(), packVersion.getMinecraftVersion());

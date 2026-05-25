@@ -145,14 +145,17 @@ public class BlockBreaking {
         return key.toLowerCase(Locale.ROOT).startsWith("minecraft:") ? key.substring("minecraft:".length()) : key;
     }
 
-    @SuppressWarnings("unchecked")
     private Drop parseDrop(Object value, String sourceID) {
         if (!(value instanceof List<?> dropConfigs)) return Drop.emptyDrop();
 
         List<Loot> loots = new ArrayList<>();
         for (Object entry : dropConfigs) {
             if (!(entry instanceof Map<?, ?> map)) continue;
-            loots.add(new Loot(new LinkedHashMap<>((Map<String, Object>) map), sourceID));
+            LinkedHashMap<String, Object> safeMap = new LinkedHashMap<>();
+            for (Map.Entry<?, ?> mapEntry : map.entrySet()) {
+                safeMap.put(String.valueOf(mapEntry.getKey()), mapEntry.getValue());
+            }
+            loots.add(new Loot(safeMap, sourceID));
         }
 
         return Drop.emptyDrop(loots);

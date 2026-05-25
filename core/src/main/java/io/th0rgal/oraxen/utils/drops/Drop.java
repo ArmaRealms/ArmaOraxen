@@ -6,6 +6,7 @@ import io.th0rgal.oraxen.mechanics.provided.misc.itemtype.ItemTypeMechanic;
 import io.th0rgal.oraxen.mechanics.provided.misc.itemtype.ItemTypeMechanicFactory;
 import io.th0rgal.oraxen.utils.BlockHelpers;
 import io.th0rgal.oraxen.utils.ItemUtils;
+import io.th0rgal.oraxen.utils.logs.Logs;
 import io.th0rgal.oraxen.utils.wrappers.EnchantmentWrapper;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -38,8 +39,12 @@ public class Drop {
         List<String> bestTools = dropSection.isList("best-tools")
                 ? dropSection.getStringList("best-tools")
                 : dropSection.getStringList("best_tools");
+        boolean fortune = dropSection.getBoolean("fortune");
+        if (fortune && loots.stream().anyMatch(Loot::hasFortuneBonus)) {
+            Logs.logWarning("Drop config for " + sourceID + " uses both drop-level fortune and loot-level fortune; both bonuses will apply.");
+        }
         return new Drop(toolTypes, loots, dropSection.getBoolean("silktouch"),
-                dropSection.getBoolean("fortune"), sourceID,
+                fortune, sourceID,
                 minimalType, bestTools);
     }
 
