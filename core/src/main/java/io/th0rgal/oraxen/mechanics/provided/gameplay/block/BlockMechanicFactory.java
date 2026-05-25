@@ -48,6 +48,11 @@ public class BlockMechanicFactory extends MechanicFactory {
     }
 
     @Override
+    public void onUnregister() {
+        if (instance == this) instance = null;
+    }
+
+    @Override
     public Mechanic parse(ConfigurationSection itemMechanicConfiguration) {
         normalizeAliases(itemMechanicConfiguration);
 

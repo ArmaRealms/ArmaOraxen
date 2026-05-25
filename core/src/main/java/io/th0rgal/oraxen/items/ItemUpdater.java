@@ -262,13 +262,18 @@ public class ItemUpdater implements Listener {
         final int[] index = {0};
         final SchedulerUtil.ScheduledTask[] task = new SchedulerUtil.ScheduledTask[1];
         task[0] = SchedulerUtil.runTaskTimer(0L, 1L, () -> {
-            int batchEnd = Math.min(index[0] + STARTUP_ENTITY_BATCH_SIZE, entities.size());
-            while (index[0] < batchEnd) {
-                Entity entity = entities.get(index[0]++);
-                if (!shouldUpdateEntityContents(entity)) continue;
-                SchedulerUtil.runForEntity(entity, () -> updateEntityInventories(entity), () -> {});
+            try {
+                int batchEnd = Math.min(index[0] + STARTUP_ENTITY_BATCH_SIZE, entities.size());
+                while (index[0] < batchEnd) {
+                    Entity entity = entities.get(index[0]++);
+                    if (!shouldUpdateEntityContents(entity)) continue;
+                    SchedulerUtil.runForEntity(entity, () -> updateEntityInventories(entity), () -> {});
+                }
+                if (index[0] >= entities.size()) task[0].cancel();
+            } catch (RuntimeException | Error throwable) {
+                task[0].cancel();
+                throw throwable;
             }
-            if (index[0] >= entities.size()) task[0].cancel();
         });
     }
 
@@ -278,15 +283,20 @@ public class ItemUpdater implements Listener {
         final int[] index = {0};
         final SchedulerUtil.ScheduledTask[] task = new SchedulerUtil.ScheduledTask[1];
         task[0] = SchedulerUtil.runTaskTimer(0L, 1L, () -> {
-            int batchEnd = Math.min(index[0] + STARTUP_CHUNK_BATCH_SIZE, chunks.size());
-            while (index[0] < batchEnd) {
-                Chunk chunk = chunks.get(index[0]++);
-                SchedulerUtil.runAtLocation(chunkLocation(chunk), () -> {
-                    if (!chunk.isLoaded()) return;
-                    updateTileEntityInventories(chunk);
-                });
+            try {
+                int batchEnd = Math.min(index[0] + STARTUP_CHUNK_BATCH_SIZE, chunks.size());
+                while (index[0] < batchEnd) {
+                    Chunk chunk = chunks.get(index[0]++);
+                    SchedulerUtil.runAtLocation(chunkLocation(chunk), () -> {
+                        if (!chunk.isLoaded()) return;
+                        updateTileEntityInventories(chunk);
+                    });
+                }
+                if (index[0] >= chunks.size()) task[0].cancel();
+            } catch (RuntimeException | Error throwable) {
+                task[0].cancel();
+                throw throwable;
             }
-            if (index[0] >= chunks.size()) task[0].cancel();
         });
     }
 

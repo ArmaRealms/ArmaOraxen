@@ -173,10 +173,11 @@ public class TotemAnimationCommand {
     private static Method getSetDataMethod() throws ReflectiveOperationException {
         if (cachedSetDataMethod != null) return cachedSetDataMethod;
 
+        Class<?> valuedDataComponentTypeClass = getValuedDataComponentTypeClass();
         synchronized (DEATH_PROTECTION_INIT_LOCK) {
             if (cachedSetDataMethod != null) return cachedSetDataMethod;
 
-            cachedSetDataMethod = ItemStack.class.getMethod("setData", getValuedDataComponentTypeClass(), Object.class);
+            cachedSetDataMethod = ItemStack.class.getMethod("setData", valuedDataComponentTypeClass, Object.class);
             return cachedSetDataMethod;
         }
     }
@@ -184,10 +185,11 @@ public class TotemAnimationCommand {
     private static Method getHasDataMethod() throws ReflectiveOperationException {
         if (cachedHasDataMethod != null) return cachedHasDataMethod;
 
+        Class<?> dataComponentTypeClass = getDataComponentTypeClass();
         synchronized (DEATH_PROTECTION_INIT_LOCK) {
             if (cachedHasDataMethod != null) return cachedHasDataMethod;
 
-            cachedHasDataMethod = ItemStack.class.getMethod("hasData", getDataComponentTypeClass());
+            cachedHasDataMethod = ItemStack.class.getMethod("hasData", dataComponentTypeClass);
             return cachedHasDataMethod;
         }
     }

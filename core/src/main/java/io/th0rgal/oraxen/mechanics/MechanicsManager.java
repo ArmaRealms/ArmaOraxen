@@ -144,8 +144,9 @@ public class MechanicsManager {
     }
 
     public static void unregisterMechanicFactory(String mechanicId) {
-        FACTORIES_BY_MECHANIC_ID.remove(mechanicId);
+        MechanicFactory factory = FACTORIES_BY_MECHANIC_ID.remove(mechanicId);
         FACTORIES_BY_LOWERCASE_MECHANIC_ID.remove(mechanicId.toLowerCase(Locale.ROOT));
+        if (factory != null) factory.onUnregister();
         unloadListeners(mechanicId);
         unregisterTasks(mechanicId);
     }
