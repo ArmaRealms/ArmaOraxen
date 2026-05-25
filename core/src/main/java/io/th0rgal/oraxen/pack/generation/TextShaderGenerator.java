@@ -9,8 +9,6 @@ import io.th0rgal.oraxen.utils.logs.Logs;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -380,12 +378,7 @@ class TextShaderGenerator {
     }
 
     private String sha256(byte[] content) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return SHA1Utils.bytesToHex(digest.digest(content));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is not available", e);
-        }
+        return SHA1Utils.sha256(content);
     }
 
     private String getShaderVersion(TextShaderTarget target) {

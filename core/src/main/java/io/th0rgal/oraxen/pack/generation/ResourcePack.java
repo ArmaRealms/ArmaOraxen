@@ -36,8 +36,6 @@ import java.awt.AlphaComposite;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -637,8 +635,8 @@ public class ResourcePack {
         try {
             byte[] content = file.getInputStream().readAllBytes();
             file.setInputStream(new ByteArrayInputStream(content));
-            return java.util.HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
-        } catch (IOException | NoSuchAlgorithmException e) {
+            return SHA1Utils.sha256(content);
+        } catch (IOException | IllegalStateException e) {
             Logs.logWarning("Failed to hash " + file.getPath() + " while filtering generated shaders: " + e.getMessage());
             return "";
         }

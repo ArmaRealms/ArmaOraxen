@@ -18,8 +18,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.Collection;
 import java.util.List;
@@ -282,11 +280,7 @@ public class MultiVersionPackGenerator {
     }
 
     private String sha256(byte[] content) {
-        try {
-            return SHA1Utils.bytesToHex(MessageDigest.getInstance("SHA-256").digest(content));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is not available", e);
-        }
+        return SHA1Utils.sha256(content);
     }
 
     private boolean isMcmetaGenerationDisabled() {

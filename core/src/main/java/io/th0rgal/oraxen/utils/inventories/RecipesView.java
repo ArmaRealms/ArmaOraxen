@@ -67,6 +67,7 @@ public class RecipesView {
                             .open(event.getWhoClicked())));
 
         gui.setDefaultClickAction(event -> event.setCancelled(true));
+        gui.setPlayerInventoryAction(event -> event.setCancelled(true));
         gui.setOutsideClickAction(event -> event.setCancelled(true));
         gui.setDragAction(event -> event.setCancelled(true));
         return gui;
