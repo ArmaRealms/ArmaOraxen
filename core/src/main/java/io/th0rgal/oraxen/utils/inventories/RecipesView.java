@@ -40,17 +40,13 @@ public class RecipesView {
         }
 
         // Close RecipeShowcase inventory button
-        gui.setItem(6, 5, new GuiItem((OraxenItems.getItemById("exit_icon") == null
-                ? new ItemBuilder(Material.BARRIER)
-                : OraxenItems.getItemById("exit_icon"))
+        gui.setItem(6, 5, new GuiItem(iconOrDefault("exit_icon", Material.BARRIER)
                 .setDisplayName(Message.EXIT_MENU).build(),
                 (event -> event.getWhoClicked().closeInventory())));
 
         // Previous Page button
         if (page > 0)
-            gui.setItem(4, 2, new GuiItem((OraxenItems.getItemById("arrow_previous_icon") == null
-                    ? new ItemBuilder(Material.ARROW)
-                    : OraxenItems.getItemById("arrow_previous_icon"))
+            gui.setItem(4, 2, new GuiItem(iconOrDefault("arrow_previous_icon", Material.ARROW)
                     .setDisplayName(pageName(page))
                     .build(),
                     event -> create(page - 1,
@@ -58,9 +54,7 @@ public class RecipesView {
 
         // Next page button
         if (!lastPage)
-            gui.setItem(4, 8, new GuiItem((OraxenItems.getItemById("arrow_next_icon") == null
-                    ? new ItemBuilder(Material.ARROW)
-                    : OraxenItems.getItemById("arrow_next_icon"))
+            gui.setItem(4, 8, new GuiItem(iconOrDefault("arrow_next_icon", Material.ARROW)
                     .setDisplayName(pageName(page + 2))
                     .build(),
                     event -> create(page + 1, filteredRecipes)
@@ -71,6 +65,11 @@ public class RecipesView {
         gui.setOutsideClickAction(event -> event.setCancelled(true));
         gui.setDragAction(event -> event.setCancelled(true));
         return gui;
+    }
+
+    private ItemBuilder iconOrDefault(String itemId, Material fallback) {
+        ItemBuilder icon = OraxenItems.getItemById(itemId);
+        return icon != null ? icon : new ItemBuilder(fallback);
     }
 
     private String pageName(int page) {

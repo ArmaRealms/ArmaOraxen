@@ -276,11 +276,7 @@ public class MultiVersionPackGenerator {
         }
 
         String generatedHash = generatedCoreShaderHashes.get(path);
-        return generatedHash != null && generatedHash.equals(sha256(content));
-    }
-
-    private String sha256(byte[] content) {
-        return HashUtils.sha256(content);
+        return generatedHash != null && generatedHash.equals(HashUtils.sha256(content));
     }
 
     private boolean isMcmetaGenerationDisabled() {

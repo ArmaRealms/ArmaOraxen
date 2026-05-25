@@ -214,6 +214,22 @@ class MultiVersionPackGeneratorTest {
     }
 
     @Test
+    void generatedCoreShaderFilterMatchesMaterializedShaderPath() throws Exception {
+        byte[] content = "generated shader".getBytes(StandardCharsets.UTF_8);
+        String materializedPath = "assets/minecraft/shaders/core/rendertype_text.vsh";
+        MultiVersionPackGenerator generator = new MultiVersionPackGenerator(tempDir,
+                Map.of(materializedPath, bytesToHex(MessageDigest.getInstance("SHA-256").digest(content))));
+
+        Method method = MultiVersionPackGenerator.class.getDeclaredMethod(
+                "shouldExcludeGeneratedCoreShader", MinecraftVersion.class, String.class, byte[].class);
+        method.setAccessible(true);
+
+        boolean excluded = (boolean) method.invoke(generator, new MinecraftVersion("1.20.2"), materializedPath, content);
+
+        assertTrue(excluded);
+    }
+
+    @Test
     void generatedCoreShaderFilterIgnoresOverlayPaths() throws Exception {
         byte[] content = "generated shader".getBytes(StandardCharsets.UTF_8);
         String overlayPath = "overlay_1_21_4/assets/minecraft/shaders/core/rendertype_text.vsh";

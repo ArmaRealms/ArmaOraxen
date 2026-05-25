@@ -266,7 +266,7 @@ public class ItemUpdater implements Listener {
                 int batchEnd = Math.min(index[0] + STARTUP_ENTITY_BATCH_SIZE, entities.size());
                 while (index[0] < batchEnd) {
                     Entity entity = entities.get(index[0]++);
-                    if (!shouldUpdateEntityContents(entity)) continue;
+                    if (!entity.isValid() || !shouldUpdateEntityContents(entity)) continue;
                     SchedulerUtil.runForEntity(entity, () -> updateEntityInventories(entity), () -> {});
                 }
                 if (index[0] >= entities.size()) task[0].cancel();
