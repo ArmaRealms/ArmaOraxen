@@ -795,7 +795,7 @@ public class ShapedBlockMechanicListener implements Listener {
             if (isPerpendicularTo(facing, frontFacing) && canTakeShape(block, stairs, frontFacing.getOppositeFace())) {
                 if (frontFacing == rotateCounterClockwise(facing)) {
                     return org.bukkit.block.data.type.Stairs.Shape.OUTER_LEFT;
-                } else {
+                } else if (frontFacing == rotateClockwise(facing)) {
                     return org.bukkit.block.data.type.Stairs.Shape.OUTER_RIGHT;
                 }
             }
@@ -811,7 +811,7 @@ public class ShapedBlockMechanicListener implements Listener {
             if (isPerpendicularTo(facing, backFacing) && canTakeShape(block, stairs, backFacing)) {
                 if (backFacing == rotateCounterClockwise(facing)) {
                     return org.bukkit.block.data.type.Stairs.Shape.INNER_LEFT;
-                } else {
+                } else if (backFacing == rotateClockwise(facing)) {
                     return org.bukkit.block.data.type.Stairs.Shape.INNER_RIGHT;
                 }
             }
