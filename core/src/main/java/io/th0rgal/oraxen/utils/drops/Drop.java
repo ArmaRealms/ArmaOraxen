@@ -41,7 +41,12 @@ public class Drop {
                 : dropSection.getStringList("best_tools");
         boolean fortune = dropSection.getBoolean("fortune");
         if (fortune && loots.stream().anyMatch(Loot::hasFortuneBonus)) {
-            Logs.logWarning("Drop config for " + sourceID + " uses both drop-level fortune and loot-level fortune; both bonuses will apply.");
+            double maxLootFortuneBonus = loots.stream()
+                    .mapToDouble(Loot::getFortuneBonus)
+                    .max()
+                    .orElse(0.0D);
+            double maxFortuneMultiplier = 3.0D * (1.0D + maxLootFortuneBonus * 3.0D);
+            Logs.logWarning("Drop config for " + sourceID + " uses both drop-level fortune and loot-level fortune; both bonuses will apply. With Fortune III this can multiply a loot amount by up to " + maxFortuneMultiplier + "x.");
         }
         return new Drop(toolTypes, loots, dropSection.getBoolean("silktouch"),
                 fortune, sourceID,

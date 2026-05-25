@@ -113,15 +113,23 @@ public class Loot {
     private ItemStack resolveItem(String itemId) {
         String normalized = itemId.startsWith("oraxen:") ? itemId.substring("oraxen:".length()) : itemId;
         ItemBuilder builder = OraxenItems.getItemById(normalized);
-        if (builder != null)
+        Material material = getMaterial(itemId);
+        if (builder != null) {
+            if (!itemId.contains(":") && material != null) {
+                Logs.logWarning("Loot item '" + itemId + "' for source " + sourceID + " matches both an Oraxen item and a vanilla material; using the Oraxen item. Prefix with 'minecraft:' to use the vanilla material.");
+            }
             return builder.build();
+        }
 
-        String materialId = itemId.toLowerCase().startsWith("minecraft:") ? itemId.substring("minecraft:".length()) : itemId;
-        Material material = Material.matchMaterial(materialId);
         if (material != null) return new ItemStack(material);
 
         Logs.logWarning("Failed to resolve loot item '" + itemId + "' for source " + sourceID);
         return null;
+    }
+
+    private Material getMaterial(String itemId) {
+        String materialId = itemId.toLowerCase().startsWith("minecraft:") ? itemId.substring("minecraft:".length()) : itemId;
+        return Material.matchMaterial(materialId);
     }
 
     private static double parseDouble(Object value, double fallback) {
@@ -179,6 +187,10 @@ public class Loot {
 
     public boolean hasFortuneBonus() {
         return fortuneBonus > 0;
+    }
+
+    public double getFortuneBonus() {
+        return fortuneBonus;
     }
 
     private int applyFortune(int amount, ItemStack tool) {

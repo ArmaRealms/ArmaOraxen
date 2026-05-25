@@ -332,7 +332,18 @@ public class ItemUpdater implements Listener {
                 || entity instanceof ItemDisplay
                 || entity instanceof Item
                 || entity instanceof InventoryHolder
-                || entity instanceof LivingEntity;
+                || entity instanceof LivingEntity livingEntity && hasEquipment(livingEntity);
+    }
+
+    private static boolean hasEquipment(LivingEntity livingEntity) {
+        EntityEquipment equipment = livingEntity.getEquipment();
+        if (equipment == null) return false;
+
+        if (!ItemUtils.isEmpty(equipment.getItemInMainHand()) || !ItemUtils.isEmpty(equipment.getItemInOffHand())) return true;
+        for (ItemStack itemStack : equipment.getArmorContents()) {
+            if (!ItemUtils.isEmpty(itemStack)) return true;
+        }
+        return false;
     }
 
     private static void updateEquipment(LivingEntity livingEntity) {
