@@ -4,6 +4,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -33,5 +34,15 @@ class BlockBreakingTest {
 
         assertFalse(breaking.hasHardness(null));
         assertNotNull(breaking.drop(null));
+    }
+
+    @Test
+    void zeroHardnessDoesNotOverrideVanillaHardness() {
+        ConfigurationSection section = mock(ConfigurationSection.class);
+        doReturn(List.of(Map.of("else", true, "hardness", 0))).when(section).getList("breaking");
+
+        BlockBreaking breaking = new BlockBreaking(section, "custom_block");
+
+        assertFalse(breaking.hasHardness(null));
     }
 }

@@ -28,7 +28,7 @@ public class BlockBreaking {
 
     public boolean hasHardness(ItemStack tool) {
         Rule rule = ruleFor(tool);
-        return rule != null && rule.hardness() >= 0.0D;
+        return rule != null && rule.hardness() > 0.0D;
     }
 
     public double hardness(ItemStack tool) {

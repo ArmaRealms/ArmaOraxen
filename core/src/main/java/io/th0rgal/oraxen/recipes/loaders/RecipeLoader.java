@@ -107,7 +107,7 @@ public abstract class RecipeLoader {
         }
 
         if (ingredientSection.isString("crucible_item")) {
-            ItemStack ingredient = new WrappedCrucibleItem(section.getString("crucible_item")).build();
+            ItemStack ingredient = new WrappedCrucibleItem(ingredientSection.getString("crucible_item")).build();
             return new RecipeChoice.ExactChoice(ingredient != null ? ingredient : new ItemStack(Material.AIR));
         }
 
@@ -117,7 +117,7 @@ public abstract class RecipeLoader {
         }
 
         if (ingredientSection.isString("ecoitem_id")) {
-            ItemStack ingredient = new WrappedEcoItem(section.getString("ecoitem_id")).build();
+            ItemStack ingredient = new WrappedEcoItem(ingredientSection.getString("ecoitem_id")).build();
             return new RecipeChoice.ExactChoice(ingredient != null ? ingredient : new ItemStack(Material.AIR));
         }
 
