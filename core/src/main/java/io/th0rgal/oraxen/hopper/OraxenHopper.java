@@ -198,9 +198,9 @@ public final class OraxenHopper {
 
     private static boolean classExists(String className) {
         try {
-            Class.forName(className);
+            Class.forName(className, false, OraxenHopper.class.getClassLoader());
             return true;
-        } catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException | LinkageError e) {
             return false;
         }
     }
