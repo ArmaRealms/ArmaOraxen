@@ -190,11 +190,6 @@ public class Loot {
         return Math.max(1, roundedAmount);
     }
 
-    private void dropItems(Location location, int amountMultiplier) {
-        ItemStack item = getItem(amountMultiplier);
-        if (location.getWorld() != null && item != null) location.getWorld().dropItemNaturally(location, item);
-    }
-
     private void dropItems(Location location, int amountMultiplier, ItemStack tool) {
         ItemStack item = getItem(amountMultiplier, tool);
         if (location.getWorld() != null && item != null) location.getWorld().dropItemNaturally(location, item);
