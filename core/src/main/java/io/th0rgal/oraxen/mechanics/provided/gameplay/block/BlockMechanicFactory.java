@@ -33,10 +33,10 @@ public class BlockMechanicFactory extends MechanicFactory {
         normalizeFactoryAliases(section);
         toolTypes = section.getStringList("tool_types");
 
-        noteBlockFactory = new NoteBlockMechanicFactory(section, false);
-        stringBlockFactory = new StringBlockMechanicFactory(section, false);
-        chorusBlockFactory = new ChorusBlockMechanicFactory(section, false);
-        shapedBlockFactory = new ShapedBlockMechanicFactory(section, false);
+        noteBlockFactory = new NoteBlockMechanicFactory(section, true);
+        stringBlockFactory = new StringBlockMechanicFactory(section, true);
+        chorusBlockFactory = new ChorusBlockMechanicFactory(section, true);
+        shapedBlockFactory = new ShapedBlockMechanicFactory(section, true);
     }
 
     public static BlockMechanicFactory getInstance() {

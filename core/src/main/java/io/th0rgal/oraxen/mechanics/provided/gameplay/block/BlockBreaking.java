@@ -2,6 +2,7 @@ package io.th0rgal.oraxen.mechanics.provided.gameplay.block;
 
 import io.th0rgal.oraxen.utils.drops.Drop;
 import io.th0rgal.oraxen.utils.drops.Loot;
+import io.th0rgal.oraxen.utils.logs.Logs;
 import io.th0rgal.oraxen.utils.wrappers.EnchantmentWrapper;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -76,7 +77,7 @@ public class BlockBreaking {
             if (!(entry instanceof Map<?, ?> map)) continue;
 
             boolean fallback = map.containsKey("else");
-            List<ToolMatcher> matchers = parseMatchers(map.get("when"));
+            List<ToolMatcher> matchers = parseMatchers(map.get("when"), sourceID);
             double hardness = parseDouble(map.get("hardness"), 1.0D, sourceID);
             Drop drop = parseDrop(map.get("drops"), sourceID);
             parsedRules.add(new Rule(matchers, fallback, hardness, drop));
@@ -85,35 +86,53 @@ public class BlockBreaking {
         return List.copyOf(parsedRules);
     }
 
-    private List<ToolMatcher> parseMatchers(Object value) {
+    private List<ToolMatcher> parseMatchers(Object value, String sourceID) {
         if (value instanceof List<?> values) {
             List<ToolMatcher> matchers = new ArrayList<>();
             for (Object entry : values) {
-                ToolMatcher matcher = parseMatcher(entry);
+                ToolMatcher matcher = parseMatcher(entry, sourceID);
                 if (matcher != null) matchers.add(matcher);
             }
             return matchers;
         }
 
-        ToolMatcher matcher = parseMatcher(value);
+        ToolMatcher matcher = parseMatcher(value, sourceID);
         return matcher == null ? List.of() : List.of(matcher);
     }
 
     @Nullable
-    private ToolMatcher parseMatcher(Object value) {
+    private ToolMatcher parseMatcher(Object value, String sourceID) {
         if (value == null) return null;
 
         String key = value.toString().trim();
         if (key.isEmpty()) return null;
         if (key.startsWith("#")) {
             NamespacedKey namespacedKey = namespacedKey(key.substring(1));
-            if (namespacedKey == null) return null;
+            if (namespacedKey == null) {
+                logInvalidMatcher(key, sourceID);
+                return null;
+            }
+
             Tag<Material> tag = Bukkit.getTag(Tag.REGISTRY_ITEMS, namespacedKey, Material.class);
-            return tag == null ? null : tool -> tool != null && tag.isTagged(tool.getType());
+            if (tag == null) {
+                logInvalidMatcher(key, sourceID);
+                return null;
+            }
+
+            return tool -> tool != null && tag.isTagged(tool.getType());
         }
 
         Material material = Material.matchMaterial(stripMinecraftNamespace(key));
-        return material == null ? null : tool -> tool != null && tool.getType() == material;
+        if (material == null) {
+            logInvalidMatcher(key, sourceID);
+            return null;
+        }
+
+        return tool -> tool != null && tool.getType() == material;
+    }
+
+    private void logInvalidMatcher(String key, String sourceID) {
+        Logs.logWarning("Invalid breaking.when entry '" + key + "' in block mechanic " + sourceID);
     }
 
     private NamespacedKey namespacedKey(String key) {
