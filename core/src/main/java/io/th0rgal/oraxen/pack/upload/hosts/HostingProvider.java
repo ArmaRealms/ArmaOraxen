@@ -11,6 +11,10 @@ public interface HostingProvider {
         return uploadPack(resourcePack);
     }
 
+    default boolean requiresNewInstancePerUpload() {
+        return false;
+    }
+
     String getPackURL();
 
     byte[] getSHA1();

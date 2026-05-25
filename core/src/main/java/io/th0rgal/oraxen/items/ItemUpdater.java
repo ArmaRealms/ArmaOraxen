@@ -88,11 +88,8 @@ public class ItemUpdater implements Listener {
             Material.JUKEBOX
     );
 
-    static {
-        TILE_ENTITY_TYPES.addAll(Tag.SHULKER_BOXES.getValues());
-    }
-
     public ItemUpdater() {
+        TILE_ENTITY_TYPES.addAll(Tag.SHULKER_BOXES.getValues());
         if (!Settings.UPDATE_ITEMS.toBool()) return;
         SchedulerUtil.runTaskLater(OraxenPlugin.get(), 2L, ItemUpdater::updateLoadedContents);
     }
@@ -264,7 +261,7 @@ public class ItemUpdater implements Listener {
 
         final int[] index = {0};
         final SchedulerUtil.ScheduledTask[] task = new SchedulerUtil.ScheduledTask[1];
-        task[0] = SchedulerUtil.runTaskTimer(0L, 1L, () -> {
+        task[0] = SchedulerUtil.runTaskTimer(1L, 1L, () -> {
             try {
                 int batchEnd = Math.min(index[0] + STARTUP_ENTITY_BATCH_SIZE, entities.size());
                 while (index[0] < batchEnd) {
@@ -272,9 +269,9 @@ public class ItemUpdater implements Listener {
                     if (!entity.isValid() || !shouldUpdateEntityContents(entity)) continue;
                     SchedulerUtil.runForEntity(entity, () -> updateEntityInventories(entity), () -> {});
                 }
-                if (index[0] >= entities.size()) task[0].cancel();
+                if (index[0] >= entities.size()) cancelTask(task[0]);
             } catch (RuntimeException | Error throwable) {
-                task[0].cancel();
+                cancelTask(task[0]);
                 throw throwable;
             }
         });
@@ -285,7 +282,7 @@ public class ItemUpdater implements Listener {
 
         final int[] index = {0};
         final SchedulerUtil.ScheduledTask[] task = new SchedulerUtil.ScheduledTask[1];
-        task[0] = SchedulerUtil.runTaskTimer(0L, 1L, () -> {
+        task[0] = SchedulerUtil.runTaskTimer(1L, 1L, () -> {
             try {
                 int batchEnd = Math.min(index[0] + STARTUP_CHUNK_BATCH_SIZE, chunks.size());
                 while (index[0] < batchEnd) {
@@ -295,12 +292,16 @@ public class ItemUpdater implements Listener {
                         updateTileEntityInventories(chunk);
                     });
                 }
-                if (index[0] >= chunks.size()) task[0].cancel();
+                if (index[0] >= chunks.size()) cancelTask(task[0]);
             } catch (RuntimeException | Error throwable) {
-                task[0].cancel();
+                cancelTask(task[0]);
                 throw throwable;
             }
         });
+    }
+
+    private static void cancelTask(SchedulerUtil.ScheduledTask task) {
+        if (task != null) task.cancel();
     }
 
     private static void updateLoadedContents() {

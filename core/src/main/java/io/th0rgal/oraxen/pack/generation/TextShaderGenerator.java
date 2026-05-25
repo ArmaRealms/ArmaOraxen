@@ -365,17 +365,7 @@ class TextShaderGenerator {
     private void writeGeneratedCoreShader(String folder, String name, String content) {
         ResourcePack.writeStringToVirtual(folder, name, content);
         if (!name.startsWith("rendertype_text")) return;
-        generatedCoreShaderHashes.put(normalizeShaderPath(folder, name), HashUtils.sha256(content.getBytes(StandardCharsets.UTF_8)));
-    }
-
-    private String normalizeShaderPath(String folder, String name) {
-        // Must match MaterializedFile.path values assembled from ResourcePack.writeStringToVirtual output.
-        String normalizedFolder = folder == null ? "" : folder.trim();
-        while (normalizedFolder.endsWith("/")) normalizedFolder = normalizedFolder.substring(0, normalizedFolder.length() - 1);
-        while (normalizedFolder.startsWith("/")) normalizedFolder = normalizedFolder.substring(1);
-        String normalizedName = name == null ? "" : name.trim();
-        while (normalizedName.startsWith("/")) normalizedName = normalizedName.substring(1);
-        return normalizedFolder.isEmpty() ? normalizedName : normalizedFolder + "/" + normalizedName;
+        generatedCoreShaderHashes.put(ResourcePack.normalizeVirtualPath(folder, name), HashUtils.sha256(content.getBytes(StandardCharsets.UTF_8)));
     }
 
     private String getShaderVersion(TextShaderTarget target) {

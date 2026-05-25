@@ -20,7 +20,6 @@ import org.bukkit.event.HandlerList;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Locale;
@@ -130,7 +129,7 @@ public class MultiVersionUploadManager {
 
         Map<String, String> currentSHA1s = new HashMap<>();
         HostingProvider sharedProvider = HostingProviderFactory.createHostingProvider(false);
-        boolean createProviderPerVersion = overridesVersionedUpload(sharedProvider);
+        boolean createProviderPerVersion = sharedProvider.requiresNewInstancePerUpload();
         for (PackVersion packVersion : versions) {
             try {
                 HostingProvider provider = createProviderPerVersion
@@ -161,15 +160,6 @@ public class MultiVersionUploadManager {
         }
 
         return anyChanged;
-    }
-
-    private boolean overridesVersionedUpload(HostingProvider provider) {
-        try {
-            Method method = provider.getClass().getMethod("uploadPack", File.class, String.class);
-            return method.getDeclaringClass() != HostingProvider.class;
-        } catch (NoSuchMethodException exception) {
-            return false;
-        }
     }
 
     private void uploadPackVersion(PackVersion packVersion, HostingProvider provider) throws IOException {

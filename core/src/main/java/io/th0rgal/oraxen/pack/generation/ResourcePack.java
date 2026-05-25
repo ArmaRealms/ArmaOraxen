@@ -1373,9 +1373,22 @@ public class ResourcePack {
 
 
     public static void writeStringToVirtual(String folder, String name, String content) {
-        folder = !folder.endsWith("/") ? folder : folder.substring(0, folder.length() - 1);
         addOutputFiles(
-                new VirtualFile(folder, name, new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8))));
+                new VirtualFile(normalizeVirtualFolder(folder), name, new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8))));
+    }
+
+    public static String normalizeVirtualPath(String folder, String name) {
+        String normalizedFolder = normalizeVirtualFolder(folder);
+        String normalizedName = name == null ? "" : name.trim();
+        while (normalizedName.startsWith("/")) normalizedName = normalizedName.substring(1);
+        return normalizedFolder.isEmpty() ? normalizedName : normalizedFolder + "/" + normalizedName;
+    }
+
+    private static String normalizeVirtualFolder(String folder) {
+        String normalizedFolder = folder == null ? "" : folder.trim();
+        while (normalizedFolder.endsWith("/")) normalizedFolder = normalizedFolder.substring(0, normalizedFolder.length() - 1);
+        while (normalizedFolder.startsWith("/")) normalizedFolder = normalizedFolder.substring(1);
+        return normalizedFolder;
     }
 
     public static void deleteFileFromVirtualAndDisk(String folder, String name) {
