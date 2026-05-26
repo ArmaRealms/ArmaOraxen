@@ -293,10 +293,12 @@ public class ItemUpdater implements Listener {
     }
 
     private static void replaceStartupEntityScanTask(SchedulerUtil.ScheduledTask task, boolean finished) {
+        SchedulerUtil.ScheduledTask oldTask;
         synchronized (STARTUP_SCAN_LOCK) {
-            cancelTask(startupEntityScanTask);
+            oldTask = startupEntityScanTask;
             startupEntityScanTask = finished ? null : task;
         }
+        cancelTask(oldTask);
         if (finished) cancelTask(task);
     }
 
@@ -305,10 +307,12 @@ public class ItemUpdater implements Listener {
     }
 
     private static void replaceStartupChunkScanTask(SchedulerUtil.ScheduledTask task, boolean finished) {
+        SchedulerUtil.ScheduledTask oldTask;
         synchronized (STARTUP_SCAN_LOCK) {
-            cancelTask(startupChunkScanTask);
+            oldTask = startupChunkScanTask;
             startupChunkScanTask = finished ? null : task;
         }
+        cancelTask(oldTask);
         if (finished) cancelTask(task);
     }
 

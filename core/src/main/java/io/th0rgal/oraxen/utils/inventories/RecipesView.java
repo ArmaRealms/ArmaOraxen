@@ -26,6 +26,10 @@ public class RecipesView {
 
     public Gui create(final int page, final List<CustomRecipe> filteredRecipes) {
         final Gui gui = Gui.gui().rows(6).title(AdventureUtils.LEGACY_SERIALIZER.deserialize(menuTexture)).create();
+        gui.setDefaultClickAction(event -> event.setCancelled(true));
+        gui.setPlayerInventoryAction(event -> event.setCancelled(true));
+        gui.setOutsideClickAction(event -> event.setCancelled(true));
+        gui.setDragAction(event -> event.setCancelled(true));
         if (filteredRecipes.isEmpty()) return gui;
 
         final int currentPage = Math.max(0, Math.min(page, filteredRecipes.size() - 1));
@@ -62,10 +66,6 @@ public class RecipesView {
                     event -> create(currentPage + 1, filteredRecipes)
                             .open(event.getWhoClicked())));
 
-        gui.setDefaultClickAction(event -> event.setCancelled(true));
-        gui.setPlayerInventoryAction(event -> event.setCancelled(true));
-        gui.setOutsideClickAction(event -> event.setCancelled(true));
-        gui.setDragAction(event -> event.setCancelled(true));
         return gui;
     }
 
