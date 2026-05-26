@@ -77,6 +77,9 @@ public class BlockBreaking {
             if (!(entry instanceof Map<?, ?> map)) continue;
 
             boolean fallback = map.containsKey("else");
+            if (fallback && map.containsKey("when")) {
+                Logs.logWarning("Block mechanic " + sourceID + " has a breaking rule with both 'when' and 'else' keys; 'when' matchers will be ignored and the rule will act as a catch-all fallback.");
+            }
             List<ToolMatcher> matchers = parseMatchers(map.get("when"), sourceID);
             double hardness = parseDouble(map.get("hardness"), 1.0D, sourceID);
             Drop drop = parseDrop(map.get("drops"), sourceID);

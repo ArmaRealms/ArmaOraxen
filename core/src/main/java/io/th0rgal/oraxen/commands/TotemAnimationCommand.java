@@ -1,7 +1,5 @@
 package io.th0rgal.oraxen.commands;
 
-import com.github.retrooper.packetevents.PacketEvents;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityStatus;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.ArgumentSuggestions;
 import dev.jorel.commandapi.arguments.EntitySelectorArgument;
@@ -19,6 +17,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -40,7 +39,14 @@ public class TotemAnimationCommand {
     private static volatile boolean setDataMethodInitialized;
     private static volatile boolean hasDataMethodInitialized;
     private static volatile boolean deathProtectionMethodInitialized;
+    private static final Object PACKET_EVENTS_INIT_LOCK = new Object();
+    private static volatile Method cachedPacketEventsGetAPIMethod;
+    private static volatile Method cachedPacketEventsGetPlayerManagerMethod;
+    private static volatile Method cachedPacketEventsSendPacketMethod;
+    private static volatile Constructor<?> cachedEntityStatusPacketConstructor;
+    private static volatile boolean packetEventsMethodsInitialized;
     private static volatile boolean loggedDeathProtectionFailure;
+    private static volatile boolean loggedPacketEventsFailure;
 
     CommandAPICommand getTotemAnimationCommand() {
         return new CommandAPICommand("totem-animation")
@@ -113,11 +119,61 @@ public class TotemAnimationCommand {
     private void sendTotemStatus(Player target) {
         if (VersionUtil.isPaperServer()) {
             target.sendEntityEffect(EntityEffect.PROTECTED_FROM_DEATH, target);
-        } else if (PacketAdapter.isPacketEventsEnabled()) {
-            PacketEvents.getAPI().getPlayerManager().sendPacket(target, new WrapperPlayServerEntityStatus(target.getEntityId(), 35));
+        } else if (PacketAdapter.isPacketEventsEnabled() && sendPacketEventsTotemStatus(target)) {
+            return;
         } else {
             target.playEffect(EntityEffect.TOTEM_RESURRECT);
         }
+    }
+
+    private static boolean sendPacketEventsTotemStatus(Player target) {
+        try {
+            if (!initializePacketEventsMethods()) return false;
+            Object packetEventsAPI = cachedPacketEventsGetAPIMethod.invoke(null);
+            Object playerManager = cachedPacketEventsGetPlayerManagerMethod.invoke(packetEventsAPI);
+            Object packet = cachedEntityStatusPacketConstructor.newInstance(target.getEntityId(), 35);
+            cachedPacketEventsSendPacketMethod.invoke(playerManager, target, packet);
+            return true;
+        } catch (ReflectiveOperationException | LinkageError e) {
+            logPacketEventsFailure(e);
+            return false;
+        }
+    }
+
+    private static boolean initializePacketEventsMethods() throws ReflectiveOperationException {
+        if (packetEventsMethodsInitialized) return cachedPacketEventsGetAPIMethod != null;
+
+        synchronized (PACKET_EVENTS_INIT_LOCK) {
+            if (packetEventsMethodsInitialized) return cachedPacketEventsGetAPIMethod != null;
+
+            try {
+                Class<?> packetEventsClass = Class.forName("com.github.retrooper.packetevents.PacketEvents");
+                Class<?> packetEventsAPIClass = Class.forName("com.github.retrooper.packetevents.PacketEventsAPI");
+                Class<?> playerManagerClass = Class.forName("com.github.retrooper.packetevents.manager.player.PlayerManager");
+                Class<?> packetWrapperClass = Class.forName("com.github.retrooper.packetevents.wrapper.PacketWrapper");
+                Class<?> entityStatusPacketClass = Class.forName("com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityStatus");
+
+                cachedPacketEventsGetAPIMethod = packetEventsClass.getMethod("getAPI");
+                cachedPacketEventsGetPlayerManagerMethod = packetEventsAPIClass.getMethod("getPlayerManager");
+                cachedPacketEventsSendPacketMethod = playerManagerClass.getMethod("sendPacket", Object.class, packetWrapperClass);
+                cachedEntityStatusPacketConstructor = entityStatusPacketClass.getConstructor(int.class, int.class);
+                return true;
+            } finally {
+                packetEventsMethodsInitialized = true;
+            }
+        }
+    }
+
+    private static void logPacketEventsFailure(Throwable throwable) {
+        if (!loggedPacketEventsFailure) {
+            synchronized (PACKET_EVENTS_INIT_LOCK) {
+                if (!loggedPacketEventsFailure) {
+                    Logs.logWarning("Failed to send totem animation via PacketEvents; falling back to Bukkit's deprecated totem effect. See debug log for details.");
+                    loggedPacketEventsFailure = true;
+                }
+            }
+        }
+        Logs.debug(throwable);
     }
 
     private ItemStack addDeathProtection(ItemStack itemStack) {

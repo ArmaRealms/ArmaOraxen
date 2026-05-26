@@ -128,13 +128,20 @@ public class MultiVersionUploadManager {
         Logs.logInfo("Uploading " + versions.size() + " pack versions...");
 
         Map<String, String> currentSHA1s = new HashMap<>();
-        HostingProvider sharedProvider = HostingProviderFactory.createHostingProvider(false);
-        boolean createProviderPerVersion = sharedProvider.requiresNewInstancePerUpload();
+        HostingProvider firstProvider = HostingProviderFactory.createHostingProvider(false);
+        boolean createProviderPerVersion = firstProvider.requiresNewInstancePerUpload();
+        boolean firstVersionHandled = false;
         for (PackVersion packVersion : versions) {
             try {
-                HostingProvider provider = createProviderPerVersion
-                        ? HostingProviderFactory.createHostingProvider(false)
-                        : sharedProvider;
+                HostingProvider provider;
+                if (!createProviderPerVersion) {
+                    provider = firstProvider;
+                } else if (!firstVersionHandled) {
+                    provider = firstProvider;
+                    firstVersionHandled = true;
+                } else {
+                    provider = HostingProviderFactory.createHostingProvider(false);
+                }
                 uploadPackVersion(packVersion, provider);
                 String sha1Hex = packVersion.getPackSHA1Hex();
                 if (sha1Hex != null) {
