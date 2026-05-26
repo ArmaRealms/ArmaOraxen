@@ -5,6 +5,7 @@ import com.jeff_media.customblockdata.CustomBlockData;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.events.chorusblock.OraxenChorusBlockBreakEvent;
 import io.th0rgal.oraxen.api.events.noteblock.OraxenNoteBlockBreakEvent;
+import io.th0rgal.oraxen.api.events.shapedblock.OraxenShapedBlockBreakEvent;
 import io.th0rgal.oraxen.api.events.stringblock.OraxenStringBlockBreakEvent;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
@@ -462,8 +463,13 @@ public class OraxenBlocks {
         ItemStack itemInHand = player != null ? player.getInventory().getItemInMainHand() : new ItemStack(Material.AIR);
         Drop drop = overrideDrop != null ? overrideDrop : mechanic.getDrop(itemInHand);
 
-        if (player != null) sendBreakEffects(block, player);
-        if (drop != null && (overrideDrop != null || player == null || player.getGameMode() != GameMode.CREATIVE)) {
+        if (player != null) {
+            OraxenShapedBlockBreakEvent event = new OraxenShapedBlockBreakEvent(mechanic, block, player);
+            if (!EventUtils.callEvent(event)) return false;
+            drop = overrideDrop != null ? overrideDrop : resolveDropAfterEvent(player, event.getDrop());
+            sendBreakEffects(block, player);
+        }
+        if (drop != null) {
             int dropCount = getShapedDropCount(block);
             for (int i = 0; i < dropCount; i++) {
                 drop.spawns(block.getLocation(), itemInHand);
