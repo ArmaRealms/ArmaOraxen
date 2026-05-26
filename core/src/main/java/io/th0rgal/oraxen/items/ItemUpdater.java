@@ -349,8 +349,8 @@ public class ItemUpdater implements Listener {
     }
 
     private static final class StartupScanTask {
-        private SchedulerUtil.ScheduledTask scheduledTask;
-        private boolean finished;
+        private volatile SchedulerUtil.ScheduledTask scheduledTask;
+        private volatile boolean finished;
     }
 
     public static void updateEntityInventories(Entity entity) {

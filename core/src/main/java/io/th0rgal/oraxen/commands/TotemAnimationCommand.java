@@ -141,10 +141,10 @@ public class TotemAnimationCommand {
     }
 
     private static boolean initializePacketEventsMethods() throws ReflectiveOperationException {
-        if (packetEventsMethodsInitialized) return cachedPacketEventsGetAPIMethod != null;
+        if (packetEventsMethodsInitialized) return hasPacketEventsMethods();
 
         synchronized (PACKET_EVENTS_INIT_LOCK) {
-            if (packetEventsMethodsInitialized) return cachedPacketEventsGetAPIMethod != null;
+            if (packetEventsMethodsInitialized) return hasPacketEventsMethods();
 
             try {
                 Class<?> packetEventsClass = Class.forName("com.github.retrooper.packetevents.PacketEvents");
@@ -162,6 +162,13 @@ public class TotemAnimationCommand {
                 packetEventsMethodsInitialized = true;
             }
         }
+    }
+
+    private static boolean hasPacketEventsMethods() {
+        return cachedPacketEventsGetAPIMethod != null
+                && cachedPacketEventsGetPlayerManagerMethod != null
+                && cachedPacketEventsSendPacketMethod != null
+                && cachedEntityStatusPacketConstructor != null;
     }
 
     private static void logPacketEventsFailure(Throwable throwable) {
