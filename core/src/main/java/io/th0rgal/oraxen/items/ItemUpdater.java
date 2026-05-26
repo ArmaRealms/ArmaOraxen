@@ -18,7 +18,6 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.block.BlockState;
 import org.bukkit.enchantments.Enchantment;
@@ -54,13 +53,10 @@ import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import static io.th0rgal.oraxen.items.ItemBuilder.ORIGINAL_NAME_KEY;
@@ -71,7 +67,6 @@ public class ItemUpdater implements Listener {
     private static final int STARTUP_ENTITY_BATCH_SIZE = 50;
     private static final int STARTUP_CHUNK_BATCH_SIZE = 10;
 
-    private static volatile Set<Material> tileEntityTypes;
     private static final Object STARTUP_SCAN_LOCK = new Object();
     private static SchedulerUtil.ScheduledTask startupEntityScanTask;
     private static SchedulerUtil.ScheduledTask startupChunkScanTask;
@@ -248,8 +243,8 @@ public class ItemUpdater implements Listener {
         if (entities.isEmpty()) return;
 
         final int[] index = {0};
-        final SchedulerUtil.ScheduledTask[] task = new SchedulerUtil.ScheduledTask[1];
-        task[0] = SchedulerUtil.runTaskTimer(1L, 1L, () -> {
+        final StartupScanTask task = new StartupScanTask();
+        SchedulerUtil.ScheduledTask scheduledTask = SchedulerUtil.runTaskTimer(1L, 1L, () -> {
             try {
                 int batchEnd = Math.min(index[0] + STARTUP_ENTITY_BATCH_SIZE, entities.size());
                 while (index[0] < batchEnd) {
@@ -257,13 +252,14 @@ public class ItemUpdater implements Listener {
                     if (!entity.isValid() || !shouldUpdateEntityContents(entity)) continue;
                     SchedulerUtil.runForEntity(entity, () -> updateEntityInventories(entity), () -> {});
                 }
-                if (index[0] >= entities.size()) finishStartupEntityScanTask(task[0]);
+                if (index[0] >= entities.size()) finishStartupEntityScanTask(task);
             } catch (RuntimeException | Error throwable) {
-                finishStartupEntityScanTask(task[0]);
+                finishStartupEntityScanTask(task);
                 throw throwable;
             }
         });
-        replaceStartupEntityScanTask(task[0]);
+        task.scheduledTask = scheduledTask;
+        replaceStartupEntityScanTask(task.scheduledTask, task.finished);
     }
 
     private static void processLoadedChunks(List<Chunk> chunks) {
@@ -271,8 +267,8 @@ public class ItemUpdater implements Listener {
         if (chunks.isEmpty()) return;
 
         final int[] index = {0};
-        final SchedulerUtil.ScheduledTask[] task = new SchedulerUtil.ScheduledTask[1];
-        task[0] = SchedulerUtil.runTaskTimer(1L, 1L, () -> {
+        final StartupScanTask task = new StartupScanTask();
+        SchedulerUtil.ScheduledTask scheduledTask = SchedulerUtil.runTaskTimer(1L, 1L, () -> {
             try {
                 int batchEnd = Math.min(index[0] + STARTUP_CHUNK_BATCH_SIZE, chunks.size());
                 while (index[0] < batchEnd) {
@@ -282,41 +278,54 @@ public class ItemUpdater implements Listener {
                         updateTileEntityInventories(chunk);
                     });
                 }
-                if (index[0] >= chunks.size()) finishStartupChunkScanTask(task[0]);
+                if (index[0] >= chunks.size()) finishStartupChunkScanTask(task);
             } catch (RuntimeException | Error throwable) {
-                finishStartupChunkScanTask(task[0]);
+                finishStartupChunkScanTask(task);
                 throw throwable;
             }
         });
-        replaceStartupChunkScanTask(task[0]);
+        task.scheduledTask = scheduledTask;
+        replaceStartupChunkScanTask(task.scheduledTask, task.finished);
     }
 
     private static void replaceStartupEntityScanTask(SchedulerUtil.ScheduledTask task) {
+        replaceStartupEntityScanTask(task, false);
+    }
+
+    private static void replaceStartupEntityScanTask(SchedulerUtil.ScheduledTask task, boolean finished) {
         synchronized (STARTUP_SCAN_LOCK) {
             cancelTask(startupEntityScanTask);
-            startupEntityScanTask = task;
+            startupEntityScanTask = finished ? null : task;
         }
+        if (finished) cancelTask(task);
     }
 
     private static void replaceStartupChunkScanTask(SchedulerUtil.ScheduledTask task) {
+        replaceStartupChunkScanTask(task, false);
+    }
+
+    private static void replaceStartupChunkScanTask(SchedulerUtil.ScheduledTask task, boolean finished) {
         synchronized (STARTUP_SCAN_LOCK) {
             cancelTask(startupChunkScanTask);
-            startupChunkScanTask = task;
+            startupChunkScanTask = finished ? null : task;
         }
+        if (finished) cancelTask(task);
     }
 
-    private static void finishStartupEntityScanTask(SchedulerUtil.ScheduledTask task) {
+    private static void finishStartupEntityScanTask(StartupScanTask task) {
         synchronized (STARTUP_SCAN_LOCK) {
-            if (startupEntityScanTask == task) startupEntityScanTask = null;
+            task.finished = true;
+            if (startupEntityScanTask == task.scheduledTask) startupEntityScanTask = null;
         }
-        cancelTask(task);
+        cancelTask(task.scheduledTask);
     }
 
-    private static void finishStartupChunkScanTask(SchedulerUtil.ScheduledTask task) {
+    private static void finishStartupChunkScanTask(StartupScanTask task) {
         synchronized (STARTUP_SCAN_LOCK) {
-            if (startupChunkScanTask == task) startupChunkScanTask = null;
+            task.finished = true;
+            if (startupChunkScanTask == task.scheduledTask) startupChunkScanTask = null;
         }
-        cancelTask(task);
+        cancelTask(task.scheduledTask);
     }
 
     private static void cancelTask(SchedulerUtil.ScheduledTask task) {
@@ -333,40 +342,15 @@ public class ItemUpdater implements Listener {
     }
 
     private static void updateTileEntityInventories(Chunk chunk) {
-        Set<Material> tileEntityTypes = getTileEntityTypes();
         for (BlockState tileEntity : chunk.getTileEntities()) {
-            if (!tileEntityTypes.contains(tileEntity.getType()) || !(tileEntity instanceof InventoryHolder holder)) continue;
+            if (!(tileEntity instanceof InventoryHolder holder)) continue;
             updateInventory(holder.getInventory());
         }
     }
 
-    private static Set<Material> getTileEntityTypes() {
-        if (tileEntityTypes != null) return tileEntityTypes;
-
-        synchronized (ItemUpdater.class) {
-            if (tileEntityTypes != null) return tileEntityTypes;
-
-            EnumSet<Material> types = EnumSet.of(
-                    Material.BARREL,
-                    Material.CHEST,
-                    Material.TRAPPED_CHEST,
-                    Material.CRAFTER,
-                    Material.DECORATED_POT,
-                    Material.HOPPER,
-                    Material.DROPPER,
-                    Material.DISPENSER,
-                    Material.CAMPFIRE,
-                    Material.SOUL_CAMPFIRE,
-                    Material.SMOKER,
-                    Material.FURNACE,
-                    Material.BLAST_FURNACE,
-                    Material.BREWING_STAND,
-                    Material.JUKEBOX
-            );
-            types.addAll(Tag.SHULKER_BOXES.getValues());
-            tileEntityTypes = Collections.unmodifiableSet(types);
-            return tileEntityTypes;
-        }
+    private static final class StartupScanTask {
+        private SchedulerUtil.ScheduledTask scheduledTask;
+        private boolean finished;
     }
 
     public static void updateEntityInventories(Entity entity) {

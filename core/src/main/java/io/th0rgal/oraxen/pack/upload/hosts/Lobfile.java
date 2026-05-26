@@ -21,7 +21,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
@@ -77,7 +76,7 @@ public class Lobfile implements HostingProvider {
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             PackHashes packHashes = calculateHashes(resourcePack);
             sha1 = packHashes.sha1();
-            packUUID = UUID.nameUUIDFromBytes(sha1.getBytes(StandardCharsets.UTF_8));
+            packUUID = UUID.nameUUIDFromBytes(SHA1Utils.hexToBytes(sha1));
 
             HttpPost request = new HttpPost(UPLOAD_URL);
             request.setConfig(requestConfig());
