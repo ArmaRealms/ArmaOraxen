@@ -194,7 +194,7 @@ public class Loot {
     }
 
     public boolean canDropWith(ItemStack tool) {
-        return !requiresSilkTouch || tool != null && tool.containsEnchantment(EnchantmentWrapper.SILK_TOUCH);
+        return !requiresSilkTouch || (tool != null && tool.containsEnchantment(EnchantmentWrapper.SILK_TOUCH));
     }
 
     public boolean hasFortuneBonus() {

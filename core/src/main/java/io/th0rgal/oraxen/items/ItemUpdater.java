@@ -52,11 +52,15 @@ import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
 
 import static io.th0rgal.oraxen.items.ItemBuilder.ORIGINAL_NAME_KEY;
@@ -66,10 +70,15 @@ public class ItemUpdater implements Listener {
 
     private static final int STARTUP_ENTITY_BATCH_SIZE = 50;
     private static final int STARTUP_CHUNK_BATCH_SIZE = 10;
+    private static final int CHUNK_LOAD_TILE_ENTITY_BATCH_SIZE = 5;
 
     private static final Object STARTUP_SCAN_LOCK = new Object();
+    private static final Object TILE_ENTITY_CHUNK_QUEUE_LOCK = new Object();
+    private static final Queue<Chunk> pendingTileEntityChunks = new ArrayDeque<>();
+    private static final Set<ChunkKey> pendingTileEntityChunkKeys = new HashSet<>();
     private static SchedulerUtil.ScheduledTask startupEntityScanTask;
     private static SchedulerUtil.ScheduledTask startupChunkScanTask;
+    private static SchedulerUtil.ScheduledTask tileEntityChunkQueueTask;
 
     public ItemUpdater() {
         if (!Settings.UPDATE_ITEMS.toBool()) return;
@@ -101,11 +110,7 @@ public class ItemUpdater implements Listener {
     public void onChunkLoad(ChunkLoadEvent event) {
         if (!Settings.UPDATE_ITEMS.toBool() || !Settings.UPDATE_TILE_ENTITY_CONTENTS.toBool() || event.isNewChunk()) return;
 
-        Chunk chunk = event.getChunk();
-        SchedulerUtil.runAtLocationLater(chunkLocation(chunk), 2L, () -> {
-            if (!chunk.isLoaded()) return;
-            updateTileEntityInventories(chunk);
-        });
+        queueTileEntityChunkUpdate(event.getChunk());
     }
 
     @EventHandler
@@ -357,6 +362,45 @@ public class ItemUpdater implements Listener {
         updateLoadedTileEntityContents();
     }
 
+    private static void queueTileEntityChunkUpdate(Chunk chunk) {
+        ChunkKey key = ChunkKey.from(chunk);
+        synchronized (TILE_ENTITY_CHUNK_QUEUE_LOCK) {
+            if (!pendingTileEntityChunkKeys.add(key)) return;
+            pendingTileEntityChunks.add(chunk);
+            if (tileEntityChunkQueueTask == null) {
+                tileEntityChunkQueueTask = SchedulerUtil.runTaskTimer(1L, 1L, ItemUpdater::processQueuedTileEntityChunks);
+            }
+        }
+    }
+
+    private static void processQueuedTileEntityChunks() {
+        for (int i = 0; i < CHUNK_LOAD_TILE_ENTITY_BATCH_SIZE; i++) {
+            Chunk chunk;
+            synchronized (TILE_ENTITY_CHUNK_QUEUE_LOCK) {
+                chunk = pendingTileEntityChunks.poll();
+                if (chunk == null) {
+                    finishTileEntityChunkQueueTask();
+                    return;
+                }
+                pendingTileEntityChunkKeys.remove(ChunkKey.from(chunk));
+            }
+
+            SchedulerUtil.runAtLocationLater(chunkLocation(chunk), 1L, () -> {
+                if (!chunk.isLoaded()) return;
+                updateTileEntityInventories(chunk);
+            });
+        }
+
+        synchronized (TILE_ENTITY_CHUNK_QUEUE_LOCK) {
+            if (pendingTileEntityChunks.isEmpty()) finishTileEntityChunkQueueTask();
+        }
+    }
+
+    private static void finishTileEntityChunkQueueTask() {
+        cancelTask(tileEntityChunkQueueTask);
+        tileEntityChunkQueueTask = null;
+    }
+
     private static Location chunkLocation(Chunk chunk) {
         return new Location(chunk.getWorld(), chunk.getX() * 16, 0, chunk.getZ() * 16);
     }
@@ -371,6 +415,13 @@ public class ItemUpdater implements Listener {
     private static final class StartupScanTask {
         private volatile SchedulerUtil.ScheduledTask scheduledTask;
         private volatile boolean finished;
+    }
+
+    private record ChunkKey(UUID worldId, int x, int z) {
+
+        private static ChunkKey from(Chunk chunk) {
+            return new ChunkKey(chunk.getWorld().getUID(), chunk.getX(), chunk.getZ());
+        }
     }
 
     public static void updateEntityInventories(Entity entity) {
