@@ -244,6 +244,8 @@ public class ItemUpdater implements Listener {
 
         final int[] index = {0};
         final StartupScanTask task = new StartupScanTask();
+        // The timer may theoretically finish before its handle is registered on non-standard schedulers.
+        // registerStartupEntityScanTask checks task.finished after assigning the handle and cancels it in that case.
         SchedulerUtil.ScheduledTask scheduledTask = SchedulerUtil.runTaskTimer(1L, 1L, () -> {
             try {
                 int batchEnd = Math.min(index[0] + STARTUP_ENTITY_BATCH_SIZE, entities.size());

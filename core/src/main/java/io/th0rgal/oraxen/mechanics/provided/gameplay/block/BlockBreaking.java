@@ -78,6 +78,10 @@ public class BlockBreaking {
             if (!(entry instanceof Map<?, ?> map)) continue;
 
             boolean fallback = map.containsKey("else");
+            boolean hasMatchers = map.containsKey("when");
+            if (!fallback && !hasMatchers) {
+                Logs.logWarning("Block mechanic " + sourceID + " has a breaking rule without 'when' or 'else'; the rule will never match.");
+            }
             if (fallback && seenFallback) {
                 Logs.logWarning("Block mechanic " + sourceID + " has multiple 'else' breaking rules; only the first fallback rule will be used.");
             }
