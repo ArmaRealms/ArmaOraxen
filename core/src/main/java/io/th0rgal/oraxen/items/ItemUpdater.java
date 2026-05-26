@@ -431,6 +431,7 @@ public class ItemUpdater implements Listener {
     }
 
     public static void updateInventory(Inventory inventory) {
+        if (inventory == null) return;
         for (int i = 0; i < inventory.getSize(); i++) {
             ItemStack oldItem = inventory.getItem(i);
             ItemStack newItem = updateItem(oldItem);

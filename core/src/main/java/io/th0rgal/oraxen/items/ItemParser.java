@@ -48,6 +48,8 @@ import java.util.function.Function;
 
 public class ItemParser {
 
+    private static final Set<String> LEGACY_BLOCK_MECHANIC_IDS = Set.of("noteblock", "stringblock", "chorusblock", "shaped_block");
+
     public static final Map<String, ModelData> MODEL_DATAS_BY_ID = new HashMap<>();
 
     private final OraxenMeta oraxenMeta;
@@ -679,8 +681,12 @@ public class ItemParser {
 
         for (final String mechanicID : mechanicsSection.getKeys(false)) {
             final MechanicFactory factory = MechanicsManager.getMechanicFactory(mechanicID);
-            if (factory == null)
+            if (factory == null) {
+                if (LEGACY_BLOCK_MECHANIC_IDS.contains(mechanicID.toLowerCase(Locale.ROOT)))
+                    Logs.logWarning("Item " + section.getName() + " uses legacy Mechanics." + mechanicID
+                            + "; migrate it to Mechanics.block or this mechanic will be ignored.");
                 continue;
+            }
 
             final ConfigurationSection mechanicSection = OraxenYaml.getConfigurationSection(mechanicsSection, mechanicID);
             if (mechanicSection == null)

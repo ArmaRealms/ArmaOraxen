@@ -37,7 +37,8 @@ public class RecipesView {
 
         // Check if last page
         final boolean lastPage = filteredRecipes.size() - 1 == currentPage;
-        gui.setItem(1, 5, new GuiItem(currentRecipe.getResult()));
+        final ItemStack result = currentRecipe.getResult();
+        if (result != null) gui.setItem(1, 5, new GuiItem(result));
 
         for (int i = 0; i < currentRecipe.getIngredients().size(); i++) {
             final ItemStack itemStack = currentRecipe.getIngredients().get(i);
