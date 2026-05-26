@@ -21,7 +21,8 @@ public class ShapelessLoader extends RecipeLoader {
             ConfigurationSection itemSection = ingredientsSection.getConfigurationSection(ingredientLetter);
             if (itemSection == null) continue;
             RecipeChoice ingredient = getRecipeChoice(itemSection);
-            if (ingredient == null) continue;
+            if (ingredient == null)
+                throw new IllegalArgumentException("Recipe " + getRecipeName() + " has invalid ingredient: " + ingredientLetter);
             for (int i = 0; i < itemSection.getInt("amount"); i++)
                 recipe.addIngredient(ingredient);
         }

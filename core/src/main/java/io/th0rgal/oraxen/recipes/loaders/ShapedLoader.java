@@ -24,7 +24,8 @@ public class ShapedLoader extends RecipeLoader {
             ConfigurationSection itemSection = ingredientsSection.getConfigurationSection(ingredientLetter);
             if (itemSection  == null) continue;
             RecipeChoice recipeChoice = getRecipeChoice(itemSection);
-            if (recipeChoice == null) continue;
+            if (recipeChoice == null)
+                throw new IllegalArgumentException("Recipe " + getRecipeName() + " has invalid ingredient: " + ingredientLetter);
             recipe.setIngredient(ingredientLetter.charAt(0), recipeChoice);
         }
         addToWhitelistedRecipes(recipe);
