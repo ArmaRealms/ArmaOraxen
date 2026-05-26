@@ -81,6 +81,7 @@ public class ItemUpdater implements Listener {
     private static SchedulerUtil.ScheduledTask tileEntityChunkQueueTask;
 
     public ItemUpdater() {
+        resetQueuedTasks();
         if (!Settings.UPDATE_ITEMS.toBool()) return;
         SchedulerUtil.runTaskLater(OraxenPlugin.get(), 2L, ItemUpdater::updateLoadedContents);
     }
@@ -355,6 +356,28 @@ public class ItemUpdater implements Listener {
 
     private static void cancelTask(SchedulerUtil.ScheduledTask task) {
         if (task != null) task.cancel();
+    }
+
+    public static void resetQueuedTasks() {
+        SchedulerUtil.ScheduledTask entityTask;
+        SchedulerUtil.ScheduledTask chunkTask;
+        synchronized (STARTUP_SCAN_LOCK) {
+            entityTask = startupEntityScanTask;
+            chunkTask = startupChunkScanTask;
+            startupEntityScanTask = null;
+            startupChunkScanTask = null;
+        }
+        cancelTask(entityTask);
+        cancelTask(chunkTask);
+
+        SchedulerUtil.ScheduledTask tileEntityTask;
+        synchronized (TILE_ENTITY_CHUNK_QUEUE_LOCK) {
+            tileEntityTask = tileEntityChunkQueueTask;
+            tileEntityChunkQueueTask = null;
+            pendingTileEntityChunks.clear();
+            pendingTileEntityChunkKeys.clear();
+        }
+        cancelTask(tileEntityTask);
     }
 
     private static void updateLoadedContents() {

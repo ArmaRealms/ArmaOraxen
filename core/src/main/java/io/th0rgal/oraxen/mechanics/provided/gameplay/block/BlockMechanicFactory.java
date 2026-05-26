@@ -2,6 +2,7 @@ package io.th0rgal.oraxen.mechanics.provided.gameplay.block;
 
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicConfigProperty;
+import io.th0rgal.oraxen.items.ItemUpdater;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
 import io.th0rgal.oraxen.mechanics.MechanicsManager;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.chorusblock.ChorusBlockMechanicFactory;
@@ -49,6 +50,7 @@ public class BlockMechanicFactory extends MechanicFactory {
 
     @Override
     public void onUnregister() {
+        ItemUpdater.resetQueuedTasks();
         if (instance == this) instance = null;
         NoteBlockMechanicFactory.clearInstance(noteBlockFactory);
         StringBlockMechanicFactory.clearInstance(stringBlockFactory);

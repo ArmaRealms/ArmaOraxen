@@ -168,6 +168,10 @@ public class Loot {
     /**
      * Drops this loot without a tool context. Loot entries that require Silk Touch are skipped,
      * matching vanilla behavior when no harvesting tool is available.
+     * <p>
+     * Behavior change from pre-1.215.0: this overload now suppresses {@code silk-touch: true}
+     * loots when called without a harvesting tool. Pass an explicit tool to
+     * {@link #dropNaturally(Location, int, ItemStack)} when tool-sensitive drops are needed.
      */
     public void dropNaturally(Location location, int amountMultiplier) {
         dropNaturally(location, amountMultiplier, null);
