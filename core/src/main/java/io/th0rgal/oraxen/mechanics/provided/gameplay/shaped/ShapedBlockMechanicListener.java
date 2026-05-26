@@ -577,7 +577,7 @@ public class ShapedBlockMechanicListener implements Listener {
                                         ShapedBlockMechanic shapedMechanic, Block clickedBlock,
                                         BlockFace face, Block targetBlock) {
         // Check if clicking on existing slab of same type to make double slab
-        if (clickedBlock.getType() == shapedMechanic.getPlacedMaterial()) {
+        if (clickedBlock.getType() == shapedMechanic.getPlacedMaterial() && getMechanicFromBlock(clickedBlock) == shapedMechanic) {
             BlockData data = clickedBlock.getBlockData();
             if (data instanceof Slab slab) {
                 if (slab.getType() != Slab.Type.DOUBLE) {

@@ -1,5 +1,6 @@
 package io.th0rgal.oraxen.pack.generation;
 
+import io.th0rgal.oraxen.utils.HashUtils;
 import io.th0rgal.oraxen.utils.MinecraftVersion;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -246,10 +247,6 @@ class MultiVersionPackGeneratorTest {
     }
 
     private String bytesToHex(byte[] bytes) {
-        StringBuilder hex = new StringBuilder(bytes.length * 2);
-        for (byte b : bytes) {
-            hex.append(String.format("%02x", b));
-        }
-        return hex.toString();
+        return HashUtils.bytesToHex(bytes);
     }
 }
