@@ -62,7 +62,7 @@ public abstract class RecipeLoader {
     protected ItemStack getValidResult() {
         ItemStack result = getResult();
         if (result == null || result.isEmpty())
-            throw new IllegalArgumentException("Recipe result is missing or invalid");
+            throw new IllegalArgumentException("Recipe '" + section.getName() + "' result is missing or invalid");
         return result;
     }
 

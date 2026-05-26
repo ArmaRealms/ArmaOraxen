@@ -334,7 +334,7 @@ public abstract class BreakerSystem {
             case NOTE_BLOCK -> sounds.hasHitSound() ? sounds.getHitSound() : "required.wood.hit";
             case TRIPWIRE -> sounds.hasHitSound() ? sounds.getHitSound() : "block.tripwire.detach";
             case BARRIER -> sounds.hasHitSound() ? sounds.getHitSound() : "required.stone.hit";
-            default -> block.getBlockData().getSoundGroup().getHitSound().getKey().toString();
+            default -> sounds.hasHitSound() ? sounds.getHitSound() : block.getBlockData().getSoundGroup().getHitSound().getKey().toString();
         };
     }
 }
