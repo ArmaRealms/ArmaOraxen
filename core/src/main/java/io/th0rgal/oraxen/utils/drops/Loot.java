@@ -165,6 +165,10 @@ public class Loot {
         return amount.getUpperBound();
     }
 
+    /**
+     * Drops this loot without a tool context. Loot entries that require Silk Touch are skipped,
+     * matching vanilla behavior when no harvesting tool is available.
+     */
     public void dropNaturally(Location location, int amountMultiplier) {
         dropNaturally(location, amountMultiplier, null);
     }

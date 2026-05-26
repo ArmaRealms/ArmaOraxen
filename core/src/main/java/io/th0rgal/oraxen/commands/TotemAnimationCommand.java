@@ -146,21 +146,18 @@ public class TotemAnimationCommand {
         synchronized (PACKET_EVENTS_INIT_LOCK) {
             if (packetEventsMethodsInitialized) return hasPacketEventsMethods();
 
-            try {
-                Class<?> packetEventsClass = Class.forName("com.github.retrooper.packetevents.PacketEvents");
-                Class<?> packetEventsAPIClass = Class.forName("com.github.retrooper.packetevents.PacketEventsAPI");
-                Class<?> playerManagerClass = Class.forName("com.github.retrooper.packetevents.manager.player.PlayerManager");
-                Class<?> packetWrapperClass = Class.forName("com.github.retrooper.packetevents.wrapper.PacketWrapper");
-                Class<?> entityStatusPacketClass = Class.forName("com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityStatus");
+            Class<?> packetEventsClass = Class.forName("com.github.retrooper.packetevents.PacketEvents");
+            Class<?> packetEventsAPIClass = Class.forName("com.github.retrooper.packetevents.PacketEventsAPI");
+            Class<?> playerManagerClass = Class.forName("com.github.retrooper.packetevents.manager.player.PlayerManager");
+            Class<?> packetWrapperClass = Class.forName("com.github.retrooper.packetevents.wrapper.PacketWrapper");
+            Class<?> entityStatusPacketClass = Class.forName("com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityStatus");
 
-                cachedPacketEventsGetAPIMethod = packetEventsClass.getMethod("getAPI");
-                cachedPacketEventsGetPlayerManagerMethod = packetEventsAPIClass.getMethod("getPlayerManager");
-                cachedPacketEventsSendPacketMethod = playerManagerClass.getMethod("sendPacket", Object.class, packetWrapperClass);
-                cachedEntityStatusPacketConstructor = entityStatusPacketClass.getConstructor(int.class, int.class);
-                return true;
-            } finally {
-                packetEventsMethodsInitialized = true;
-            }
+            cachedPacketEventsGetAPIMethod = packetEventsClass.getMethod("getAPI");
+            cachedPacketEventsGetPlayerManagerMethod = packetEventsAPIClass.getMethod("getPlayerManager");
+            cachedPacketEventsSendPacketMethod = playerManagerClass.getMethod("sendPacket", Object.class, packetWrapperClass);
+            cachedEntityStatusPacketConstructor = entityStatusPacketClass.getConstructor(int.class, int.class);
+            packetEventsMethodsInitialized = true;
+            return true;
         }
     }
 
@@ -247,14 +244,11 @@ public class TotemAnimationCommand {
         synchronized (DEATH_PROTECTION_INIT_LOCK) {
             if (deathProtectionTypeInitialized) return cachedDeathProtectionType;
 
-            try {
-                Field deathProtectionType = Class.forName("io.papermc.paper.datacomponent.DataComponentTypes")
-                        .getField("DEATH_PROTECTION");
-                cachedDeathProtectionType = deathProtectionType.get(null);
-                return cachedDeathProtectionType;
-            } finally {
-                deathProtectionTypeInitialized = true;
-            }
+            Field deathProtectionType = Class.forName("io.papermc.paper.datacomponent.DataComponentTypes")
+                    .getField("DEATH_PROTECTION");
+            cachedDeathProtectionType = deathProtectionType.get(null);
+            deathProtectionTypeInitialized = true;
+            return cachedDeathProtectionType;
         }
     }
 
@@ -264,13 +258,10 @@ public class TotemAnimationCommand {
         synchronized (DEATH_PROTECTION_INIT_LOCK) {
             if (deathProtectionMethodInitialized) return cachedDeathProtectionMethod;
 
-            try {
-                cachedDeathProtectionMethod = Class.forName("io.papermc.paper.datacomponent.item.DeathProtection")
-                        .getMethod("deathProtection");
-                return cachedDeathProtectionMethod;
-            } finally {
-                deathProtectionMethodInitialized = true;
-            }
+            cachedDeathProtectionMethod = Class.forName("io.papermc.paper.datacomponent.item.DeathProtection")
+                    .getMethod("deathProtection");
+            deathProtectionMethodInitialized = true;
+            return cachedDeathProtectionMethod;
         }
     }
 
@@ -280,14 +271,11 @@ public class TotemAnimationCommand {
         synchronized (DEATH_PROTECTION_INIT_LOCK) {
             if (setDataMethodInitialized) return cachedSetDataMethod;
 
-            try {
-                Class<?> valuedDataComponentTypeClass = getValuedDataComponentTypeClass();
-                if (valuedDataComponentTypeClass == null) return null;
-                cachedSetDataMethod = ItemStack.class.getMethod("setData", valuedDataComponentTypeClass, Object.class);
-                return cachedSetDataMethod;
-            } finally {
-                setDataMethodInitialized = true;
-            }
+            Class<?> valuedDataComponentTypeClass = getValuedDataComponentTypeClass();
+            if (valuedDataComponentTypeClass == null) return null;
+            cachedSetDataMethod = ItemStack.class.getMethod("setData", valuedDataComponentTypeClass, Object.class);
+            setDataMethodInitialized = true;
+            return cachedSetDataMethod;
         }
     }
 
@@ -297,14 +285,11 @@ public class TotemAnimationCommand {
         synchronized (DEATH_PROTECTION_INIT_LOCK) {
             if (hasDataMethodInitialized) return cachedHasDataMethod;
 
-            try {
-                Class<?> dataComponentTypeClass = getDataComponentTypeClass();
-                if (dataComponentTypeClass == null) return null;
-                cachedHasDataMethod = ItemStack.class.getMethod("hasData", dataComponentTypeClass);
-                return cachedHasDataMethod;
-            } finally {
-                hasDataMethodInitialized = true;
-            }
+            Class<?> dataComponentTypeClass = getDataComponentTypeClass();
+            if (dataComponentTypeClass == null) return null;
+            cachedHasDataMethod = ItemStack.class.getMethod("hasData", dataComponentTypeClass);
+            hasDataMethodInitialized = true;
+            return cachedHasDataMethod;
         }
     }
 
@@ -314,12 +299,9 @@ public class TotemAnimationCommand {
         synchronized (DEATH_PROTECTION_INIT_LOCK) {
             if (dataComponentTypeClassInitialized) return cachedDataComponentTypeClass;
 
-            try {
-                cachedDataComponentTypeClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType");
-                return cachedDataComponentTypeClass;
-            } finally {
-                dataComponentTypeClassInitialized = true;
-            }
+            cachedDataComponentTypeClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType");
+            dataComponentTypeClassInitialized = true;
+            return cachedDataComponentTypeClass;
         }
     }
 
@@ -329,12 +311,9 @@ public class TotemAnimationCommand {
         synchronized (DEATH_PROTECTION_INIT_LOCK) {
             if (valuedDataComponentTypeClassInitialized) return cachedValuedDataComponentTypeClass;
 
-            try {
-                cachedValuedDataComponentTypeClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType$Valued");
-                return cachedValuedDataComponentTypeClass;
-            } finally {
-                valuedDataComponentTypeClassInitialized = true;
-            }
+            cachedValuedDataComponentTypeClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType$Valued");
+            valuedDataComponentTypeClassInitialized = true;
+            return cachedValuedDataComponentTypeClass;
         }
     }
 }
