@@ -29,7 +29,6 @@ public class BlockMechanicFactory extends MechanicFactory {
 
     public BlockMechanicFactory(ConfigurationSection section) {
         super(section);
-        instance = this;
         normalizeFactoryAliases(section);
         toolTypes = section.getStringList("tool_types");
 
@@ -37,6 +36,7 @@ public class BlockMechanicFactory extends MechanicFactory {
         stringBlockFactory = new StringBlockMechanicFactory(section, true);
         chorusBlockFactory = new ChorusBlockMechanicFactory(section, true);
         shapedBlockFactory = new ShapedBlockMechanicFactory(section, true);
+        instance = this;
     }
 
     public static BlockMechanicFactory getInstance() {

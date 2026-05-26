@@ -184,7 +184,7 @@ public class Loot {
         if (baseStack == null) return null;
 
         ItemStack stack = baseStack.clone();
-        int dropAmount = ThreadLocalRandom.current().nextInt(amount.getLowerBound(), amount.getUpperBound() + 1);
+        int dropAmount = Math.max(1, ThreadLocalRandom.current().nextInt(amount.getLowerBound(), amount.getUpperBound() + 1));
         stack.setAmount(stack.getAmount() * amountMultiplier * applyFortune(dropAmount, tool));
         return ItemUpdater.updateItem(stack);
     }
