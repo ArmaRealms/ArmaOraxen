@@ -173,8 +173,9 @@ public class TotemAnimationCommand {
                 cachedPacketEventsGetPlayerManagerMethod = null;
                 cachedPacketEventsSendPacketMethod = null;
                 cachedEntityStatusPacketConstructor = null;
-                packetEventsMethodsInitialized = false;
                 throw e;
+            } finally {
+                packetEventsMethodsInitialized = true;
             }
         }
     }
