@@ -204,7 +204,7 @@ public class ItemUpdater implements Listener {
     public static void updateLoadedEntityContents() {
         if (!Settings.UPDATE_ITEMS.toBool() || !Settings.UPDATE_ENTITY_CONTENTS.toBool()) return;
         if (VersionUtil.isFoliaServer()) {
-            Logs.logWarning("Skipping loaded entity item updates on Folia; entities are updated when they load instead.");
+            Logs.debug("Skipping loaded entity item updates on Folia; entities are updated when they load instead.");
             return;
         }
 
@@ -223,7 +223,7 @@ public class ItemUpdater implements Listener {
     public static void updateLoadedTileEntityContents() {
         if (!Settings.UPDATE_ITEMS.toBool() || !Settings.UPDATE_TILE_ENTITY_CONTENTS.toBool()) return;
         if (VersionUtil.isFoliaServer()) {
-            Logs.logWarning("Skipping loaded tile entity item updates on Folia; tile entities are updated when their chunks load instead.");
+            Logs.debug("Skipping loaded tile entity item updates on Folia; tile entities are updated when their chunks load instead.");
             return;
         }
 

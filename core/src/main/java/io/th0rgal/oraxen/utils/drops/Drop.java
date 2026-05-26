@@ -233,8 +233,9 @@ public class Drop {
         ItemStack itemInHand = player.getInventory().getItemInMainHand();
         int fortuneMultiplier = getFortuneMultiplier(itemInHand);
         List<Loot> droppedLoots = new ArrayList<>();
+        if (!canDrop(itemInHand)) return droppedLoots;
         for (Loot loot : loots) {
-            if (!canDrop(itemInHand) || !loot.canDropWith(itemInHand)) continue;
+            if (!loot.canDropWith(itemInHand)) continue;
 
             ItemStack item = loot.getItem(fortuneMultiplier, itemInHand);
             if (item == null) continue;

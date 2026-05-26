@@ -73,10 +73,14 @@ public class BlockBreaking {
             return List.of();
 
         List<Rule> parsedRules = new ArrayList<>();
+        boolean seenFallback = false;
         for (Object entry : ruleConfigs) {
             if (!(entry instanceof Map<?, ?> map)) continue;
 
             boolean fallback = map.containsKey("else");
+            if (fallback && seenFallback) {
+                Logs.logWarning("Block mechanic " + sourceID + " has multiple 'else' breaking rules; only the first fallback rule will be used.");
+            }
             if (fallback && map.containsKey("when")) {
                 Logs.logWarning("Block mechanic " + sourceID + " has a breaking rule with both 'when' and 'else' keys; 'when' matchers will be ignored and the rule will act as a catch-all fallback.");
             }
@@ -84,6 +88,7 @@ public class BlockBreaking {
             double hardness = parseDouble(map.get("hardness"), 1.0D, sourceID);
             Drop drop = parseDrop(map.get("drops"), sourceID);
             parsedRules.add(new Rule(matchers, fallback, hardness, drop));
+            if (fallback) seenFallback = true;
         }
 
         return List.copyOf(parsedRules);
