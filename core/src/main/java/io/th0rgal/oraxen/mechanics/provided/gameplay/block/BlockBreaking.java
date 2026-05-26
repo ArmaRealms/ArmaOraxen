@@ -20,11 +20,6 @@ import java.util.Map;
 
 public class BlockBreaking {
 
-    private static final Tag<Material> TAG_MINEABLE_PICKAXE = mineableTag("mineable/pickaxe");
-    private static final Tag<Material> TAG_MINEABLE_AXE = mineableTag("mineable/axe");
-    private static final Tag<Material> TAG_MINEABLE_SHOVEL = mineableTag("mineable/shovel");
-    private static final Tag<Material> TAG_MINEABLE_HOE = mineableTag("mineable/hoe");
-
     private final List<Rule> rules;
 
     public BlockBreaking(ConfigurationSection section, String sourceID) {
@@ -259,13 +254,7 @@ public class BlockBreaking {
     }
 
     private static boolean isMineable(Material blockType, String tagName) {
-        Tag<Material> tag = switch (tagName) {
-            case "mineable/pickaxe" -> TAG_MINEABLE_PICKAXE;
-            case "mineable/axe" -> TAG_MINEABLE_AXE;
-            case "mineable/shovel" -> TAG_MINEABLE_SHOVEL;
-            case "mineable/hoe" -> TAG_MINEABLE_HOE;
-            default -> mineableTag(tagName);
-        };
+        Tag<Material> tag = mineableTag(tagName);
         return tag != null && tag.isTagged(blockType);
     }
 

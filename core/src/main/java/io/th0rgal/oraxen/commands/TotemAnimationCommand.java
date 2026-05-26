@@ -173,7 +173,6 @@ public class TotemAnimationCommand {
                     cachedEntityStatusPacketConstructor = entityStatusPacketClass.getConstructor(int.class, byte.class);
                     cachedEntityStatusPacketUsesByte = true;
                 }
-                packetEventsMethodsInitialized = true;
                 return true;
             } catch (ReflectiveOperationException | LinkageError e) {
                 cachedPacketEventsGetAPIMethod = null;
