@@ -370,7 +370,7 @@ public class ItemUpdater implements Listener {
             if (!Objects.equals(oldItem, newItem)) item.setItemStack(newItem);
         }
         if (entity instanceof InventoryHolder holder) updateInventory(holder.getInventory());
-        else if (entity instanceof LivingEntity livingEntity) updateEquipment(livingEntity);
+        if (entity instanceof LivingEntity livingEntity) updateEquipment(livingEntity);
     }
 
     private static boolean shouldUpdateEntityContents(Entity entity) {
