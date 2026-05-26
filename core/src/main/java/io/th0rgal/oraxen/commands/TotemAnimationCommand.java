@@ -1,5 +1,7 @@
 package io.th0rgal.oraxen.commands;
 
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityStatus;
 import dev.jorel.commandapi.CommandAPICommand;
 import dev.jorel.commandapi.arguments.ArgumentSuggestions;
 import dev.jorel.commandapi.arguments.EntitySelectorArgument;
@@ -7,6 +9,7 @@ import dev.jorel.commandapi.arguments.TextArgument;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.config.Message;
 import io.th0rgal.oraxen.items.ItemBuilder;
+import io.th0rgal.oraxen.packets.PacketAdapter;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.logs.Logs;
@@ -110,6 +113,8 @@ public class TotemAnimationCommand {
     private void sendTotemStatus(Player target) {
         if (VersionUtil.isPaperServer()) {
             target.sendEntityEffect(EntityEffect.PROTECTED_FROM_DEATH, target);
+        } else if (PacketAdapter.isPacketEventsEnabled()) {
+            PacketEvents.getAPI().getPlayerManager().sendPacket(target, new WrapperPlayServerEntityStatus(target.getEntityId(), 35));
         } else {
             target.playEffect(EntityEffect.TOTEM_RESURRECT);
         }
