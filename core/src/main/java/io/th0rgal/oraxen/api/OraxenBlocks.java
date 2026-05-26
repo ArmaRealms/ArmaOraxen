@@ -122,7 +122,10 @@ public class OraxenBlocks {
      * @return true if the itemID is an instance of an OraxenBlock, otherwise false
      */
     public static boolean isOraxenBlock(String itemId) {
-        return OraxenItems.hasMechanic(itemId, "block");
+        return OraxenItems.hasMechanic(itemId, "block")
+                || isOraxenNoteBlock(itemId)
+                || isOraxenStringBlock(itemId)
+                || isOraxenChorusBlock(itemId);
     }
 
     /**
