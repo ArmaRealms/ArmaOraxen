@@ -26,11 +26,13 @@ public class RecipesView {
 
     public Gui create(final int page, final List<CustomRecipe> filteredRecipes) {
         final Gui gui = Gui.gui().rows(6).title(AdventureUtils.LEGACY_SERIALIZER.deserialize(menuTexture)).create();
+        if (filteredRecipes.isEmpty()) return gui;
 
-        final CustomRecipe currentRecipe = filteredRecipes.get(page);
+        final int currentPage = Math.max(0, Math.min(page, filteredRecipes.size() - 1));
+        final CustomRecipe currentRecipe = filteredRecipes.get(currentPage);
 
         // Check if last page
-        final boolean lastPage = filteredRecipes.size() - 1 == page;
+        final boolean lastPage = filteredRecipes.size() - 1 == currentPage;
         gui.setItem(1, 5, new GuiItem(currentRecipe.getResult()));
 
         for (int i = 0; i < currentRecipe.getIngredients().size(); i++) {
@@ -45,19 +47,19 @@ public class RecipesView {
                 (event -> event.getWhoClicked().closeInventory())));
 
         // Previous Page button
-        if (page > 0)
+        if (currentPage > 0)
             gui.setItem(4, 2, new GuiItem(iconOrDefault("arrow_previous_icon", Material.ARROW)
-                    .setDisplayName(pageName(page))
+                    .setDisplayName(pageName(currentPage))
                     .build(),
-                    event -> create(page - 1,
+                    event -> create(currentPage - 1,
                             filteredRecipes).open(event.getWhoClicked())));
 
         // Next page button
         if (!lastPage)
             gui.setItem(4, 8, new GuiItem(iconOrDefault("arrow_next_icon", Material.ARROW)
-                    .setDisplayName(pageName(page + 2))
+                    .setDisplayName(pageName(currentPage + 2))
                     .build(),
-                    event -> create(page + 1, filteredRecipes)
+                    event -> create(currentPage + 1, filteredRecipes)
                             .open(event.getWhoClicked())));
 
         gui.setDefaultClickAction(event -> event.setCancelled(true));

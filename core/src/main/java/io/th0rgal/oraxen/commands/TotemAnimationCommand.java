@@ -31,6 +31,12 @@ public class TotemAnimationCommand {
     private static volatile Method cachedSetDataMethod;
     private static volatile Method cachedHasDataMethod;
     private static volatile Method cachedDeathProtectionMethod;
+    private static volatile boolean deathProtectionTypeInitialized;
+    private static volatile boolean dataComponentTypeClassInitialized;
+    private static volatile boolean valuedDataComponentTypeClassInitialized;
+    private static volatile boolean setDataMethodInitialized;
+    private static volatile boolean hasDataMethodInitialized;
+    private static volatile boolean deathProtectionMethodInitialized;
     private static volatile boolean loggedDeathProtectionFailure;
 
     CommandAPICommand getTotemAnimationCommand() {
@@ -116,6 +122,8 @@ public class TotemAnimationCommand {
 
         try {
             Object deathProtectionType = getDeathProtectionType();
+            if (deathProtectionType == null) return itemStack;
+
             Object deathProtection = getDeathProtectionMethod().invoke(null);
             getSetDataMethod().invoke(itemStack, deathProtectionType, deathProtection);
         } catch (ReflectiveOperationException | LinkageError e) {
@@ -159,72 +167,78 @@ public class TotemAnimationCommand {
     }
 
     private static Object getDeathProtectionType() throws ReflectiveOperationException {
-        if (cachedDeathProtectionType != null) return cachedDeathProtectionType;
+        if (deathProtectionTypeInitialized) return cachedDeathProtectionType;
 
         synchronized (DEATH_PROTECTION_INIT_LOCK) {
-            if (cachedDeathProtectionType != null) return cachedDeathProtectionType;
+            if (deathProtectionTypeInitialized) return cachedDeathProtectionType;
 
             Field deathProtectionType = Class.forName("io.papermc.paper.datacomponent.DataComponentTypes")
                     .getField("DEATH_PROTECTION");
             cachedDeathProtectionType = deathProtectionType.get(null);
+            deathProtectionTypeInitialized = true;
             return cachedDeathProtectionType;
         }
     }
 
     private static Method getDeathProtectionMethod() throws ReflectiveOperationException {
-        if (cachedDeathProtectionMethod != null) return cachedDeathProtectionMethod;
+        if (deathProtectionMethodInitialized) return cachedDeathProtectionMethod;
 
         synchronized (DEATH_PROTECTION_INIT_LOCK) {
-            if (cachedDeathProtectionMethod != null) return cachedDeathProtectionMethod;
+            if (deathProtectionMethodInitialized) return cachedDeathProtectionMethod;
 
             cachedDeathProtectionMethod = Class.forName("io.papermc.paper.datacomponent.item.DeathProtection")
                     .getMethod("deathProtection");
+            deathProtectionMethodInitialized = true;
             return cachedDeathProtectionMethod;
         }
     }
 
     private static Method getSetDataMethod() throws ReflectiveOperationException {
-        if (cachedSetDataMethod != null) return cachedSetDataMethod;
+        if (setDataMethodInitialized) return cachedSetDataMethod;
 
         synchronized (DEATH_PROTECTION_INIT_LOCK) {
-            if (cachedSetDataMethod != null) return cachedSetDataMethod;
+            if (setDataMethodInitialized) return cachedSetDataMethod;
 
             Class<?> valuedDataComponentTypeClass = getValuedDataComponentTypeClass();
             cachedSetDataMethod = ItemStack.class.getMethod("setData", valuedDataComponentTypeClass, Object.class);
+            setDataMethodInitialized = true;
             return cachedSetDataMethod;
         }
     }
 
     private static Method getHasDataMethod() throws ReflectiveOperationException {
-        if (cachedHasDataMethod != null) return cachedHasDataMethod;
+        if (hasDataMethodInitialized) return cachedHasDataMethod;
 
         synchronized (DEATH_PROTECTION_INIT_LOCK) {
-            if (cachedHasDataMethod != null) return cachedHasDataMethod;
+            if (hasDataMethodInitialized) return cachedHasDataMethod;
 
             Class<?> dataComponentTypeClass = getDataComponentTypeClass();
             cachedHasDataMethod = ItemStack.class.getMethod("hasData", dataComponentTypeClass);
+            hasDataMethodInitialized = true;
             return cachedHasDataMethod;
         }
     }
 
     private static Class<?> getDataComponentTypeClass() throws ClassNotFoundException {
-        if (cachedDataComponentTypeClass != null) return cachedDataComponentTypeClass;
+        if (dataComponentTypeClassInitialized) return cachedDataComponentTypeClass;
 
         synchronized (DEATH_PROTECTION_INIT_LOCK) {
-            if (cachedDataComponentTypeClass != null) return cachedDataComponentTypeClass;
+            if (dataComponentTypeClassInitialized) return cachedDataComponentTypeClass;
 
             cachedDataComponentTypeClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType");
+            dataComponentTypeClassInitialized = true;
             return cachedDataComponentTypeClass;
         }
     }
 
     private static Class<?> getValuedDataComponentTypeClass() throws ClassNotFoundException {
-        if (cachedValuedDataComponentTypeClass != null) return cachedValuedDataComponentTypeClass;
+        if (valuedDataComponentTypeClassInitialized) return cachedValuedDataComponentTypeClass;
 
         synchronized (DEATH_PROTECTION_INIT_LOCK) {
-            if (cachedValuedDataComponentTypeClass != null) return cachedValuedDataComponentTypeClass;
+            if (valuedDataComponentTypeClassInitialized) return cachedValuedDataComponentTypeClass;
 
             cachedValuedDataComponentTypeClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType$Valued");
+            valuedDataComponentTypeClassInitialized = true;
             return cachedValuedDataComponentTypeClass;
         }
     }

@@ -2,6 +2,8 @@ package io.th0rgal.oraxen.painting;
 
 import com.google.gson.JsonObject;
 import io.th0rgal.oraxen.utils.AdventureUtils;
+import io.th0rgal.oraxen.utils.logs.Logs;
+import net.kyori.adventure.key.InvalidKeyException;
 import net.kyori.adventure.key.Key;
 import org.bukkit.configuration.ConfigurationSection;
 import org.jetbrains.annotations.NotNull;
@@ -57,7 +59,33 @@ public record CustomPainting(
 
     private static Key parseKey(String value) {
         String normalized = value.toLowerCase(Locale.ROOT);
-        return normalized.contains(":") ? Key.key(normalized) : Key.key("oraxen", normalized);
+        try {
+            return normalized.contains(":") ? Key.key(normalized) : Key.key("oraxen", normalized);
+        } catch (InvalidKeyException e) {
+            String sanitized = sanitizeKey(normalized);
+            Logs.logWarning("Invalid custom painting key '" + value + "', using sanitized key '" + sanitized + "' instead.");
+            return sanitized.contains(":") ? Key.key(sanitized) : Key.key("oraxen", sanitized);
+        }
+    }
+
+    private static String sanitizeKey(String value) {
+        if (value.isBlank()) return "painting";
+        if (!value.contains(":")) return sanitizePath(value);
+
+        String[] parts = value.split(":", 2);
+        String namespace = sanitizeNamespace(parts[0]);
+        String path = parts.length > 1 ? sanitizePath(parts[1].replace(':', '_')) : "painting";
+        return namespace + ":" + path;
+    }
+
+    private static String sanitizeNamespace(String value) {
+        String sanitized = value.replaceAll("[^a-z0-9_.-]", "_");
+        return sanitized.isBlank() ? "oraxen" : sanitized;
+    }
+
+    private static String sanitizePath(String value) {
+        String sanitized = value.replaceAll("[^a-z0-9_./-]", "_");
+        return sanitized.isBlank() ? "painting" : sanitized;
     }
 
     @Nullable
