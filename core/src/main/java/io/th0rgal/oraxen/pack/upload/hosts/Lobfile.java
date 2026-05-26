@@ -84,7 +84,13 @@ public class Lobfile implements HostingProvider {
             request.setEntity(createUploadEntity(resourcePack, uploadPackName, packHashes.sha256()));
 
             try (CloseableHttpResponse response = httpClient.execute(request)) {
-                String responseString = EntityUtils.toString(response.getEntity());
+                HttpEntity responseEntity = response.getEntity();
+                if (responseEntity == null) {
+                    Logs.logError("The resource pack could not be uploaded to Lobfile because the response body was empty.");
+                    return false;
+                }
+
+                String responseString = EntityUtils.toString(responseEntity);
                 JsonObject jsonOutput = parseResponse(responseString);
                 if (jsonOutput == null) return false;
 
@@ -137,6 +143,11 @@ public class Lobfile implements HostingProvider {
     }
 
     private JsonObject parseResponse(String responseString) {
+        if (responseString == null || responseString.isBlank()) {
+            Logs.logError("The resource pack could not be uploaded to Lobfile because the response body was empty.");
+            return null;
+        }
+
         try {
             return JsonParser.parseString(responseString).getAsJsonObject();
         } catch (JsonSyntaxException | IllegalStateException e) {
