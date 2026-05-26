@@ -364,23 +364,33 @@ public class ItemUpdater implements Listener {
 
     private static void queueTileEntityChunkUpdate(Chunk chunk) {
         ChunkKey key = ChunkKey.from(chunk);
+        boolean scheduleTask = false;
         synchronized (TILE_ENTITY_CHUNK_QUEUE_LOCK) {
             if (!pendingTileEntityChunkKeys.add(key)) return;
             pendingTileEntityChunks.add(chunk);
+            scheduleTask = tileEntityChunkQueueTask == null;
+        }
+        if (!scheduleTask) return;
+
+        SchedulerUtil.ScheduledTask scheduledTask = SchedulerUtil.runTaskTimer(1L, 1L, ItemUpdater::processQueuedTileEntityChunks);
+        synchronized (TILE_ENTITY_CHUNK_QUEUE_LOCK) {
             if (tileEntityChunkQueueTask == null) {
-                tileEntityChunkQueueTask = SchedulerUtil.runTaskTimer(1L, 1L, ItemUpdater::processQueuedTileEntityChunks);
+                tileEntityChunkQueueTask = scheduledTask;
+                return;
             }
         }
+        cancelTask(scheduledTask);
     }
 
     private static void processQueuedTileEntityChunks() {
+        SchedulerUtil.ScheduledTask taskToCancel = null;
         for (int i = 0; i < CHUNK_LOAD_TILE_ENTITY_BATCH_SIZE; i++) {
             Chunk chunk;
             synchronized (TILE_ENTITY_CHUNK_QUEUE_LOCK) {
                 chunk = pendingTileEntityChunks.poll();
                 if (chunk == null) {
-                    finishTileEntityChunkQueueTask();
-                    return;
+                    taskToCancel = finishTileEntityChunkQueueTask();
+                    break;
                 }
                 pendingTileEntityChunkKeys.remove(ChunkKey.from(chunk));
             }
@@ -391,14 +401,18 @@ public class ItemUpdater implements Listener {
             });
         }
 
-        synchronized (TILE_ENTITY_CHUNK_QUEUE_LOCK) {
-            if (pendingTileEntityChunks.isEmpty()) finishTileEntityChunkQueueTask();
+        if (taskToCancel == null) {
+            synchronized (TILE_ENTITY_CHUNK_QUEUE_LOCK) {
+                if (pendingTileEntityChunks.isEmpty()) taskToCancel = finishTileEntityChunkQueueTask();
+            }
         }
+        cancelTask(taskToCancel);
     }
 
-    private static void finishTileEntityChunkQueueTask() {
-        cancelTask(tileEntityChunkQueueTask);
+    private static SchedulerUtil.ScheduledTask finishTileEntityChunkQueueTask() {
+        SchedulerUtil.ScheduledTask task = tileEntityChunkQueueTask;
         tileEntityChunkQueueTask = null;
+        return task;
     }
 
     private static Location chunkLocation(Chunk chunk) {

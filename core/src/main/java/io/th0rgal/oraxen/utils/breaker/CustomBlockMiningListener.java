@@ -9,6 +9,7 @@ import io.th0rgal.oraxen.utils.wrappers.AttributeWrapper;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Tag;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
@@ -170,12 +171,53 @@ public class CustomBlockMiningListener implements Listener {
         return nativeHardness * nativeMiningDivisor(tool, block) / fullBlockMiningCost;
     }
 
-    @SuppressWarnings({"deprecation", "removal"})
     private double nativeMiningDivisor(final ItemStack tool, final Block block) {
-        final ItemStack hand = new ItemStack(Material.AIR);
-        return block.isPreferredTool(tool) || block.isValidTool(tool) || block.isValidTool(hand)
-                ? HARVESTABLE_BLOCK_DIVISOR
-                : UNHARVESTABLE_BLOCK_DIVISOR;
+        final Material blockType = block.getType();
+        return canHarvest(blockType, tool) ? HARVESTABLE_BLOCK_DIVISOR : UNHARVESTABLE_BLOCK_DIVISOR;
+    }
+
+    private boolean canHarvest(final Material blockType, final ItemStack tool) {
+        if (!requiresCorrectTool(blockType)) return true;
+        if (tool == null) return false;
+
+        final Material toolType = tool.getType();
+        final String toolName = toolType.name();
+        final String mineableTag = mineableTagName(toolName);
+        return mineableTag != null && isTagged(blockType, mineableTag) && hasRequiredTier(blockType, toolName);
+    }
+
+    private boolean requiresCorrectTool(final Material blockType) {
+        return isTagged(blockType, "needs_stone_tool")
+                || isTagged(blockType, "needs_iron_tool")
+                || isTagged(blockType, "needs_diamond_tool");
+    }
+
+    private boolean hasRequiredTier(final Material blockType, final String toolName) {
+        if (isTagged(blockType, "needs_diamond_tool")) {
+            return toolName.startsWith("DIAMOND_") || toolName.startsWith("NETHERITE_");
+        }
+        if (isTagged(blockType, "needs_iron_tool")) {
+            return toolName.startsWith("IRON_") || toolName.startsWith("DIAMOND_") || toolName.startsWith("NETHERITE_");
+        }
+        if (isTagged(blockType, "needs_stone_tool")) {
+            return toolName.startsWith("STONE_") || toolName.startsWith("IRON_")
+                    || toolName.startsWith("DIAMOND_") || toolName.startsWith("NETHERITE_");
+        }
+        return true;
+    }
+
+    @Nullable
+    private String mineableTagName(final String toolName) {
+        if (toolName.endsWith("_PICKAXE")) return "mineable/pickaxe";
+        if (toolName.endsWith("_AXE")) return "mineable/axe";
+        if (toolName.endsWith("_SHOVEL")) return "mineable/shovel";
+        if (toolName.endsWith("_HOE")) return "mineable/hoe";
+        return null;
+    }
+
+    private boolean isTagged(final Material blockType, final String tagName) {
+        final Tag<Material> tag = org.bukkit.Bukkit.getTag(Tag.REGISTRY_BLOCKS, NamespacedKey.minecraft(tagName), Material.class);
+        return tag != null && tag.isTagged(blockType);
     }
 
     private void addTransientModifier(final Player player, final AttributeModifier modifier) {

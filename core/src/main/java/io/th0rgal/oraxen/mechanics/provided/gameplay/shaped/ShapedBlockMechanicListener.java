@@ -815,6 +815,8 @@ public class ShapedBlockMechanicListener implements Listener {
                     return org.bukkit.block.data.type.Stairs.Shape.INNER_LEFT;
                 } else if (backFacing == rotateClockwise(facing)) {
                     return org.bukkit.block.data.type.Stairs.Shape.INNER_RIGHT;
+                } else {
+                    return org.bukkit.block.data.type.Stairs.Shape.STRAIGHT;
                 }
             }
         }
