@@ -166,9 +166,15 @@ public class TotemAnimationCommand {
                 cachedPacketEventsGetPlayerManagerMethod = packetEventsAPIClass.getMethod("getPlayerManager");
                 cachedPacketEventsSendPacketMethod = playerManagerClass.getMethod("sendPacket", Object.class, packetWrapperClass);
                 cachedEntityStatusPacketConstructor = entityStatusPacketClass.getConstructor(int.class, int.class);
-                return true;
-            } finally {
                 packetEventsMethodsInitialized = true;
+                return true;
+            } catch (ReflectiveOperationException | LinkageError e) {
+                cachedPacketEventsGetAPIMethod = null;
+                cachedPacketEventsGetPlayerManagerMethod = null;
+                cachedPacketEventsSendPacketMethod = null;
+                cachedEntityStatusPacketConstructor = null;
+                packetEventsMethodsInitialized = false;
+                throw e;
             }
         }
     }

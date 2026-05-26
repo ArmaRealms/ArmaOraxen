@@ -76,7 +76,7 @@ public class RecipesView {
     }
 
     private String pageName(int page) {
-        return AdventureUtils.LEGACY_SERIALIZER.serialize(Component.text("Open page " + page, NamedTextColor.YELLOW));
+        return AdventureUtils.LEGACY_SERIALIZER.serialize(Component.text("Page " + page, NamedTextColor.YELLOW));
     }
 
 }
