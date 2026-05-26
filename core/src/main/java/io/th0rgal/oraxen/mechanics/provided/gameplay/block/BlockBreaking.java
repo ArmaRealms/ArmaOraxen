@@ -130,7 +130,7 @@ public class BlockBreaking {
 
             Tag<Material> tag = Bukkit.getTag(Tag.REGISTRY_ITEMS, namespacedKey, Material.class);
             if (tag == null) {
-                logInvalidMatcher(key, sourceID);
+                logInvalidItemTagMatcher(key, sourceID);
                 return null;
             }
 
@@ -148,6 +148,10 @@ public class BlockBreaking {
 
     private void logInvalidMatcher(String key, String sourceID) {
         Logs.logWarning("Invalid breaking.when entry '" + key + "' in block mechanic " + sourceID);
+    }
+
+    private void logInvalidItemTagMatcher(String key, String sourceID) {
+        Logs.logWarning("Invalid breaking.when entry '" + key + "' in block mechanic " + sourceID + "; # tags must be item-registry tags such as #minecraft:axes, not block tags such as #minecraft:needs_stone_tool.");
     }
 
     private NamespacedKey namespacedKey(String key) {

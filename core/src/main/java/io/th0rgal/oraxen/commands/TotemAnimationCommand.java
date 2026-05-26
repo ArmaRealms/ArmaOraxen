@@ -44,6 +44,7 @@ public class TotemAnimationCommand {
     private static volatile Method cachedPacketEventsGetPlayerManagerMethod;
     private static volatile Method cachedPacketEventsSendPacketMethod;
     private static volatile Constructor<?> cachedEntityStatusPacketConstructor;
+    private static volatile boolean cachedEntityStatusPacketUsesByte;
     private static volatile boolean packetEventsMethodsInitialized;
     private static volatile boolean loggedDeathProtectionFailure;
     private static volatile boolean loggedPacketEventsFailure;
@@ -140,7 +141,7 @@ public class TotemAnimationCommand {
             if (!initializePacketEventsMethods()) return false;
             Object packetEventsAPI = cachedPacketEventsGetAPIMethod.invoke(null);
             Object playerManager = cachedPacketEventsGetPlayerManagerMethod.invoke(packetEventsAPI);
-            Object packet = cachedEntityStatusPacketConstructor.newInstance(target.getEntityId(), 35);
+            Object packet = cachedEntityStatusPacketConstructor.newInstance(target.getEntityId(), cachedEntityStatusPacketUsesByte ? (byte) 35 : 35);
             cachedPacketEventsSendPacketMethod.invoke(playerManager, target, packet);
             return true;
         } catch (ReflectiveOperationException | LinkageError e) {
@@ -165,7 +166,13 @@ public class TotemAnimationCommand {
                 cachedPacketEventsGetAPIMethod = packetEventsClass.getMethod("getAPI");
                 cachedPacketEventsGetPlayerManagerMethod = packetEventsAPIClass.getMethod("getPlayerManager");
                 cachedPacketEventsSendPacketMethod = playerManagerClass.getMethod("sendPacket", Object.class, packetWrapperClass);
-                cachedEntityStatusPacketConstructor = entityStatusPacketClass.getConstructor(int.class, int.class);
+                try {
+                    cachedEntityStatusPacketConstructor = entityStatusPacketClass.getConstructor(int.class, int.class);
+                    cachedEntityStatusPacketUsesByte = false;
+                } catch (NoSuchMethodException ignored) {
+                    cachedEntityStatusPacketConstructor = entityStatusPacketClass.getConstructor(int.class, byte.class);
+                    cachedEntityStatusPacketUsesByte = true;
+                }
                 packetEventsMethodsInitialized = true;
                 return true;
             } catch (ReflectiveOperationException | LinkageError e) {
@@ -173,6 +180,7 @@ public class TotemAnimationCommand {
                 cachedPacketEventsGetPlayerManagerMethod = null;
                 cachedPacketEventsSendPacketMethod = null;
                 cachedEntityStatusPacketConstructor = null;
+                cachedEntityStatusPacketUsesByte = false;
                 throw e;
             } finally {
                 packetEventsMethodsInitialized = true;

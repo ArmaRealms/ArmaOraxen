@@ -410,6 +410,7 @@ public class ItemUpdater implements Listener {
     }
 
     private static SchedulerUtil.ScheduledTask finishTileEntityChunkQueueTask() {
+        // Called inside TILE_ENTITY_CHUNK_QUEUE_LOCK; caller must cancel the returned task outside the lock.
         SchedulerUtil.ScheduledTask task = tileEntityChunkQueueTask;
         tileEntityChunkQueueTask = null;
         return task;

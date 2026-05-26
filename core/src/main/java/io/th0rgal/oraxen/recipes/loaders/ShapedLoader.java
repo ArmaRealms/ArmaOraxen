@@ -1,5 +1,6 @@
 package io.th0rgal.oraxen.recipes.loaders;
 
+import io.th0rgal.oraxen.utils.logs.Logs;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.inventory.ShapedRecipe;
@@ -24,8 +25,10 @@ public class ShapedLoader extends RecipeLoader {
             ConfigurationSection itemSection = ingredientsSection.getConfigurationSection(ingredientLetter);
             if (itemSection  == null) continue;
             RecipeChoice recipeChoice = getRecipeChoice(itemSection);
-            if (recipeChoice == null)
-                throw new IllegalArgumentException("Recipe " + getRecipeName() + " has invalid ingredient: " + ingredientLetter);
+            if (recipeChoice == null) {
+                Logs.logWarning("Recipe " + getRecipeName() + " has an invalid or unresolvable ingredient '" + ingredientLetter + "'; skipping recipe.");
+                return;
+            }
             recipe.setIngredient(ingredientLetter.charAt(0), recipeChoice);
         }
         addToWhitelistedRecipes(recipe);

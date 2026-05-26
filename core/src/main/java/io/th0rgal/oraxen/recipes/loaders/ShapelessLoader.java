@@ -1,5 +1,6 @@
 package io.th0rgal.oraxen.recipes.loaders;
 
+import io.th0rgal.oraxen.utils.logs.Logs;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.inventory.ShapelessRecipe;
@@ -21,8 +22,10 @@ public class ShapelessLoader extends RecipeLoader {
             ConfigurationSection itemSection = ingredientsSection.getConfigurationSection(ingredientLetter);
             if (itemSection == null) continue;
             RecipeChoice ingredient = getRecipeChoice(itemSection);
-            if (ingredient == null)
-                throw new IllegalArgumentException("Recipe " + getRecipeName() + " has invalid ingredient: " + ingredientLetter);
+            if (ingredient == null) {
+                Logs.logWarning("Recipe " + getRecipeName() + " has an invalid or unresolvable ingredient '" + ingredientLetter + "'; skipping recipe.");
+                return;
+            }
             for (int i = 0; i < itemSection.getInt("amount"); i++)
                 recipe.addIngredient(ingredient);
         }
