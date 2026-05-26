@@ -234,9 +234,10 @@ public class Drop {
         int fortuneMultiplier = getFortuneMultiplier(itemInHand);
         List<Loot> droppedLoots = new ArrayList<>();
         for (Loot loot : loots) {
-            ItemStack item = loot.getItem(fortuneMultiplier, itemInHand);
+            if (!canDrop(itemInHand) || !loot.canDropWith(itemInHand)) continue;
 
-            if (!canDrop(itemInHand) || !loot.canDropWith(itemInHand) || item == null) continue;
+            ItemStack item = loot.getItem(fortuneMultiplier, itemInHand);
+            if (item == null) continue;
             if (Math.random() > loot.getProbability()) continue;
 
             droppedLoots.add(loot);

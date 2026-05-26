@@ -54,6 +54,7 @@ import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -70,26 +71,9 @@ public class ItemUpdater implements Listener {
     private static final int STARTUP_ENTITY_BATCH_SIZE = 50;
     private static final int STARTUP_CHUNK_BATCH_SIZE = 10;
 
-    private static final Set<Material> TILE_ENTITY_TYPES = EnumSet.of(
-            Material.BARREL,
-            Material.CHEST,
-            Material.TRAPPED_CHEST,
-            Material.CRAFTER,
-            Material.DECORATED_POT,
-            Material.HOPPER,
-            Material.DROPPER,
-            Material.DISPENSER,
-            Material.CAMPFIRE,
-            Material.SOUL_CAMPFIRE,
-            Material.SMOKER,
-            Material.FURNACE,
-            Material.BLAST_FURNACE,
-            Material.BREWING_STAND,
-            Material.JUKEBOX
-    );
+    private static volatile Set<Material> tileEntityTypes;
 
     public ItemUpdater() {
-        TILE_ENTITY_TYPES.addAll(Tag.SHULKER_BOXES.getValues());
         if (!Settings.UPDATE_ITEMS.toBool()) return;
         SchedulerUtil.runTaskLater(OraxenPlugin.get(), 2L, ItemUpdater::updateLoadedContents);
     }
@@ -314,9 +298,39 @@ public class ItemUpdater implements Listener {
     }
 
     private static void updateTileEntityInventories(Chunk chunk) {
+        Set<Material> tileEntityTypes = getTileEntityTypes();
         for (BlockState tileEntity : chunk.getTileEntities()) {
-            if (!TILE_ENTITY_TYPES.contains(tileEntity.getType()) || !(tileEntity instanceof InventoryHolder holder)) continue;
+            if (!tileEntityTypes.contains(tileEntity.getType()) || !(tileEntity instanceof InventoryHolder holder)) continue;
             updateInventory(holder.getInventory());
+        }
+    }
+
+    private static Set<Material> getTileEntityTypes() {
+        if (tileEntityTypes != null) return tileEntityTypes;
+
+        synchronized (ItemUpdater.class) {
+            if (tileEntityTypes != null) return tileEntityTypes;
+
+            EnumSet<Material> types = EnumSet.of(
+                    Material.BARREL,
+                    Material.CHEST,
+                    Material.TRAPPED_CHEST,
+                    Material.CRAFTER,
+                    Material.DECORATED_POT,
+                    Material.HOPPER,
+                    Material.DROPPER,
+                    Material.DISPENSER,
+                    Material.CAMPFIRE,
+                    Material.SOUL_CAMPFIRE,
+                    Material.SMOKER,
+                    Material.FURNACE,
+                    Material.BLAST_FURNACE,
+                    Material.BREWING_STAND,
+                    Material.JUKEBOX
+            );
+            types.addAll(Tag.SHULKER_BOXES.getValues());
+            tileEntityTypes = Collections.unmodifiableSet(types);
+            return tileEntityTypes;
         }
     }
 
