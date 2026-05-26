@@ -117,12 +117,21 @@ public class TotemAnimationCommand {
 
     @SuppressWarnings("deprecation")
     private void sendTotemStatus(Player target) {
-        if (VersionUtil.isPaperServer()) {
-            target.sendEntityEffect(EntityEffect.PROTECTED_FROM_DEATH, target);
+        EntityEffect protectedFromDeath = getProtectedFromDeathEffect();
+        if (VersionUtil.isPaperServer() && protectedFromDeath != null) {
+            target.sendEntityEffect(protectedFromDeath, target);
         } else if (PacketAdapter.isPacketEventsEnabled() && sendPacketEventsTotemStatus(target)) {
             return;
         } else {
             target.playEffect(EntityEffect.TOTEM_RESURRECT);
+        }
+    }
+
+    private static EntityEffect getProtectedFromDeathEffect() {
+        try {
+            return EntityEffect.valueOf("PROTECTED_FROM_DEATH");
+        } catch (IllegalArgumentException e) {
+            return null;
         }
     }
 

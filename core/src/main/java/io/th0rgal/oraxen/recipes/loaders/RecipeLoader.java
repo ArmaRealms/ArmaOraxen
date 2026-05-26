@@ -108,17 +108,20 @@ public abstract class RecipeLoader {
 
         if (ingredientSection.isString("crucible_item")) {
             ItemStack ingredient = new WrappedCrucibleItem(ingredientSection.getString("crucible_item")).build();
-            return new RecipeChoice.ExactChoice(ingredient != null ? ingredient : new ItemStack(Material.AIR));
+            if (ingredient == null || ingredient.getType().isAir()) return null;
+            return new RecipeChoice.ExactChoice(ingredient);
         }
 
         if (ingredientSection.isString("mmoitems_id") && ingredientSection.isString("mmoitems_type")) {
             ItemStack ingredient = MMOItems.plugin.getItem(ingredientSection.getString("mmoitems_type"), ingredientSection.getString("mmoitems_id"));
-            return new RecipeChoice.ExactChoice(ingredient != null ? ingredient : new ItemStack(Material.AIR));
+            if (ingredient == null || ingredient.getType().isAir()) return null;
+            return new RecipeChoice.ExactChoice(ingredient);
         }
 
         if (ingredientSection.isString("ecoitem_id")) {
             ItemStack ingredient = new WrappedEcoItem(ingredientSection.getString("ecoitem_id")).build();
-            return new RecipeChoice.ExactChoice(ingredient != null ? ingredient : new ItemStack(Material.AIR));
+            if (ingredient == null || ingredient.getType().isAir()) return null;
+            return new RecipeChoice.ExactChoice(ingredient);
         }
 
         if (ingredientSection.isString("minecraft_type")) {
