@@ -226,6 +226,33 @@ public class TotemAnimationCommand {
         return VersionUtil.isPaperServer() && VersionUtil.atOrAbove("1.21.2");
     }
 
+    public static void clearReflectionCaches() {
+        synchronized (DEATH_PROTECTION_INIT_LOCK) {
+            cachedDeathProtectionType = null;
+            cachedDataComponentTypeClass = null;
+            cachedValuedDataComponentTypeClass = null;
+            cachedSetDataMethod = null;
+            cachedHasDataMethod = null;
+            cachedDeathProtectionMethod = null;
+            deathProtectionTypeInitialized = false;
+            dataComponentTypeClassInitialized = false;
+            valuedDataComponentTypeClassInitialized = false;
+            setDataMethodInitialized = false;
+            hasDataMethodInitialized = false;
+            deathProtectionMethodInitialized = false;
+            loggedDeathProtectionFailure = false;
+        }
+
+        synchronized (PACKET_EVENTS_INIT_LOCK) {
+            cachedPacketEventsGetAPIMethod = null;
+            cachedPacketEventsGetPlayerManagerMethod = null;
+            cachedPacketEventsSendPacketMethod = null;
+            cachedEntityStatusPacketConstructor = null;
+            packetEventsMethodsInitialized = false;
+            loggedPacketEventsFailure = false;
+        }
+    }
+
     private static void logDeathProtectionFailure(Throwable throwable) {
         if (!loggedDeathProtectionFailure) {
             synchronized (DEATH_PROTECTION_INIT_LOCK) {

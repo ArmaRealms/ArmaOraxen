@@ -258,8 +258,7 @@ public class ItemUpdater implements Listener {
                 throw throwable;
             }
         });
-        task.setScheduledTask(scheduledTask);
-        replaceStartupEntityScanTask(task.scheduledTask, task.finished);
+        registerStartupEntityScanTask(task, scheduledTask);
     }
 
     private static void processLoadedChunks(List<Chunk> chunks) {
@@ -284,36 +283,51 @@ public class ItemUpdater implements Listener {
                 throw throwable;
             }
         });
-        task.setScheduledTask(scheduledTask);
-        replaceStartupChunkScanTask(task.scheduledTask, task.finished);
+        registerStartupChunkScanTask(task, scheduledTask);
     }
 
     private static void replaceStartupEntityScanTask(SchedulerUtil.ScheduledTask task) {
-        replaceStartupEntityScanTask(task, false);
-    }
-
-    private static void replaceStartupEntityScanTask(SchedulerUtil.ScheduledTask task, boolean finished) {
         SchedulerUtil.ScheduledTask oldTask;
         synchronized (STARTUP_SCAN_LOCK) {
             oldTask = startupEntityScanTask;
-            startupEntityScanTask = finished ? null : task;
+            startupEntityScanTask = task;
         }
         cancelTask(oldTask);
-        if (finished) cancelTask(task);
+    }
+
+    private static void registerStartupEntityScanTask(StartupScanTask task, SchedulerUtil.ScheduledTask scheduledTask) {
+        SchedulerUtil.ScheduledTask oldTask;
+        boolean finished;
+        synchronized (STARTUP_SCAN_LOCK) {
+            task.scheduledTask = scheduledTask;
+            finished = task.finished;
+            oldTask = startupEntityScanTask;
+            startupEntityScanTask = finished ? null : scheduledTask;
+        }
+        cancelTask(oldTask);
+        if (finished) cancelTask(scheduledTask);
     }
 
     private static void replaceStartupChunkScanTask(SchedulerUtil.ScheduledTask task) {
-        replaceStartupChunkScanTask(task, false);
-    }
-
-    private static void replaceStartupChunkScanTask(SchedulerUtil.ScheduledTask task, boolean finished) {
         SchedulerUtil.ScheduledTask oldTask;
         synchronized (STARTUP_SCAN_LOCK) {
             oldTask = startupChunkScanTask;
-            startupChunkScanTask = finished ? null : task;
+            startupChunkScanTask = task;
         }
         cancelTask(oldTask);
-        if (finished) cancelTask(task);
+    }
+
+    private static void registerStartupChunkScanTask(StartupScanTask task, SchedulerUtil.ScheduledTask scheduledTask) {
+        SchedulerUtil.ScheduledTask oldTask;
+        boolean finished;
+        synchronized (STARTUP_SCAN_LOCK) {
+            task.scheduledTask = scheduledTask;
+            finished = task.finished;
+            oldTask = startupChunkScanTask;
+            startupChunkScanTask = finished ? null : scheduledTask;
+        }
+        cancelTask(oldTask);
+        if (finished) cancelTask(scheduledTask);
     }
 
     private static void finishStartupEntityScanTask(StartupScanTask task) {
@@ -355,15 +369,6 @@ public class ItemUpdater implements Listener {
     private static final class StartupScanTask {
         private volatile SchedulerUtil.ScheduledTask scheduledTask;
         private volatile boolean finished;
-
-        private void setScheduledTask(SchedulerUtil.ScheduledTask scheduledTask) {
-            boolean cancelImmediately;
-            synchronized (STARTUP_SCAN_LOCK) {
-                this.scheduledTask = scheduledTask;
-                cancelImmediately = finished;
-            }
-            if (cancelImmediately) cancelTask(scheduledTask);
-        }
     }
 
     public static void updateEntityInventories(Entity entity) {
@@ -382,7 +387,7 @@ public class ItemUpdater implements Listener {
             ItemStack newItem = updateItem(oldItem);
             if (!Objects.equals(oldItem, newItem)) item.setItemStack(newItem);
         }
-        if (entity instanceof InventoryHolder holder) updateInventory(holder.getInventory());
+        if (entity instanceof InventoryHolder holder && !(entity instanceof ItemFrame)) updateInventory(holder.getInventory());
         if (entity instanceof LivingEntity livingEntity) updateEquipment(livingEntity);
     }
 
