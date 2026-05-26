@@ -258,7 +258,7 @@ public class ItemUpdater implements Listener {
                 throw throwable;
             }
         });
-        task.scheduledTask = scheduledTask;
+        task.setScheduledTask(scheduledTask);
         replaceStartupEntityScanTask(task.scheduledTask, task.finished);
     }
 
@@ -284,7 +284,7 @@ public class ItemUpdater implements Listener {
                 throw throwable;
             }
         });
-        task.scheduledTask = scheduledTask;
+        task.setScheduledTask(scheduledTask);
         replaceStartupChunkScanTask(task.scheduledTask, task.finished);
     }
 
@@ -355,6 +355,15 @@ public class ItemUpdater implements Listener {
     private static final class StartupScanTask {
         private volatile SchedulerUtil.ScheduledTask scheduledTask;
         private volatile boolean finished;
+
+        private void setScheduledTask(SchedulerUtil.ScheduledTask scheduledTask) {
+            boolean cancelImmediately;
+            synchronized (STARTUP_SCAN_LOCK) {
+                this.scheduledTask = scheduledTask;
+                cancelImmediately = finished;
+            }
+            if (cancelImmediately) cancelTask(scheduledTask);
+        }
     }
 
     public static void updateEntityInventories(Entity entity) {

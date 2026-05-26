@@ -24,6 +24,8 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class Drop {
 
+    private static final int MAX_DROP_LEVEL_FORTUNE_MULTIPLIER = 3;
+
     private List<String> hierarchy;
     private final List<Loot> loots;
     final boolean silktouch;
@@ -45,7 +47,7 @@ public class Drop {
                     .mapToDouble(Loot::getFortuneBonus)
                     .max()
                     .orElse(0.0D);
-            double maxFortuneMultiplier = 3.0D * (1.0D + maxLootFortuneBonus * 3.0D);
+            double maxFortuneMultiplier = MAX_DROP_LEVEL_FORTUNE_MULTIPLIER * (1.0D + maxLootFortuneBonus * 3.0D);
             Logs.logWarning("Drop config for " + sourceID + " uses both drop-level fortune and loot-level fortune; both bonuses will apply. With Fortune III this can multiply a loot amount by up to " + maxFortuneMultiplier + "x.");
         }
         return new Drop(toolTypes, loots, dropSection.getBoolean("silktouch"),
