@@ -31,6 +31,7 @@ public class TotemAnimationCommand {
     private static volatile Method cachedSetDataMethod;
     private static volatile Method cachedHasDataMethod;
     private static volatile Method cachedDeathProtectionMethod;
+    private static volatile boolean loggedDeathProtectionFailure;
 
     CommandAPICommand getTotemAnimationCommand() {
         return new CommandAPICommand("totem-animation")
@@ -118,7 +119,7 @@ public class TotemAnimationCommand {
             Object deathProtection = getDeathProtectionMethod().invoke(null);
             getSetDataMethod().invoke(itemStack, deathProtectionType, deathProtection);
         } catch (ReflectiveOperationException | LinkageError e) {
-            Logs.debug(e);
+            logDeathProtectionFailure(e);
         }
 
         return itemStack;
@@ -143,6 +144,18 @@ public class TotemAnimationCommand {
 
     private boolean supportsDeathProtectionComponent() {
         return VersionUtil.isPaperServer() && VersionUtil.atOrAbove("1.21.2");
+    }
+
+    private static void logDeathProtectionFailure(Throwable throwable) {
+        if (!loggedDeathProtectionFailure) {
+            synchronized (DEATH_PROTECTION_INIT_LOCK) {
+                if (!loggedDeathProtectionFailure) {
+                    Logs.logWarning("Failed to apply Paper death-protection component for totem animation; the animation item may not trigger the protected-from-death effect on this server build. See debug log for details.");
+                    loggedDeathProtectionFailure = true;
+                }
+            }
+        }
+        Logs.debug(throwable);
     }
 
     private static Object getDeathProtectionType() throws ReflectiveOperationException {

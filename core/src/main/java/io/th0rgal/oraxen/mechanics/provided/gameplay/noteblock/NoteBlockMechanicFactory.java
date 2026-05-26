@@ -175,6 +175,10 @@ public class NoteBlockMechanicFactory extends MechanicFactory {
         return instance;
     }
 
+    public static void clearInstance(NoteBlockMechanicFactory factory) {
+        if (instance == factory) instance = null;
+    }
+
     public boolean removeMineableTag() {
         return removeMineableTag;
     }

@@ -72,6 +72,9 @@ public class ItemUpdater implements Listener {
     private static final int STARTUP_CHUNK_BATCH_SIZE = 10;
 
     private static volatile Set<Material> tileEntityTypes;
+    private static final Object STARTUP_SCAN_LOCK = new Object();
+    private static SchedulerUtil.ScheduledTask startupEntityScanTask;
+    private static SchedulerUtil.ScheduledTask startupChunkScanTask;
 
     public ItemUpdater() {
         if (!Settings.UPDATE_ITEMS.toBool()) return;
@@ -241,6 +244,7 @@ public class ItemUpdater implements Listener {
     }
 
     private static void processLoadedEntities(List<Entity> entities) {
+        replaceStartupEntityScanTask(null);
         if (entities.isEmpty()) return;
 
         final int[] index = {0};
@@ -253,15 +257,17 @@ public class ItemUpdater implements Listener {
                     if (!entity.isValid() || !shouldUpdateEntityContents(entity)) continue;
                     SchedulerUtil.runForEntity(entity, () -> updateEntityInventories(entity), () -> {});
                 }
-                if (index[0] >= entities.size()) cancelTask(task[0]);
+                if (index[0] >= entities.size()) finishStartupEntityScanTask(task[0]);
             } catch (RuntimeException | Error throwable) {
-                cancelTask(task[0]);
+                finishStartupEntityScanTask(task[0]);
                 throw throwable;
             }
         });
+        replaceStartupEntityScanTask(task[0]);
     }
 
     private static void processLoadedChunks(List<Chunk> chunks) {
+        replaceStartupChunkScanTask(null);
         if (chunks.isEmpty()) return;
 
         final int[] index = {0};
@@ -276,12 +282,41 @@ public class ItemUpdater implements Listener {
                         updateTileEntityInventories(chunk);
                     });
                 }
-                if (index[0] >= chunks.size()) cancelTask(task[0]);
+                if (index[0] >= chunks.size()) finishStartupChunkScanTask(task[0]);
             } catch (RuntimeException | Error throwable) {
-                cancelTask(task[0]);
+                finishStartupChunkScanTask(task[0]);
                 throw throwable;
             }
         });
+        replaceStartupChunkScanTask(task[0]);
+    }
+
+    private static void replaceStartupEntityScanTask(SchedulerUtil.ScheduledTask task) {
+        synchronized (STARTUP_SCAN_LOCK) {
+            cancelTask(startupEntityScanTask);
+            startupEntityScanTask = task;
+        }
+    }
+
+    private static void replaceStartupChunkScanTask(SchedulerUtil.ScheduledTask task) {
+        synchronized (STARTUP_SCAN_LOCK) {
+            cancelTask(startupChunkScanTask);
+            startupChunkScanTask = task;
+        }
+    }
+
+    private static void finishStartupEntityScanTask(SchedulerUtil.ScheduledTask task) {
+        synchronized (STARTUP_SCAN_LOCK) {
+            if (startupEntityScanTask == task) startupEntityScanTask = null;
+        }
+        cancelTask(task);
+    }
+
+    private static void finishStartupChunkScanTask(SchedulerUtil.ScheduledTask task) {
+        synchronized (STARTUP_SCAN_LOCK) {
+            if (startupChunkScanTask == task) startupChunkScanTask = null;
+        }
+        cancelTask(task);
     }
 
     private static void cancelTask(SchedulerUtil.ScheduledTask task) {

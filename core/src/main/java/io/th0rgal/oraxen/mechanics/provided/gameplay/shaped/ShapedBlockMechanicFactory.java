@@ -97,6 +97,10 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
         return instance;
     }
 
+    public static void clearInstance(ShapedBlockMechanicFactory factory) {
+        if (instance == factory) instance = null;
+    }
+
     /**
      * Whether to convert vanilla waxed copper blocks to non-waxed variants
      * with a marker to prevent oxidation. This allows vanilla copper appearance

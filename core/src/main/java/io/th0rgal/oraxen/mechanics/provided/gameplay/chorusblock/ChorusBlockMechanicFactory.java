@@ -123,6 +123,10 @@ public class ChorusBlockMechanicFactory extends MechanicFactory {
         return instance;
     }
 
+    public static void clearInstance(ChorusBlockMechanicFactory factory) {
+        if (instance == factory) instance = null;
+    }
+
     /**
      * Create a MultipleFacing blockdata from a variation code.
      * Bit encoding: NORTH(0x1) | SOUTH(0x2) | EAST(0x4) | WEST(0x8) | UP(0x10) | DOWN(0x20)

@@ -50,6 +50,10 @@ public class BlockMechanicFactory extends MechanicFactory {
     @Override
     public void onUnregister() {
         if (instance == this) instance = null;
+        NoteBlockMechanicFactory.clearInstance(noteBlockFactory);
+        StringBlockMechanicFactory.clearInstance(stringBlockFactory);
+        ChorusBlockMechanicFactory.clearInstance(chorusBlockFactory);
+        ShapedBlockMechanicFactory.clearInstance(shapedBlockFactory);
     }
 
     @Override

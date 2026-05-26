@@ -121,6 +121,10 @@ public class StringBlockMechanicFactory extends MechanicFactory {
         return instance;
     }
 
+    public static void clearInstance(StringBlockMechanicFactory factory) {
+        if (instance == factory) instance = null;
+    }
+
 
     /**
      * Attempts to set the block directly to the model and texture of an Oraxen item.
