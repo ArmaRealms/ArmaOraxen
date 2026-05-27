@@ -23,7 +23,7 @@ public class ShapelessLoader extends RecipeLoader {
             if (itemSection == null) continue;
             RecipeChoice ingredient = getRecipeChoice(itemSection);
             if (ingredient == null) {
-                Logs.logWarning("Recipe " + getRecipeName() + " has an invalid or unresolvable ingredient '" + ingredientLetter + "'; skipping recipe.");
+                Logs.logError("Recipe " + getRecipeName() + " has an invalid or unresolvable ingredient '" + ingredientLetter + "'; skipping recipe.");
                 return;
             }
             for (int i = 0; i < itemSection.getInt("amount"); i++)

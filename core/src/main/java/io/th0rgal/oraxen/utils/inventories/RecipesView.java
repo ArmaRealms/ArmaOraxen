@@ -52,7 +52,7 @@ public class RecipesView {
         // Previous Page button
         if (currentPage > 0)
             gui.setItem(4, 2, new GuiItem(iconOrDefault("arrow_previous_icon", Material.ARROW)
-                    .setDisplayName(pageName(currentPage))
+                    .setDisplayName(ChatColor.YELLOW + "Previous")
                     .build(),
                     event -> create(currentPage - 1,
                             filteredRecipes).open(event.getWhoClicked())));

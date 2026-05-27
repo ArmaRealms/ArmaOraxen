@@ -26,7 +26,7 @@ public class ShapedLoader extends RecipeLoader {
             if (itemSection  == null) continue;
             RecipeChoice recipeChoice = getRecipeChoice(itemSection);
             if (recipeChoice == null) {
-                Logs.logWarning("Recipe " + getRecipeName() + " has an invalid or unresolvable ingredient '" + ingredientLetter + "'; skipping recipe.");
+                Logs.logError("Recipe " + getRecipeName() + " has an invalid or unresolvable ingredient '" + ingredientLetter + "'; skipping recipe.");
                 return;
             }
             recipe.setIngredient(ingredientLetter.charAt(0), recipeChoice);

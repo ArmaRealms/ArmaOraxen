@@ -77,6 +77,8 @@ public class BlockMechanicFactory extends MechanicFactory {
             case STAIR, SLAB, DOOR, TRAPDOOR, GRATE, BULB -> shapedBlockFactory.parse(itemMechanicConfiguration);
         };
 
+        // Delegate factories keep their own registries for legacy subsystem lookups;
+        // the unified block factory also registers the same mechanic for block API lookups.
         if (mechanic != null) addToImplemented(mechanic);
         else Logs.logWarning("Failed to parse block mechanic for " + itemId(itemMechanicConfiguration));
         return mechanic;
