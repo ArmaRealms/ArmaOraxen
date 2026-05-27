@@ -9,6 +9,7 @@ import io.th0rgal.oraxen.font.FontManager;
 import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.recipes.CustomRecipe;
 import io.th0rgal.oraxen.utils.AdventureUtils;
+import io.th0rgal.oraxen.utils.logs.Logs;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -36,7 +37,11 @@ public class RecipesView {
         // Check if last page
         final boolean lastPage = filteredRecipes.size() - 1 == currentPage;
         final ItemStack result = currentRecipe.getResult();
-        if (result != null) gui.setItem(1, 5, new GuiItem(result));
+        if (result != null) {
+            gui.setItem(1, 5, new GuiItem(result));
+        } else {
+            Logs.logWarning("Recipe " + currentRecipe.getName() + " has no result and cannot be displayed in the recipe viewer.");
+        }
 
         for (int i = 0; i < currentRecipe.getIngredients().size(); i++) {
             final ItemStack itemStack = currentRecipe.getIngredients().get(i);
@@ -52,7 +57,7 @@ public class RecipesView {
         // Previous Page button
         if (currentPage > 0)
             gui.setItem(4, 2, new GuiItem(iconOrDefault("arrow_previous_icon", Material.ARROW)
-                    .setDisplayName(ChatColor.YELLOW + "Previous")
+                    .setDisplayName(pageName(currentPage))
                     .build(),
                     event -> create(currentPage - 1,
                             filteredRecipes).open(event.getWhoClicked())));

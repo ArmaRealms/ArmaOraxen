@@ -89,7 +89,7 @@ public class BlockBreaking {
                 Logs.logWarning("Block mechanic " + sourceID + " has a breaking rule without 'when' or 'else'; the rule will never match.");
             }
             if (fallback && seenFallback) {
-                Logs.logWarning("Block mechanic " + sourceID + " has multiple 'else' breaking rules; only the first fallback rule will be used.");
+                Logs.logWarning("Block mechanic " + sourceID + " has multiple 'else' breaking rules; only the first 'else' rule will be used.");
             }
             if (fallback && map.containsKey("when")) {
                 Logs.logWarning("Block mechanic " + sourceID + " has a breaking rule with both 'when' and 'else' keys; 'when' matchers will be ignored and the rule will act as a catch-all fallback.");
@@ -155,7 +155,7 @@ public class BlockBreaking {
 
             Tag<Material> tag = Bukkit.getTag(Tag.REGISTRY_ITEMS, namespacedKey, Material.class);
             if (tag == null) {
-                logInvalidItemTagMatcher(key, sourceID);
+                logInvalidItemTagMatcher(key, namespacedKey, sourceID);
                 return null;
             }
 
@@ -175,7 +175,12 @@ public class BlockBreaking {
         Logs.logWarning("Invalid breaking.when entry '" + key + "' in block mechanic " + sourceID);
     }
 
-    private void logInvalidItemTagMatcher(String key, String sourceID) {
+    private void logInvalidItemTagMatcher(String key, NamespacedKey namespacedKey, String sourceID) {
+        String path = namespacedKey.getKey();
+        if (path.startsWith("mineable/") || path.startsWith("needs_")) {
+            Logs.logWarning("Invalid breaking.when entry '" + key + "' in block mechanic " + sourceID + "; this is a block tag. Use item-registry tool tags instead (e.g. '#minecraft:axes' not '#minecraft:mineable/axe', '#minecraft:pickaxes' not '#minecraft:mineable/pickaxe').");
+            return;
+        }
         Logs.logWarning("Invalid breaking.when entry '" + key + "' in block mechanic " + sourceID + "; # tags must be item-registry tags (e.g. '#minecraft:axes' not '#minecraft:mineable/axe', '#minecraft:pickaxes' not '#minecraft:mineable/pickaxe'), not block-mining or tier tags (e.g. #minecraft:mineable/pickaxe, #minecraft:needs_stone_tool).");
     }
 

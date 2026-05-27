@@ -123,6 +123,8 @@ public class TotemAnimationCommand {
         try {
             Object packetEventsAPI = api.getApiMethod.invoke(null);
             Object playerManager = api.getPlayerManagerMethod.invoke(packetEventsAPI);
+            // entityStatusPacketUsesByte is derived from the resolved constructor signature in getPacketEventsAPI(),
+            // so the boxed status value below always matches the primitive parameter type PacketEvents expects.
             Object packet = api.entityStatusPacketConstructor.newInstance(target.getEntityId(), api.entityStatusPacketUsesByte ? (byte) 35 : 35);
             api.sendPacketMethod.invoke(playerManager, target, packet);
             return true;
