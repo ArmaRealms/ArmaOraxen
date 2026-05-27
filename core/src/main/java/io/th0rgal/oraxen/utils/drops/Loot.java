@@ -166,24 +166,21 @@ public class Loot {
     }
 
     /**
-     * Drops this loot without a tool context. Loot entries that require Silk Touch are skipped,
-     * matching vanilla behavior when no harvesting tool is available.
-     * <p>
-     * Behavior change from pre-1.215.0: this overload now suppresses {@code silk-touch: true}
-     * loots when called without a harvesting tool. Pass an explicit tool to
-     * {@link #dropNaturally(Location, int, ItemStack)} when tool-sensitive drops are needed.
+     * Drops this loot without a tool context, preserving the legacy behavior of not applying
+     * tool-sensitive filtering.
      *
      * @deprecated Use {@link #dropNaturally(Location, int, ItemStack)} to apply tool-sensitive drop filtering.
      */
     @Deprecated
     public void dropNaturally(Location location, int amountMultiplier) {
-        dropNaturally(location, amountMultiplier, null);
+        if (Math.random() <= probability)
+            dropItems(location, amountMultiplier, null, false);
     }
 
     public void dropNaturally(Location location, int amountMultiplier, ItemStack tool) {
         if (!canDropWith(tool)) return;
         if (Math.random() <= probability)
-            dropItems(location, amountMultiplier, tool);
+            dropItems(location, amountMultiplier, tool, true);
     }
 
     public ItemStack getItem(int amountMultiplier) {
@@ -231,15 +228,15 @@ public class Loot {
         return Math.max(1, roundedAmount);
     }
 
-    private void dropItems(Location location, int amountMultiplier, ItemStack tool) {
+    private void dropItems(Location location, int amountMultiplier, ItemStack tool, boolean enforceToolRequirements) {
         if (location.getWorld() == null) return;
-        for (ItemStack item : getDropItems(amountMultiplier, tool)) {
+        for (ItemStack item : getDropItems(amountMultiplier, tool, enforceToolRequirements)) {
             location.getWorld().dropItemNaturally(location, item);
         }
     }
 
-    private List<ItemStack> getDropItems(int amountMultiplier, ItemStack tool) {
-        ItemStack item = getItem(amountMultiplier, tool);
+    private List<ItemStack> getDropItems(int amountMultiplier, ItemStack tool, boolean enforceToolRequirements) {
+        ItemStack item = getItem(amountMultiplier, tool, enforceToolRequirements);
         if (item == null) return List.of();
 
         int maxStackSize = Math.max(1, item.getMaxStackSize());

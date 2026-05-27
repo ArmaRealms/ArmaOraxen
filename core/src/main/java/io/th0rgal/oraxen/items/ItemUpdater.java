@@ -90,8 +90,11 @@ public class ItemUpdater implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         if (!Settings.UPDATE_ITEMS.toBool()) return;
 
-        updateInventory(event.getPlayer().getInventory());
-        updateInventory(event.getPlayer().getEnderChest());
+        Player player = event.getPlayer();
+        SchedulerUtil.runForEntity(player, () -> {
+            updateInventory(player.getInventory());
+            updateInventory(player.getEnderChest());
+        });
     }
 
     @EventHandler
