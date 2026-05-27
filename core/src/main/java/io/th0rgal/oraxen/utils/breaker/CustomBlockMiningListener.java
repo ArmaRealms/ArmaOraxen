@@ -5,6 +5,7 @@ import io.th0rgal.oraxen.mechanics.provided.gameplay.chorusblock.ChorusBlockMech
 import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.NoteBlockMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.shaped.ShapedBlockMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.stringblock.StringBlockMechanic;
+import io.th0rgal.oraxen.utils.logs.Logs;
 import io.th0rgal.oraxen.utils.wrappers.AttributeWrapper;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -44,10 +45,19 @@ public class CustomBlockMiningListener implements Listener {
     private static final double VANILLA_BREAK_SPEED_BASE = 0.24D;
     private static final double HARVESTABLE_BLOCK_DIVISOR = 30.0D;
     private static final double UNHARVESTABLE_BLOCK_DIVISOR = 100.0D;
-    private static final double FULL_BLOCK_MINING_COST = Material.NOTE_BLOCK.getHardness() * HARVESTABLE_BLOCK_DIVISOR;
+    private static final double EXPECTED_NOTE_BLOCK_HARDNESS = 0.8D;
+    private static final double FULL_BLOCK_MINING_COST = computeFullBlockMiningCost();
     private final Map<UUID, AttributeModifier> modifierMap = new ConcurrentHashMap<>();
     // Cache of the resolved AttributeModifier constructor (varies by server version).
     private static volatile ModifierFactory cachedModifierFactory;
+
+    private static double computeFullBlockMiningCost() {
+        double noteBlockHardness = Material.NOTE_BLOCK.getHardness();
+        if (Math.abs(noteBlockHardness - EXPECTED_NOTE_BLOCK_HARDNESS) > 0.0001D) {
+            Logs.logWarning("NOTE_BLOCK hardness is " + noteBlockHardness + " instead of " + EXPECTED_NOTE_BLOCK_HARDNESS + "; shaped-block mining speed compensation may need adjustment.");
+        }
+        return noteBlockHardness * HARVESTABLE_BLOCK_DIVISOR;
+    }
 
     /**
      * Returns true if the BLOCK_BREAK_SPEED attribute is available on this server version.

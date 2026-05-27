@@ -136,7 +136,9 @@ public class Loot {
     }
 
     private Material getMaterial(String itemId) {
-        String materialId = itemId.toLowerCase().startsWith("minecraft:") ? itemId.substring("minecraft:".length()) : itemId;
+        String lowerItemId = itemId.toLowerCase();
+        if (lowerItemId.startsWith("oraxen:")) return null;
+        String materialId = lowerItemId.startsWith("minecraft:") ? itemId.substring("minecraft:".length()) : itemId;
         return Material.matchMaterial(materialId);
     }
 

@@ -76,6 +76,7 @@ public class ItemUpdater implements Listener {
     private static final Object TILE_ENTITY_CHUNK_QUEUE_LOCK = new Object();
     private static final Queue<Chunk> pendingTileEntityChunks = new ArrayDeque<>();
     private static final Set<ChunkKey> pendingTileEntityChunkKeys = new HashSet<>();
+    private static SchedulerUtil.ScheduledTask startupContentsTask;
     private static SchedulerUtil.ScheduledTask startupEntityScanTask;
     private static SchedulerUtil.ScheduledTask startupChunkScanTask;
     private static SchedulerUtil.ScheduledTask tileEntityChunkQueueTask;
@@ -84,7 +85,10 @@ public class ItemUpdater implements Listener {
         resetQueuedTasks();
         if (!Settings.UPDATE_ITEMS.toBool()) return;
         if (VersionUtil.isPaperServer()) Bukkit.getPluginManager().registerEvents(new PaperEntityLoadListener(), OraxenPlugin.get());
-        SchedulerUtil.runTaskLater(OraxenPlugin.get(), 2L, ItemUpdater::updateLoadedContents);
+        replaceStartupContentsTask(SchedulerUtil.runTaskLater(OraxenPlugin.get(), 2L, () -> {
+            clearStartupContentsTask();
+            updateLoadedContents();
+        }));
     }
 
     @EventHandler
@@ -300,6 +304,21 @@ public class ItemUpdater implements Listener {
         registerStartupChunkScanTask(task, scheduledTask);
     }
 
+    private static void replaceStartupContentsTask(SchedulerUtil.ScheduledTask task) {
+        SchedulerUtil.ScheduledTask oldTask;
+        synchronized (STARTUP_SCAN_LOCK) {
+            oldTask = startupContentsTask;
+            startupContentsTask = task;
+        }
+        cancelTask(oldTask);
+    }
+
+    private static void clearStartupContentsTask() {
+        synchronized (STARTUP_SCAN_LOCK) {
+            startupContentsTask = null;
+        }
+    }
+
     private static void replaceStartupEntityScanTask(SchedulerUtil.ScheduledTask task) {
         SchedulerUtil.ScheduledTask oldTask;
         synchronized (STARTUP_SCAN_LOCK) {
@@ -365,14 +384,18 @@ public class ItemUpdater implements Listener {
     }
 
     public static void resetQueuedTasks() {
+        SchedulerUtil.ScheduledTask contentsTask;
         SchedulerUtil.ScheduledTask entityTask;
         SchedulerUtil.ScheduledTask chunkTask;
         synchronized (STARTUP_SCAN_LOCK) {
+            contentsTask = startupContentsTask;
             entityTask = startupEntityScanTask;
             chunkTask = startupChunkScanTask;
+            startupContentsTask = null;
             startupEntityScanTask = null;
             startupChunkScanTask = null;
         }
+        cancelTask(contentsTask);
         cancelTask(entityTask);
         cancelTask(chunkTask);
 

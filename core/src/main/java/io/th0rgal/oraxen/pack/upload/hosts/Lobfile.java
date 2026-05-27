@@ -189,9 +189,10 @@ public class Lobfile implements HostingProvider {
 
     @NotNull
     String buildVersionedPackName(String packVersion) {
-        String baseName = packName.toLowerCase(Locale.ROOT).endsWith(".zip")
-                ? packName.substring(0, packName.length() - 4)
-                : packName;
+        String normalizedPackName = packName.toLowerCase(Locale.ROOT);
+        String baseName = normalizedPackName.endsWith(".zip")
+                ? normalizedPackName.substring(0, normalizedPackName.length() - 4)
+                : normalizedPackName;
         return baseName + "_" + sanitizePackName(packVersion);
     }
 
