@@ -94,6 +94,9 @@ public class Lobfile implements HostingProvider {
                 String responseString = EntityUtils.toString(responseEntity);
                 if (statusCode < 200 || statusCode >= 300) {
                     Logs.logError("Lobfile returned HTTP " + statusCode + " for the resource pack upload.");
+                    JsonObject errorOutput = parseResponse(responseString);
+                    if (errorOutput != null) logUploadError(errorOutput);
+                    return false;
                 }
                 JsonObject jsonOutput = parseResponse(responseString);
                 if (jsonOutput == null) return false;
