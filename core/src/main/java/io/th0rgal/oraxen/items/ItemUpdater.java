@@ -387,22 +387,13 @@ public class ItemUpdater implements Listener {
 
     private static void queueTileEntityChunkUpdate(Chunk chunk) {
         ChunkKey key = ChunkKey.from(chunk);
-        boolean scheduleTask = false;
         synchronized (TILE_ENTITY_CHUNK_QUEUE_LOCK) {
             if (!pendingTileEntityChunkKeys.add(key)) return;
             pendingTileEntityChunks.add(chunk);
-            scheduleTask = tileEntityChunkQueueTask == null;
-        }
-        if (!scheduleTask) return;
+            if (tileEntityChunkQueueTask != null) return;
 
-        SchedulerUtil.ScheduledTask scheduledTask = SchedulerUtil.runTaskTimer(1L, 1L, ItemUpdater::processQueuedTileEntityChunks);
-        synchronized (TILE_ENTITY_CHUNK_QUEUE_LOCK) {
-            if (tileEntityChunkQueueTask == null) {
-                tileEntityChunkQueueTask = scheduledTask;
-                return;
-            }
+            tileEntityChunkQueueTask = SchedulerUtil.runTaskTimer(1L, 1L, ItemUpdater::processQueuedTileEntityChunks);
         }
-        cancelTask(scheduledTask);
     }
 
     private static void processQueuedTileEntityChunks() {
