@@ -130,13 +130,12 @@ public class MultiVersionUploadManager {
         Map<String, String> currentSHA1s = new HashMap<>();
         HostingProvider firstProvider = HostingProviderFactory.createHostingProvider(false);
         boolean createProviderPerVersion = firstProvider.requiresNewInstancePerUpload();
-        boolean firstVersion = true;
+        int versionIndex = 0;
         for (PackVersion packVersion : versions) {
             try {
-                HostingProvider provider = firstVersion || !createProviderPerVersion
-                        ? firstProvider
-                        : HostingProviderFactory.createHostingProvider(false);
-                firstVersion = false;
+                HostingProvider provider = createProviderPerVersion && versionIndex++ > 0
+                        ? HostingProviderFactory.createHostingProvider(false)
+                        : firstProvider;
                 uploadPackVersion(packVersion, provider);
                 String sha1Hex = packVersion.getPackSHA1Hex();
                 if (sha1Hex != null) {

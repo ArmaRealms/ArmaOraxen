@@ -156,12 +156,7 @@ public class ShapedBlockMechanic extends Mechanic {
         String itemId = blockData.get(SHAPED_BLOCK_KEY, PersistentDataType.STRING);
         if (itemId != null) return itemId;
 
-        itemId = blockData.get(LEGACY_SHAPED_BLOCK_KEY, PersistentDataType.STRING);
-        if (itemId == null) return null;
-
-        blockData.set(SHAPED_BLOCK_KEY, PersistentDataType.STRING, itemId);
-        blockData.remove(LEGACY_SHAPED_BLOCK_KEY);
-        return itemId;
+        return blockData.get(LEGACY_SHAPED_BLOCK_KEY, PersistentDataType.STRING);
     }
 
     public static void setItemId(CustomBlockData blockData, String itemId) {
