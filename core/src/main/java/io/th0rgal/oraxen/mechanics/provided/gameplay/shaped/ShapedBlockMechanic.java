@@ -45,7 +45,7 @@ public class ShapedBlockMechanic extends Mechanic {
             this.blockType = ShapedBlockType.valueOf(typeStr);
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid shaped block type: " + typeStr +
-                ". Valid types: STAIR, SLAB, DOOR, TRAPDOOR, GRATE");
+                ". Valid types: STAIR, SLAB, DOOR, TRAPDOOR, GRATE, BULB");
         }
 
         // Parse custom variation (1-4)
