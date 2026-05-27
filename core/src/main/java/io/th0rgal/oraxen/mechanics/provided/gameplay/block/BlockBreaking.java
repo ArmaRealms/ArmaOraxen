@@ -176,7 +176,7 @@ public class BlockBreaking {
     }
 
     private void logInvalidItemTagMatcher(String key, String sourceID) {
-        Logs.logWarning("Invalid breaking.when entry '" + key + "' in block mechanic " + sourceID + "; # tags must be item-registry tags such as #minecraft:axes, not block tags such as #minecraft:needs_stone_tool.");
+        Logs.logWarning("Invalid breaking.when entry '" + key + "' in block mechanic " + sourceID + "; # tags must be item-registry tags such as #minecraft:axes or #minecraft:pickaxes, not block-mining tags such as #minecraft:needs_stone_tool or #minecraft:mineable/pickaxe.");
     }
 
     private NamespacedKey namespacedKey(String key) {

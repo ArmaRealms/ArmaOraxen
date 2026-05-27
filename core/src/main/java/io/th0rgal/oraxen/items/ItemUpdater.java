@@ -83,6 +83,7 @@ public class ItemUpdater implements Listener {
     public ItemUpdater() {
         resetQueuedTasks();
         if (!Settings.UPDATE_ITEMS.toBool()) return;
+        if (VersionUtil.isPaperServer()) Bukkit.getPluginManager().registerEvents(new PaperEntityLoadListener(), OraxenPlugin.get());
         SchedulerUtil.runTaskLater(OraxenPlugin.get(), 2L, ItemUpdater::updateLoadedContents);
     }
 
@@ -97,17 +98,19 @@ public class ItemUpdater implements Listener {
         });
     }
 
-    @EventHandler
-    public void onEntityLoad(EntityAddToWorldEvent event) {
-        if (!Settings.UPDATE_ITEMS.toBool() || !Settings.UPDATE_ENTITY_CONTENTS.toBool()) return;
+    private static final class PaperEntityLoadListener implements Listener {
+        @EventHandler
+        public void onEntityLoad(EntityAddToWorldEvent event) {
+            if (!Settings.UPDATE_ITEMS.toBool() || !Settings.UPDATE_ENTITY_CONTENTS.toBool()) return;
 
-        Entity entity = event.getEntity();
-        if (!shouldUpdateEntityContents(entity)) return;
+            Entity entity = event.getEntity();
+            if (!shouldUpdateEntityContents(entity)) return;
 
-        SchedulerUtil.runForEntityLater(entity, 2L, () -> {
-            if (!entity.isValid()) return;
-            updateEntityInventories(entity);
-        }, () -> {});
+            SchedulerUtil.runForEntityLater(entity, 2L, () -> {
+                if (!entity.isValid()) return;
+                updateEntityInventories(entity);
+            }, () -> {});
+        }
     }
 
     @EventHandler

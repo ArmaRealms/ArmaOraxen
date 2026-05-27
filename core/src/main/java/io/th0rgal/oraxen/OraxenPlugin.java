@@ -127,6 +127,8 @@ public class OraxenPlugin extends JavaPlugin {
         });
 
         Bukkit.getPluginManager().registerEvents(new CustomArmorListener(), this);
+        // Register this even when the packet breaker is active: BreakerSystem cancels START_DIGGING
+        // before Bukkit fires BlockDamageEvent, so CustomBlockMiningListener becomes a no-op there.
         if (CustomBlockMiningListener.isSupported()) {
             Bukkit.getPluginManager().registerEvents(new CustomBlockMiningListener(), this);
         }
