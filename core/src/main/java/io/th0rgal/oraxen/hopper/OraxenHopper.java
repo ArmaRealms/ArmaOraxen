@@ -65,7 +65,8 @@ public final class OraxenHopper {
         Platform platform = Platform.detect();
 
         BukkitHopper.register(plugin, deps -> {
-            // We check for files in the plugins folder since plugins aren't loaded yet in constructor
+            // We check for files in the plugins folder as a reliable baseline; the classpath check catches
+            // cases where the library is already loaded (e.g. installed server plugin with an atypical jar name)
             boolean hasCommandAPI = pluginJarExists(COMMANDAPI_PATTERN) || classExists("dev.jorel.commandapi.CommandAPI");
             boolean hasProtocolLib = pluginJarExists(PROTOCOLLIB_PATTERN) || classExists("com.comphenix.protocol.ProtocolLib");
             boolean hasPacketEvents = pluginJarExists(PACKETEVENTS_PATTERN) || classExists("com.github.retrooper.packetevents.PacketEvents");
