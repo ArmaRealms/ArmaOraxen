@@ -184,11 +184,15 @@ public class Loot {
     }
 
     public ItemStack getItem(int amountMultiplier) {
-        return getItem(amountMultiplier, null);
+        return getItem(amountMultiplier, null, false);
     }
 
     public ItemStack getItem(int amountMultiplier, ItemStack tool) {
-        if (!canDropWith(tool)) return null;
+        return getItem(amountMultiplier, tool, true);
+    }
+
+    private ItemStack getItem(int amountMultiplier, ItemStack tool, boolean enforceToolRequirements) {
+        if (enforceToolRequirements && !canDropWith(tool)) return null;
         ItemStack baseStack = getItemStack();
         if (baseStack == null) return null;
 

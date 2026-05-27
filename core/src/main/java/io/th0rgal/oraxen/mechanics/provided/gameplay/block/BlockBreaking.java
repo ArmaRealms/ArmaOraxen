@@ -89,6 +89,9 @@ public class BlockBreaking {
                 Logs.logWarning("Block mechanic " + sourceID + " has a breaking rule with both 'when' and 'else' keys; 'when' matchers will be ignored and the rule will act as a catch-all fallback.");
             }
             List<ToolMatcher> matchers = parseMatchers(map.get("when"), sourceID);
+            if (hasMatchers && !fallback && matchers.isEmpty()) {
+                Logs.logWarning("Block mechanic " + sourceID + " has a 'when' breaking rule with no valid tool entries; the rule will never match.");
+            }
             double hardness = parseDouble(map.get("hardness"), 1.0D, sourceID);
             Drop drop = parseDrop(map.get("drops"), sourceID);
             parsedRules.add(new Rule(matchers, fallback, hardness, drop));

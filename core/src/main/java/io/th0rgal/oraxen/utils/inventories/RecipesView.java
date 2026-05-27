@@ -9,8 +9,6 @@ import io.th0rgal.oraxen.font.FontManager;
 import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.recipes.CustomRecipe;
 import io.th0rgal.oraxen.utils.AdventureUtils;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -76,7 +74,7 @@ public class RecipesView {
     }
 
     private String pageName(int page) {
-        return AdventureUtils.LEGACY_SERIALIZER.serialize(Component.text("Page " + page, NamedTextColor.YELLOW));
+        return ChatColor.YELLOW + "Page " + page;
     }
 
 }
