@@ -169,8 +169,8 @@ public class Lobfile implements HostingProvider {
 
     @NotNull
     static String buildUploadFileName(String packName) {
-        String sanitized = sanitizePackName(packName);
-        return sanitized.toLowerCase(Locale.ROOT).endsWith(".zip") ? sanitized : sanitized + ".zip";
+        String sanitized = sanitizePackName(packName).toLowerCase(Locale.ROOT);
+        return sanitized.endsWith(".zip") ? sanitized : sanitized + ".zip";
     }
 
     @NotNull
