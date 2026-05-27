@@ -16,36 +16,24 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 public class TotemAnimationCommand {
 
-    private static volatile Object cachedDeathProtectionType;
+    private static final AtomicReference<DeathProtectionAPI> DEATH_PROTECTION_API = new AtomicReference<>();
+    private static final AtomicReference<PacketEventsAPI> PACKET_EVENTS_API = new AtomicReference<>();
     private static final Object DEATH_PROTECTION_INIT_LOCK = new Object();
-    private static volatile Class<?> cachedDataComponentTypeClass;
-    private static volatile Class<?> cachedValuedDataComponentTypeClass;
-    private static volatile Method cachedSetDataMethod;
-    private static volatile Method cachedHasDataMethod;
-    private static volatile Method cachedDeathProtectionMethod;
-    private static volatile boolean deathProtectionTypeInitialized;
-    private static volatile boolean dataComponentTypeClassInitialized;
-    private static volatile boolean valuedDataComponentTypeClassInitialized;
-    private static volatile boolean setDataMethodInitialized;
-    private static volatile boolean hasDataMethodInitialized;
-    private static volatile boolean deathProtectionMethodInitialized;
     private static final Object PACKET_EVENTS_INIT_LOCK = new Object();
-    private static volatile Method cachedPacketEventsGetAPIMethod;
-    private static volatile Method cachedPacketEventsGetPlayerManagerMethod;
-    private static volatile Method cachedPacketEventsSendPacketMethod;
-    private static volatile Constructor<?> cachedEntityStatusPacketConstructor;
-    private static volatile boolean cachedEntityStatusPacketUsesByte;
-    private static volatile boolean packetEventsMethodsInitialized;
+    private static volatile boolean deathProtectionInitialized;
+    private static volatile boolean packetEventsInitialized;
     private static volatile boolean loggedDeathProtectionFailure;
     private static volatile boolean loggedPacketEventsFailure;
 
@@ -84,14 +72,10 @@ public class TotemAnimationCommand {
 
     private ItemStack parseItem(String itemId) {
         ItemBuilder itemBuilder = OraxenItems.getItemById(itemId);
-        if (itemBuilder != null) {
-            return itemBuilder.build();
-        }
+        if (itemBuilder != null) return itemBuilder.build();
 
         String materialName = itemId.toUpperCase(Locale.ROOT);
-        if (materialName.startsWith("MINECRAFT:")) {
-            materialName = materialName.substring("MINECRAFT:".length());
-        }
+        if (materialName.startsWith("MINECRAFT:")) materialName = materialName.substring("MINECRAFT:".length());
 
         Material material = Material.matchMaterial(materialName);
         return material != null && material.isItem() ? new ItemStack(material) : null;
@@ -102,16 +86,12 @@ public class TotemAnimationCommand {
         ItemStack previousOffHand = target.getInventory().getItemInOffHand().clone();
         boolean mainHandIsTotem = isDeathProtectionItem(previousMainHand);
 
-        if (mainHandIsTotem) {
-            target.sendEquipmentChange(target, EquipmentSlot.HAND, null);
-        }
+        if (mainHandIsTotem) target.sendEquipmentChange(target, EquipmentSlot.HAND, null);
 
         target.sendEquipmentChange(target, EquipmentSlot.OFF_HAND, animationItem);
         sendTotemStatus(target);
 
-        if (mainHandIsTotem) {
-            target.sendEquipmentChange(target, EquipmentSlot.HAND, previousMainHand);
-        }
+        if (mainHandIsTotem) target.sendEquipmentChange(target, EquipmentSlot.HAND, previousMainHand);
 
         target.sendEquipmentChange(target, EquipmentSlot.OFF_HAND, previousOffHand);
     }
@@ -137,12 +117,14 @@ public class TotemAnimationCommand {
     }
 
     private static boolean sendPacketEventsTotemStatus(Player target) {
+        PacketEventsAPI api = getPacketEventsAPI();
+        if (api == null) return false;
+
         try {
-            if (!initializePacketEventsMethods()) return false;
-            Object packetEventsAPI = cachedPacketEventsGetAPIMethod.invoke(null);
-            Object playerManager = cachedPacketEventsGetPlayerManagerMethod.invoke(packetEventsAPI);
-            Object packet = cachedEntityStatusPacketConstructor.newInstance(target.getEntityId(), cachedEntityStatusPacketUsesByte ? (byte) 35 : 35);
-            cachedPacketEventsSendPacketMethod.invoke(playerManager, target, packet);
+            Object packetEventsAPI = api.getApiMethod.invoke(null);
+            Object playerManager = api.getPlayerManagerMethod.invoke(packetEventsAPI);
+            Object packet = api.entityStatusPacketConstructor.newInstance(target.getEntityId(), api.entityStatusPacketUsesByte ? (byte) 35 : 35);
+            api.sendPacketMethod.invoke(playerManager, target, packet);
             return true;
         } catch (ReflectiveOperationException | LinkageError e) {
             logPacketEventsFailure(e);
@@ -150,77 +132,15 @@ public class TotemAnimationCommand {
         }
     }
 
-    private static boolean initializePacketEventsMethods() throws ReflectiveOperationException {
-        if (packetEventsMethodsInitialized) return hasPacketEventsMethods();
-
-        synchronized (PACKET_EVENTS_INIT_LOCK) {
-            if (packetEventsMethodsInitialized) return hasPacketEventsMethods();
-
-            try {
-                Class<?> packetEventsClass = Class.forName("com.github.retrooper.packetevents.PacketEvents");
-                Class<?> packetEventsAPIClass = Class.forName("com.github.retrooper.packetevents.PacketEventsAPI");
-                Class<?> playerManagerClass = Class.forName("com.github.retrooper.packetevents.manager.player.PlayerManager");
-                Class<?> packetWrapperClass = Class.forName("com.github.retrooper.packetevents.wrapper.PacketWrapper");
-                Class<?> entityStatusPacketClass = Class.forName("com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityStatus");
-
-                cachedPacketEventsGetAPIMethod = packetEventsClass.getMethod("getAPI");
-                cachedPacketEventsGetPlayerManagerMethod = packetEventsAPIClass.getMethod("getPlayerManager");
-                cachedPacketEventsSendPacketMethod = playerManagerClass.getMethod("sendPacket", Object.class, packetWrapperClass);
-                try {
-                    cachedEntityStatusPacketConstructor = entityStatusPacketClass.getConstructor(int.class, int.class);
-                    cachedEntityStatusPacketUsesByte = false;
-                } catch (NoSuchMethodException ignored) {
-                    cachedEntityStatusPacketConstructor = entityStatusPacketClass.getConstructor(int.class, byte.class);
-                    cachedEntityStatusPacketUsesByte = true;
-                }
-                return true;
-            } catch (ReflectiveOperationException | LinkageError e) {
-                cachedPacketEventsGetAPIMethod = null;
-                cachedPacketEventsGetPlayerManagerMethod = null;
-                cachedPacketEventsSendPacketMethod = null;
-                cachedEntityStatusPacketConstructor = null;
-                cachedEntityStatusPacketUsesByte = false;
-                throw e;
-            } finally {
-                packetEventsMethodsInitialized = true;
-            }
-        }
-    }
-
-    private static boolean hasPacketEventsMethods() {
-        return cachedPacketEventsGetAPIMethod != null
-                && cachedPacketEventsGetPlayerManagerMethod != null
-                && cachedPacketEventsSendPacketMethod != null
-                && cachedEntityStatusPacketConstructor != null;
-    }
-
-    private static void logPacketEventsFailure(Throwable throwable) {
-        if (!loggedPacketEventsFailure) {
-            synchronized (PACKET_EVENTS_INIT_LOCK) {
-                if (!loggedPacketEventsFailure) {
-                    Logs.logWarning("Failed to send totem animation via PacketEvents; falling back to Bukkit's deprecated totem effect. See debug log for details.");
-                    loggedPacketEventsFailure = true;
-                }
-            }
-        }
-        Logs.debug(throwable);
-    }
-
     private ItemStack addDeathProtection(ItemStack itemStack) {
-        if (!supportsDeathProtectionComponent() || itemStack.getType() == Material.AIR) {
-            return itemStack;
-        }
+        if (!supportsDeathProtectionComponent() || itemStack.getType() == Material.AIR) return itemStack;
+
+        DeathProtectionAPI api = getDeathProtectionAPI();
+        if (api == null) return itemStack;
 
         try {
-            Object deathProtectionType = getDeathProtectionType();
-            if (deathProtectionType == null) return itemStack;
-
-            Method deathProtectionMethod = getDeathProtectionMethod();
-            Method setDataMethod = getSetDataMethod();
-            if (deathProtectionMethod == null || setDataMethod == null) return itemStack;
-
-            Object deathProtection = deathProtectionMethod.invoke(null);
-            setDataMethod.invoke(itemStack, deathProtectionType, deathProtection);
+            Object deathProtection = api.deathProtectionMethod.invoke(null);
+            api.setDataMethod.invoke(itemStack, api.deathProtectionType, deathProtection);
         } catch (ReflectiveOperationException | LinkageError e) {
             logDeathProtectionFailure(e);
         }
@@ -229,19 +149,14 @@ public class TotemAnimationCommand {
     }
 
     private boolean isDeathProtectionItem(ItemStack itemStack) {
-        if (itemStack.getType() == Material.TOTEM_OF_UNDYING) {
-            return true;
-        }
+        if (itemStack.getType() == Material.TOTEM_OF_UNDYING) return true;
+        if (!supportsDeathProtectionComponent()) return false;
 
-        if (!supportsDeathProtectionComponent()) {
-            return false;
-        }
+        DeathProtectionAPI api = getDeathProtectionAPI();
+        if (api == null) return false;
 
         try {
-            Object deathProtectionType = getDeathProtectionType();
-            Method hasDataMethod = getHasDataMethod();
-            if (deathProtectionType == null || hasDataMethod == null) return false;
-            return (boolean) hasDataMethod.invoke(itemStack, deathProtectionType);
+            return (boolean) api.hasDataMethod.invoke(itemStack, api.dataComponentType.cast(api.deathProtectionType));
         } catch (ReflectiveOperationException | LinkageError e) {
             Logs.debug(e);
             return false;
@@ -254,28 +169,81 @@ public class TotemAnimationCommand {
 
     public static void clearReflectionCaches() {
         synchronized (DEATH_PROTECTION_INIT_LOCK) {
-            cachedDeathProtectionType = null;
-            cachedDataComponentTypeClass = null;
-            cachedValuedDataComponentTypeClass = null;
-            cachedSetDataMethod = null;
-            cachedHasDataMethod = null;
-            cachedDeathProtectionMethod = null;
-            deathProtectionTypeInitialized = false;
-            dataComponentTypeClassInitialized = false;
-            valuedDataComponentTypeClassInitialized = false;
-            setDataMethodInitialized = false;
-            hasDataMethodInitialized = false;
-            deathProtectionMethodInitialized = false;
+            DEATH_PROTECTION_API.set(null);
+            deathProtectionInitialized = false;
             loggedDeathProtectionFailure = false;
         }
 
         synchronized (PACKET_EVENTS_INIT_LOCK) {
-            cachedPacketEventsGetAPIMethod = null;
-            cachedPacketEventsGetPlayerManagerMethod = null;
-            cachedPacketEventsSendPacketMethod = null;
-            cachedEntityStatusPacketConstructor = null;
-            packetEventsMethodsInitialized = false;
+            PACKET_EVENTS_API.set(null);
+            packetEventsInitialized = false;
             loggedPacketEventsFailure = false;
+        }
+    }
+
+    private static @Nullable DeathProtectionAPI getDeathProtectionAPI() {
+        if (deathProtectionInitialized) return DEATH_PROTECTION_API.get();
+
+        synchronized (DEATH_PROTECTION_INIT_LOCK) {
+            if (deathProtectionInitialized) return DEATH_PROTECTION_API.get();
+
+            try {
+                Class<?> dataComponentTypeClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType");
+                Class<?> valuedDataComponentTypeClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType$Valued");
+                Field deathProtectionField = Class.forName("io.papermc.paper.datacomponent.DataComponentTypes").getField("DEATH_PROTECTION");
+                Object deathProtectionType = deathProtectionField.get(null);
+                Method deathProtectionMethod = Class.forName("io.papermc.paper.datacomponent.item.DeathProtection").getMethod("deathProtection");
+                Method setDataMethod = ItemStack.class.getMethod("setData", valuedDataComponentTypeClass, Object.class);
+                Method hasDataMethod = ItemStack.class.getMethod("hasData", dataComponentTypeClass);
+                DEATH_PROTECTION_API.set(new DeathProtectionAPI(deathProtectionType, dataComponentTypeClass, deathProtectionMethod, setDataMethod, hasDataMethod));
+            } catch (ReflectiveOperationException | LinkageError e) {
+                logDeathProtectionFailure(e);
+                DEATH_PROTECTION_API.set(null);
+            } finally {
+                deathProtectionInitialized = true;
+            }
+
+            return DEATH_PROTECTION_API.get();
+        }
+    }
+
+    private static @Nullable PacketEventsAPI getPacketEventsAPI() {
+        if (packetEventsInitialized) return PACKET_EVENTS_API.get();
+
+        synchronized (PACKET_EVENTS_INIT_LOCK) {
+            if (packetEventsInitialized) return PACKET_EVENTS_API.get();
+
+            try {
+                Class<?> packetEventsClass = Class.forName("com.github.retrooper.packetevents.PacketEvents");
+                Class<?> packetEventsAPIClass = Class.forName("com.github.retrooper.packetevents.PacketEventsAPI");
+                Class<?> playerManagerClass = Class.forName("com.github.retrooper.packetevents.manager.player.PlayerManager");
+                Class<?> packetWrapperClass = Class.forName("com.github.retrooper.packetevents.wrapper.PacketWrapper");
+                Class<?> entityStatusPacketClass = Class.forName("com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityStatus");
+
+                Constructor<?> entityStatusPacketConstructor;
+                boolean entityStatusPacketUsesByte;
+                try {
+                    entityStatusPacketConstructor = entityStatusPacketClass.getConstructor(int.class, int.class);
+                    entityStatusPacketUsesByte = false;
+                } catch (NoSuchMethodException ignored) {
+                    entityStatusPacketConstructor = entityStatusPacketClass.getConstructor(int.class, byte.class);
+                    entityStatusPacketUsesByte = true;
+                }
+
+                PACKET_EVENTS_API.set(new PacketEventsAPI(
+                        packetEventsClass.getMethod("getAPI"),
+                        packetEventsAPIClass.getMethod("getPlayerManager"),
+                        playerManagerClass.getMethod("sendPacket", Object.class, packetWrapperClass),
+                        entityStatusPacketConstructor,
+                        entityStatusPacketUsesByte));
+            } catch (ReflectiveOperationException | LinkageError e) {
+                logPacketEventsFailure(e);
+                PACKET_EVENTS_API.set(null);
+            } finally {
+                packetEventsInitialized = true;
+            }
+
+            return PACKET_EVENTS_API.get();
         }
     }
 
@@ -291,100 +259,21 @@ public class TotemAnimationCommand {
         Logs.debug(throwable);
     }
 
-    private static Object getDeathProtectionType() throws ReflectiveOperationException {
-        if (deathProtectionTypeInitialized) return cachedDeathProtectionType;
-
-        synchronized (DEATH_PROTECTION_INIT_LOCK) {
-            if (deathProtectionTypeInitialized) return cachedDeathProtectionType;
-
-            try {
-                Field deathProtectionType = Class.forName("io.papermc.paper.datacomponent.DataComponentTypes")
-                        .getField("DEATH_PROTECTION");
-                cachedDeathProtectionType = deathProtectionType.get(null);
-                return cachedDeathProtectionType;
-            } finally {
-                deathProtectionTypeInitialized = true;
+    private static void logPacketEventsFailure(Throwable throwable) {
+        if (!loggedPacketEventsFailure) {
+            synchronized (PACKET_EVENTS_INIT_LOCK) {
+                if (!loggedPacketEventsFailure) {
+                    Logs.logWarning("Failed to send totem animation via PacketEvents; falling back to Bukkit's deprecated totem effect. See debug log for details.");
+                    loggedPacketEventsFailure = true;
+                }
             }
         }
+        Logs.debug(throwable);
     }
 
-    private static Method getDeathProtectionMethod() throws ReflectiveOperationException {
-        if (deathProtectionMethodInitialized) return cachedDeathProtectionMethod;
+    private record DeathProtectionAPI(Object deathProtectionType, Class<?> dataComponentType, Method deathProtectionMethod,
+                                      Method setDataMethod, Method hasDataMethod) {}
 
-        synchronized (DEATH_PROTECTION_INIT_LOCK) {
-            if (deathProtectionMethodInitialized) return cachedDeathProtectionMethod;
-
-            try {
-                cachedDeathProtectionMethod = Class.forName("io.papermc.paper.datacomponent.item.DeathProtection")
-                        .getMethod("deathProtection");
-                return cachedDeathProtectionMethod;
-            } finally {
-                deathProtectionMethodInitialized = true;
-            }
-        }
-    }
-
-    private static Method getSetDataMethod() throws ReflectiveOperationException {
-        if (setDataMethodInitialized) return cachedSetDataMethod;
-
-        synchronized (DEATH_PROTECTION_INIT_LOCK) {
-            if (setDataMethodInitialized) return cachedSetDataMethod;
-
-            try {
-                Class<?> valuedDataComponentTypeClass = getValuedDataComponentTypeClass();
-                if (valuedDataComponentTypeClass == null) return null;
-                cachedSetDataMethod = ItemStack.class.getMethod("setData", valuedDataComponentTypeClass, Object.class);
-                return cachedSetDataMethod;
-            } finally {
-                setDataMethodInitialized = true;
-            }
-        }
-    }
-
-    private static Method getHasDataMethod() throws ReflectiveOperationException {
-        if (hasDataMethodInitialized) return cachedHasDataMethod;
-
-        synchronized (DEATH_PROTECTION_INIT_LOCK) {
-            if (hasDataMethodInitialized) return cachedHasDataMethod;
-
-            try {
-                Class<?> dataComponentTypeClass = getDataComponentTypeClass();
-                if (dataComponentTypeClass == null) return null;
-                cachedHasDataMethod = ItemStack.class.getMethod("hasData", dataComponentTypeClass);
-                return cachedHasDataMethod;
-            } finally {
-                hasDataMethodInitialized = true;
-            }
-        }
-    }
-
-    private static Class<?> getDataComponentTypeClass() throws ClassNotFoundException {
-        if (dataComponentTypeClassInitialized) return cachedDataComponentTypeClass;
-
-        synchronized (DEATH_PROTECTION_INIT_LOCK) {
-            if (dataComponentTypeClassInitialized) return cachedDataComponentTypeClass;
-
-            try {
-                cachedDataComponentTypeClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType");
-                return cachedDataComponentTypeClass;
-            } finally {
-                dataComponentTypeClassInitialized = true;
-            }
-        }
-    }
-
-    private static Class<?> getValuedDataComponentTypeClass() throws ClassNotFoundException {
-        if (valuedDataComponentTypeClassInitialized) return cachedValuedDataComponentTypeClass;
-
-        synchronized (DEATH_PROTECTION_INIT_LOCK) {
-            if (valuedDataComponentTypeClassInitialized) return cachedValuedDataComponentTypeClass;
-
-            try {
-                cachedValuedDataComponentTypeClass = Class.forName("io.papermc.paper.datacomponent.DataComponentType$Valued");
-                return cachedValuedDataComponentTypeClass;
-            } finally {
-                valuedDataComponentTypeClassInitialized = true;
-            }
-        }
-    }
+    private record PacketEventsAPI(Method getApiMethod, Method getPlayerManagerMethod, Method sendPacketMethod,
+                                   Constructor<?> entityStatusPacketConstructor, boolean entityStatusPacketUsesByte) {}
 }
