@@ -23,7 +23,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Locale;
 import java.util.UUID;
 
 public class Lobfile implements HostingProvider {
@@ -176,8 +175,8 @@ public class Lobfile implements HostingProvider {
 
     @NotNull
     static String buildUploadFileName(String packName) {
-        String sanitized = sanitizePackName(packName).toLowerCase(Locale.ROOT);
-        return sanitized.endsWith(".zip") ? sanitized : sanitized + ".zip";
+        String sanitized = sanitizePackName(packName);
+        return sanitized.toLowerCase().endsWith(".zip") ? sanitized : sanitized + ".zip";
     }
 
     @NotNull
@@ -189,10 +188,9 @@ public class Lobfile implements HostingProvider {
 
     @NotNull
     String buildVersionedPackName(String packVersion) {
-        String normalizedPackName = packName.toLowerCase(Locale.ROOT);
-        String baseName = normalizedPackName.endsWith(".zip")
-                ? normalizedPackName.substring(0, normalizedPackName.length() - 4)
-                : normalizedPackName;
+        String baseName = packName.toLowerCase().endsWith(".zip")
+                ? packName.substring(0, packName.length() - 4)
+                : packName;
         return baseName + "_" + sanitizePackName(packVersion);
     }
 
