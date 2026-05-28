@@ -6,11 +6,12 @@ import me.gabytm.util.actions.actions.Action;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.ParseException;
 import org.springframework.expression.spel.SpelEvaluationException;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
+import org.springframework.expression.spel.support.SimpleEvaluationContext;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -75,7 +76,10 @@ public class ClickAction {
         if (conditions.isEmpty()) return true;
         if (actions.isEmpty()) return false;
 
-        final StandardEvaluationContext context = new StandardEvaluationContext(player);
+        final EvaluationContext context = SimpleEvaluationContext.forReadOnlyDataBinding()
+                .withInstanceMethods()
+                .withRootObject(player)
+                .build();
         context.setVariable("player", player);
         context.setVariable("server", Bukkit.getServer());
 
