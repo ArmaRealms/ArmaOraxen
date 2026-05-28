@@ -634,7 +634,7 @@ class TextShaderGenerator {
         String vertexPrelude = snippets.vertexPrelude();
         String vertexEffects = snippets.vertexEffects();
 
-        VertexShaderConfig config = createVertexShaderConfig(is1_21_6Plus, is26Plus, seeThrough);
+        VertexShaderConfig config = createVertexShaderConfig(target, is1_21_6Plus, is26Plus, seeThrough);
         String mainBody = getVertexShaderMainBody(config, vertexEffects, false);
 
         if (is1_21_6Plus) {
@@ -756,7 +756,7 @@ class TextShaderGenerator {
         }
     }
 
-    private VertexShaderConfig createVertexShaderConfig(boolean is1_21_6Plus, boolean is26Plus, boolean seeThrough) {
+    private VertexShaderConfig createVertexShaderConfig(TextShaderTarget target, boolean is1_21_6Plus, boolean is26Plus, boolean seeThrough) {
         if (is1_21_6Plus) {
             String litColor = is26Plus
                     ? "Color * sample_lightmap(Sampler2, UV2)"
@@ -782,18 +782,21 @@ class TextShaderGenerator {
                 );
             }
         } else {
+            String fogDistance = target.isAtLeast("1.20.2")
+                    ? "vertexDistance = fog_distance(ModelViewMat, pos, FogShape);"
+                    : "vertexDistance = fog_distance(pos, FogShape);";
             if (seeThrough) {
                 return new VertexShaderConfig(
-                        "vertexDistance = fog_distance(pos, FogShape);",
-                        "vertexDistance = fog_distance(pos, FogShape);",
+                        fogDistance,
+                        fogDistance,
                         "Color",
                         "vec4(1.0, 1.0, 1.0, visible)",
                         "int(mod(float(rawFrame), float(totalFrames)))"
                 );
             } else {
                 return new VertexShaderConfig(
-                        "vertexDistance = fog_distance(pos, FogShape);",
-                        "vertexDistance = fog_distance(pos, FogShape);",
+                        fogDistance,
+                        fogDistance,
                         "Color * texelFetch(Sampler2, UV2 / 16, 0)",
                         "vec4(1.0, 1.0, 1.0, visible) * texelFetch(Sampler2, UV2 / 16, 0)",
                         "int(mod(float(rawFrame), float(totalFrames)))"
@@ -1041,7 +1044,7 @@ class TextShaderGenerator {
         String vertexPrelude = snippets.vertexPrelude();
         String vertexEffects = snippets.vertexEffects();
 
-        VertexShaderConfig config = createVertexShaderConfig(is1_21_6Plus, is26Plus, false);
+        VertexShaderConfig config = createVertexShaderConfig(target, is1_21_6Plus, is26Plus, false);
         String mainBody = getVertexShaderMainBody(config, vertexEffects, true);
 
         if (is1_21_6Plus) {

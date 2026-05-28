@@ -4,6 +4,7 @@ import io.th0rgal.oraxen.compatibilities.provided.blocklocker.BlockLockerMechani
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockBreaking;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.block.Placeable;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.light.LightMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.limitedplacing.LimitedPlacing;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.storage.StorageMechanic;
@@ -23,6 +24,7 @@ public class ChorusBlockMechanic extends Mechanic {
     private final int customVariation;
     private String model;
     private final BlockBreaking breaking;
+    private final Placeable placeable;
     private final BlockSounds blockSounds;
     private final LimitedPlacing limitedPlacing;
     private final StorageMechanic storage;
@@ -47,6 +49,7 @@ public class ChorusBlockMechanic extends Mechanic {
         model = section.getString("model");
         customVariation = section.getInt("custom_variation");
         breaking = new BlockBreaking(section, getItemID());
+        placeable = section.contains("placeable") ? new Placeable(section) : null;
         light = new LightMechanic(section);
 
         isFalling = section.getBoolean("is_falling", false);
@@ -108,6 +111,8 @@ public class ChorusBlockMechanic extends Mechanic {
     public Drop getDrop(ItemStack tool) {
         return breaking.drop(tool);
     }
+
+    public boolean canPlaceOn(org.bukkit.block.BlockFace face) { return placeable == null || placeable.canPlaceOn(face); }
 
     public boolean hasBlockSounds() {
         return blockSounds != null;

@@ -339,7 +339,7 @@ public class ShapedBlockMechanicListener implements Listener {
         }
 
         // Validate placement
-        if (!canPlaceBlock(player, targetBlock, clickedBlock, shapedMechanic)) return;
+        if (!canPlaceBlock(player, targetBlock, clickedBlock, face, shapedMechanic)) return;
 
         // Additional door validation
         if (shapedMechanic.getBlockType() == ShapedBlockType.DOOR) {
@@ -359,8 +359,9 @@ public class ShapedBlockMechanicListener implements Listener {
         return clickedBlock.getRelative(face);
     }
 
-    private boolean canPlaceBlock(Player player, Block targetBlock, Block clickedBlock, ShapedBlockMechanic mechanic) {
+    private boolean canPlaceBlock(Player player, Block targetBlock, Block clickedBlock, BlockFace face, ShapedBlockMechanic mechanic) {
         if (!BlockHelpers.isReplaceable(targetBlock.getType())) return false;
+        if (!mechanic.canPlaceOn(face)) return false;
 
         Range<Integer> worldHeightRange = Range.of(
             targetBlock.getWorld().getMinHeight(),

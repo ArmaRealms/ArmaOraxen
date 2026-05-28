@@ -5,6 +5,7 @@ import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockBreaking;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.block.Placeable;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.light.LightMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.limitedplacing.LimitedPlacing;
 import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
@@ -30,6 +31,7 @@ public class ShapedBlockMechanic extends Mechanic {
     private final int customVariation;
     private final Material placedMaterial;
     private final BlockBreaking breaking;
+    private final Placeable placeable;
     private final LightMechanic light;
     private final LimitedPlacing limitedPlacing;
     private final BlockSounds blockSounds;
@@ -62,6 +64,7 @@ public class ShapedBlockMechanic extends Mechanic {
 
         // Parse breaking
         this.breaking = new BlockBreaking(section, getItemID());
+        this.placeable = section.contains("placeable") ? new Placeable(section) : null;
 
         // Parse light
         this.light = new LightMechanic(section);
@@ -78,6 +81,8 @@ public class ShapedBlockMechanic extends Mechanic {
     public ShapedBlockType getBlockType() {
         return blockType;
     }
+
+    public boolean canPlaceOn(org.bukkit.block.BlockFace face) { return placeable == null || placeable.canPlaceOn(face); }
 
     public int getCustomVariation() {
         return customVariation;
