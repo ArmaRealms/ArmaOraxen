@@ -633,7 +633,7 @@ public class ItemBuilder {
         try {
             this.jukeboxPlayable = jukeboxPlayable;
         } catch (Exception e) {
-            Logs.logWarning("Error setting JukeboxPlayable: This component is not available in your server version");
+            Logs.logWarning("Error setting JukeboxPlayable; This component is not available in your server version");
             if (Settings.DEBUG.toBool()) {
                 e.printStackTrace();
             }
@@ -1344,7 +1344,7 @@ public class ItemBuilder {
 
     /**
      * Sets a generic component on this item
-     * 
+     *
      * @param type      The component type (e.g. "food", "tool", etc.)
      * @param component The component object
      */
@@ -1358,7 +1358,7 @@ public class ItemBuilder {
 
     /**
      * Gets a generic component from this item
-     * 
+     *
      * @param type The component type
      * @return The component object, or null if not found
      */
@@ -1369,7 +1369,7 @@ public class ItemBuilder {
 
     /**
      * Checks if this item has a specific component
-     * 
+     *
      * @param type The component type
      * @return true if the component exists
      */
