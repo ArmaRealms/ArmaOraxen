@@ -1,5 +1,6 @@
 package io.th0rgal.oraxen.mechanics.provided.gameplay.block;
 
+import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicConfigProperty;
 import io.th0rgal.oraxen.items.ItemUpdater;
@@ -37,6 +38,7 @@ public class BlockMechanicFactory extends MechanicFactory {
         stringBlockFactory = new StringBlockMechanicFactory(section, true);
         chorusBlockFactory = new ChorusBlockMechanicFactory(section, true);
         shapedBlockFactory = new ShapedBlockMechanicFactory(section, true);
+        MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new BlockMechanicListener());
         instance = this;
     }
 
@@ -147,6 +149,7 @@ public class BlockMechanicFactory extends MechanicFactory {
                 )),
                 MechanicConfigProperty.integer("custom-variation", "Backing-state variation ID", 1),
                 MechanicConfigProperty.list("breaking", "Ordered block breaking rules"),
+                MechanicConfigProperty.list("events", "Click events with actions to run when the placed block is clicked"),
                 MechanicConfigProperty.integer("light", "Light level emitted (0-15)", 0, 0, 15),
                 MechanicConfigProperty.object("block-sounds", "Custom block sounds", Map.of(
                         "place-sound", MechanicConfigProperty.string("place-sound", "Sound when placed"),

@@ -5,6 +5,7 @@ import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockBreaking;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockEvents;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.block.Placeable;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.light.LightMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.limitedplacing.LimitedPlacing;
@@ -14,6 +15,8 @@ import io.th0rgal.oraxen.utils.drops.Loot;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
+import org.bukkit.event.block.Action;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
@@ -35,6 +38,7 @@ public class ShapedBlockMechanic extends Mechanic {
     private final LightMechanic light;
     private final LimitedPlacing limitedPlacing;
     private final BlockSounds blockSounds;
+    private final BlockEvents blockEvents;
     private String model;
 
     @SuppressWarnings("unchecked")
@@ -76,6 +80,8 @@ public class ShapedBlockMechanic extends Mechanic {
         // Parse block sounds
         ConfigurationSection blockSoundsSection = section.getConfigurationSection("block_sounds");
         this.blockSounds = blockSoundsSection != null ? new BlockSounds(blockSoundsSection) : null;
+
+        this.blockEvents = new BlockEvents(section, getItemID());
     }
 
     public ShapedBlockType getBlockType() {
@@ -155,6 +161,14 @@ public class ShapedBlockMechanic extends Mechanic {
 
     public BlockSounds getBlockSounds() {
         return blockSounds;
+    }
+
+    public boolean hasBlockEvents() {
+        return !blockEvents.isEmpty();
+    }
+
+    public boolean runBlockEvents(Player player, Action action) {
+        return blockEvents.run(player, action);
     }
 
     public static String getItemId(CustomBlockData blockData) {

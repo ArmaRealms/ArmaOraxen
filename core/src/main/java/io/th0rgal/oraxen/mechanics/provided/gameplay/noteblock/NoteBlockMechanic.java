@@ -5,6 +5,7 @@ import io.th0rgal.oraxen.compatibilities.provided.blocklocker.BlockLockerMechani
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockBreaking;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockEvents;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.block.Placeable;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.light.LightMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.limitedplacing.LimitedPlacing;
@@ -19,6 +20,7 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.Action;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
@@ -42,6 +44,7 @@ public class NoteBlockMechanic extends Mechanic {
     private final LogStripping logStripping;
     private final DirectionalBlock directionalBlock;
     private final List<ClickAction> clickActions;
+    private final BlockEvents blockEvents;
 
     private final BlockLockerMechanic blockLocker;
 
@@ -60,6 +63,7 @@ public class NoteBlockMechanic extends Mechanic {
 
         light = new LightMechanic(section);
         clickActions = ClickAction.parseList(section);
+        blockEvents = new BlockEvents(section, getItemID());
         canIgnite = section.getBoolean("can_ignite", false);
         isFalling = section.getBoolean("is_falling", false);
         blastResistant = section.getBoolean("blast_resistant", false);
@@ -189,6 +193,10 @@ public class NoteBlockMechanic extends Mechanic {
 
     public boolean hasClickActions() { return !clickActions.isEmpty(); }
 
+    public boolean hasBlockEvents() { return !blockEvents.isEmpty(); }
+
+    public boolean runBlockEvents(final Player player, final Action action) { return blockEvents.run(player, action); }
+
     public void runClickActions(final Player player) {
         for (final ClickAction action : clickActions) {
             if (action.canRun(player)) {
@@ -198,7 +206,7 @@ public class NoteBlockMechanic extends Mechanic {
     }
 
     public boolean isInteractable() {
-        return hasClickActions() || isStorage();
+        return hasClickActions() || hasBlockEvents() || isStorage();
     }
 
     public boolean isBlastResistant() {

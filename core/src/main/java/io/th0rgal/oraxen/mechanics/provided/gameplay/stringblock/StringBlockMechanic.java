@@ -4,6 +4,7 @@ import io.th0rgal.oraxen.compatibilities.provided.blocklocker.BlockLockerMechani
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockBreaking;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockEvents;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.block.Placeable;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.light.LightMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.limitedplacing.LimitedPlacing;
@@ -15,6 +16,7 @@ import io.th0rgal.oraxen.utils.drops.Drop;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.Action;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
@@ -42,6 +44,7 @@ public class StringBlockMechanic extends Mechanic {
 
     private final BlockLockerMechanic blockLocker;
     private final List<ClickAction> clickActions;
+    private final BlockEvents blockEvents;
 
     // Stackable block support: each variation represents one stack level
     private final List<StackVariation> stackVariations;
@@ -90,6 +93,7 @@ public class StringBlockMechanic extends Mechanic {
         blockLocker = blockLockerSection != null ? new BlockLockerMechanic(blockLockerSection) : null;
 
         clickActions = ClickAction.parseList(section);
+        blockEvents = new BlockEvents(section, getItemID());
 
         // Parse stackable block variations
         List<?> stackList = section.getList("stackable");
@@ -213,6 +217,14 @@ public class StringBlockMechanic extends Mechanic {
         return !clickActions.isEmpty();
     }
 
+    public boolean hasBlockEvents() {
+        return !blockEvents.isEmpty();
+    }
+
+    public boolean runBlockEvents(final Player player, final Action action) {
+        return blockEvents.run(player, action);
+    }
+
     public List<ClickAction> getClickActions() {
         return clickActions;
     }
@@ -226,7 +238,7 @@ public class StringBlockMechanic extends Mechanic {
     }
 
     public boolean isInteractable() {
-        return hasClickActions() || isStorage() || isStackable();
+        return hasClickActions() || hasBlockEvents() || isStorage() || isStackable();
     }
 
     // --- Stackable block API ---

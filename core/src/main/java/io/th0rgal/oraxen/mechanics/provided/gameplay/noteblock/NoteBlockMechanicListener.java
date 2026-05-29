@@ -472,7 +472,7 @@ public class NoteBlockMechanicListener implements Listener {
             final BlockPlaceEvent blockPlaceEvent = new BlockPlaceEvent(target, target.getState(), placedAgainst, item, player, true, hand);
             final Material material = newData.getMaterial();
 
-            if (againstMechanic != null && (againstMechanic.isStorage() || againstMechanic.hasClickActions()))
+            if (againstMechanic != null && (againstMechanic.isStorage() || againstMechanic.hasClickActions() || againstMechanic.hasBlockEvents()))
                 blockPlaceEvent.setCancelled(true);
             if (BlockHelpers.isStandingInside(player, target) || !ProtectionLib.canBuild(player, target.getLocation()))
                 blockPlaceEvent.setCancelled(true);

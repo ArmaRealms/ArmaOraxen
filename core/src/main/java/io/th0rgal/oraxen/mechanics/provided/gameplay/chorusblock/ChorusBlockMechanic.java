@@ -4,6 +4,7 @@ import io.th0rgal.oraxen.compatibilities.provided.blocklocker.BlockLockerMechani
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockBreaking;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockEvents;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.block.Placeable;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.light.LightMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.limitedplacing.LimitedPlacing;
@@ -15,6 +16,7 @@ import org.bukkit.Material;
 import org.bukkit.block.data.MultipleFacing;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.Action;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
@@ -34,6 +36,7 @@ public class ChorusBlockMechanic extends Mechanic {
     private final boolean immovable;
     private final BlockLockerMechanic blockLocker;
     private final List<ClickAction> clickActions;
+    private final BlockEvents blockEvents;
     private final float seatHeight;
     private final boolean hasSeat;
     private final boolean hasSeatYaw;
@@ -69,6 +72,7 @@ public class ChorusBlockMechanic extends Mechanic {
         storage = storageSection != null ? new StorageMechanic(storageSection) : null;
 
         clickActions = ClickAction.parseList(section);
+        blockEvents = new BlockEvents(section, getItemID());
 
         // Parse seat configuration
         ConfigurationSection seatSection = section.getConfigurationSection("seat");
@@ -186,6 +190,14 @@ public class ChorusBlockMechanic extends Mechanic {
         return !clickActions.isEmpty();
     }
 
+    public boolean hasBlockEvents() {
+        return !blockEvents.isEmpty();
+    }
+
+    public boolean runBlockEvents(final Player player, final Action action) {
+        return blockEvents.run(player, action);
+    }
+
     public void runClickActions(final Player player) {
         for (final ClickAction action : clickActions) {
             if (action.canRun(player)) {
@@ -219,6 +231,6 @@ public class ChorusBlockMechanic extends Mechanic {
     }
 
     public boolean isInteractable() {
-        return hasClickActions() || isStorage() || hasSeat();
+        return hasClickActions() || hasBlockEvents() || isStorage() || hasSeat();
     }
 }
