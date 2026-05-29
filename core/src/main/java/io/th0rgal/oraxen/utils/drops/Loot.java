@@ -70,46 +70,54 @@ public class Loot {
     }
 
     public ItemStack getItemStack() {
-        if (itemStack != null) return ItemUpdater.updateItem(itemStack);
-
-        String oraxenItemId = getConfigString("oraxen_item");
-        String crucibleItemId = getConfigString("crucible_item");
-        String mmoItemsId = getConfigString("mmoitems_id");
-        String mmoItemsType = getConfigString("mmoitems_type");
-        String ecoItemId = getConfigString("ecoitem");
-        String executableItemId = getConfigString("executableitem");
-        String minecraftType = getConfigString("minecraft_type");
-        String itemId = getConfigString("item");
-
-        if (itemId != null) {
-            itemStack = resolveItem(itemId);
-        } else if (oraxenItemId != null) {
-            if (OraxenItems.getItemById(oraxenItemId) != null)
-                itemStack = OraxenItems.getItemById(oraxenItemId).build();
-        } else if (crucibleItemId != null) {
-            itemStack = new WrappedCrucibleItem(crucibleItemId).build();
-        } else if (mmoItemsId != null && mmoItemsType != null) {
-            String type = mmoItemsType;
-            String id = mmoItemsId;
-            itemStack = MMOItems.plugin.getItem(type, id);
-        } else if (ecoItemId != null) {
-            itemStack = new WrappedEcoItem(ecoItemId).build();
-        } else if (executableItemId != null) {
-            itemStack = new WrappedExecutableItem(executableItemId).build();
-        } else if (minecraftType != null) {
-            Material material = OraxenYaml.getMaterial(minecraftType);
-            itemStack = material != null ? new ItemStack(material) : null;
-        } else if (config.containsKey("minecraft_item")) {
-            itemStack = (ItemStack) config.get("minecraft_item");
+        if (itemStack == null) {
+            itemStack = resolveConfiguredItem();
+            if (itemStack == null) itemStack = resolveSourceItem();
+            if (itemStack == null)
+                Logs.logWarning("Failed to resolve loot item for source " + sourceID + " with config " + config);
         }
 
-        if (itemStack == null && sourceID != null && OraxenItems.getItemById(sourceID) != null)
-            itemStack = OraxenItems.getItemById(sourceID).build();
-
-        if (itemStack == null)
-            Logs.logWarning("Failed to resolve loot item for source " + sourceID + " with config " + config);
-
         return itemStack != null ? ItemUpdater.updateItem(itemStack) : null;
+    }
+
+    private ItemStack resolveConfiguredItem() {
+        String itemId = getConfigString("item");
+        if (itemId != null) return resolveItem(itemId);
+
+        String oraxenItemId = getConfigString("oraxen_item");
+        if (oraxenItemId != null) return buildOraxenItem(oraxenItemId);
+
+        String crucibleItemId = getConfigString("crucible_item");
+        if (crucibleItemId != null) return new WrappedCrucibleItem(crucibleItemId).build();
+
+        String mmoItemsId = getConfigString("mmoitems_id");
+        String mmoItemsType = getConfigString("mmoitems_type");
+        if (mmoItemsId != null && mmoItemsType != null) return MMOItems.plugin.getItem(mmoItemsType, mmoItemsId);
+
+        String ecoItemId = getConfigString("ecoitem");
+        if (ecoItemId != null) return new WrappedEcoItem(ecoItemId).build();
+
+        String executableItemId = getConfigString("executableitem");
+        if (executableItemId != null) return new WrappedExecutableItem(executableItemId).build();
+
+        String minecraftType = getConfigString("minecraft_type");
+        if (minecraftType != null) return buildMinecraftItem(minecraftType);
+
+        return config.containsKey("minecraft_item") ? (ItemStack) config.get("minecraft_item") : null;
+    }
+
+    private ItemStack buildOraxenItem(String itemId) {
+        ItemBuilder builder = OraxenItems.getItemById(itemId);
+        return builder != null ? builder.build() : null;
+    }
+
+    private ItemStack buildMinecraftItem(String minecraftType) {
+        Material material = OraxenYaml.getMaterial(minecraftType);
+        return material != null ? new ItemStack(material) : null;
+    }
+
+    private ItemStack resolveSourceItem() {
+        return sourceID != null ? buildOraxenItem(sourceID) : null;
     }
 
     private ItemStack resolveItem(String itemId) {

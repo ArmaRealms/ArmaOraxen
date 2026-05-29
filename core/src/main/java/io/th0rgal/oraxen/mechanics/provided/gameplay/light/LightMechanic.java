@@ -79,35 +79,56 @@ public class LightMechanic {
     public static void refreshBlockLight(Block block) {
         if (block.getType() == Material.LIGHT || block.getType().isAir()) return;
 
+        Block relative = block;
         for (BlockFace face : BLOCK_FACES) {
-            block = block.getRelative(face);
-            NoteBlockMechanic noteBlockMechanic = OraxenBlocks.getNoteBlockMechanic(block);
-            if (noteBlockMechanic != null)
-                if (noteBlockMechanic.hasLight()) noteBlockMechanic.getLight().createBlockLight(block);
-                else continue;
-
-            StringBlockMechanic stringBlockMechanic = OraxenBlocks.getStringMechanic(block);
-            if (stringBlockMechanic != null)
-                if (stringBlockMechanic.hasLight()) stringBlockMechanic.getLight().createBlockLight(block);
-                else continue;
-
-            ChorusBlockMechanic chorusBlockMechanic = OraxenBlocks.getChorusMechanic(block);
-            if (chorusBlockMechanic != null)
-                if (chorusBlockMechanic.hasLight()) chorusBlockMechanic.getLight().createBlockLight(block);
-                else continue;
-
-            ShapedBlockMechanic shapedBlockMechanic = OraxenBlocks.getShapedMechanic(block);
-            if (shapedBlockMechanic != null)
-                if (shapedBlockMechanic.hasLight()) shapedBlockMechanic.getLight().createBlockLight(block);
-                else continue;
-
-            FurnitureMechanic furnitureMechanic = OraxenFurniture.getFurnitureMechanic(block);
-            if (furnitureMechanic != null) {
-                Entity baseEntity = furnitureMechanic.getBaseEntity(block);
-                if (!furnitureMechanic.hasLight() || baseEntity == null) continue;
-                furnitureMechanic.setEntityData(baseEntity, FurnitureMechanic.getFurnitureYaw(baseEntity), baseEntity.getFacing());
-            }
+            relative = relative.getRelative(face);
+            if (refreshNoteBlockLight(relative)) continue;
+            if (refreshStringBlockLight(relative)) continue;
+            if (refreshChorusBlockLight(relative)) continue;
+            if (refreshShapedBlockLight(relative)) continue;
+            refreshFurnitureLight(relative);
         }
+    }
+
+    private static boolean refreshNoteBlockLight(Block block) {
+        NoteBlockMechanic noteBlockMechanic = OraxenBlocks.getNoteBlockMechanic(block);
+        if (noteBlockMechanic == null) return false;
+        if (!noteBlockMechanic.hasLight()) return true;
+        noteBlockMechanic.getLight().createBlockLight(block);
+        return false;
+    }
+
+    private static boolean refreshStringBlockLight(Block block) {
+        StringBlockMechanic stringBlockMechanic = OraxenBlocks.getStringMechanic(block);
+        if (stringBlockMechanic == null) return false;
+        if (!stringBlockMechanic.hasLight()) return true;
+        stringBlockMechanic.getLight().createBlockLight(block);
+        return false;
+    }
+
+    private static boolean refreshChorusBlockLight(Block block) {
+        ChorusBlockMechanic chorusBlockMechanic = OraxenBlocks.getChorusMechanic(block);
+        if (chorusBlockMechanic == null) return false;
+        if (!chorusBlockMechanic.hasLight()) return true;
+        chorusBlockMechanic.getLight().createBlockLight(block);
+        return false;
+    }
+
+    private static boolean refreshShapedBlockLight(Block block) {
+        ShapedBlockMechanic shapedBlockMechanic = OraxenBlocks.getShapedMechanic(block);
+        if (shapedBlockMechanic == null) return false;
+        if (!shapedBlockMechanic.hasLight()) return true;
+        shapedBlockMechanic.getLight().createBlockLight(block);
+        return false;
+    }
+
+    private static void refreshFurnitureLight(Block block) {
+        FurnitureMechanic furnitureMechanic = OraxenFurniture.getFurnitureMechanic(block);
+        if (furnitureMechanic == null || !furnitureMechanic.hasLight()) return;
+
+        Entity baseEntity = furnitureMechanic.getBaseEntity(block);
+        if (baseEntity == null) return;
+        furnitureMechanic.setEntityData(baseEntity, FurnitureMechanic.getFurnitureYaw(baseEntity), baseEntity.getFacing());
     }
 
     private static int clampLightLevel(int lightLevel) {

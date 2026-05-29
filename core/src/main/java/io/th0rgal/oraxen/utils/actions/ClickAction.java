@@ -2,6 +2,7 @@ package io.th0rgal.oraxen.utils.actions;
 
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.utils.logs.Logs;
 import me.gabytm.util.actions.actions.Action;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
@@ -80,6 +81,7 @@ public class ClickAction {
                 .withRootObject(player)
                 .build();
         context.setVariable("player", player);
+        context.setVariable("server", org.bukkit.Bukkit.getServer());
 
         for (final String condition : conditions) {
             try {
@@ -89,6 +91,7 @@ public class ClickAction {
                     return false;
                 }
             } catch (ParseException | EvaluationException e) {
+                Logs.logWarning("Failed to evaluate click action condition '" + condition + "' for player " + player.getName() + "; blocking action.");
                 if (Settings.DEBUG.toBool()) e.printStackTrace();
                 return false;
             }
