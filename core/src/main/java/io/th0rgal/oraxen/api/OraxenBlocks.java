@@ -611,6 +611,16 @@ public class OraxenBlocks {
         return shapedFactory != null ? shapedFactory.getMechanicFromBlock(block) : null;
     }
 
+    @org.jetbrains.annotations.Nullable
+    public static ShapedBlockMechanic getShapedMechanic(String itemID) {
+        BlockMechanicFactory blockFactory = BlockMechanicFactory.getInstance();
+        if (blockFactory == null) return null;
+        ShapedBlockMechanicFactory shapedFactory = blockFactory.getShapedBlockFactory();
+        if (shapedFactory == null) return null;
+        Mechanic mechanic = shapedFactory.getMechanic(itemID);
+        return mechanic instanceof ShapedBlockMechanic shapedBlockMechanic ? shapedBlockMechanic : null;
+    }
+
     private static void createInitialLight(Block block, String itemID) {
         ToggleLightMechanic toggleLight = getToggleLightMechanic(itemID);
         if (toggleLight != null && (toggleLight.hasToggleLight() || toggleLight.getBaseLightLevel() > 0)) {
@@ -639,6 +649,8 @@ public class OraxenBlocks {
         if (sbm != null && sbm.hasLight()) return sbm.getLight();
         ChorusBlockMechanic cbm = getChorusMechanic(itemID);
         if (cbm != null && cbm.hasLight()) return cbm.getLight();
+        ShapedBlockMechanic shaped = getShapedMechanic(itemID);
+        if (shaped != null && shaped.hasLight()) return shaped.getLight();
         return null;
     }
 

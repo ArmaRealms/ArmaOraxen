@@ -2,8 +2,10 @@ package io.th0rgal.oraxen.mechanics.provided.gameplay.light;
 
 import io.th0rgal.oraxen.api.OraxenBlocks;
 import io.th0rgal.oraxen.api.OraxenFurniture;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.chorusblock.ChorusBlockMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.NoteBlockMechanic;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.shaped.ShapedBlockMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.stringblock.StringBlockMechanic;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -19,8 +21,8 @@ public class LightMechanic {
     private final int lightLevel;
 
     public LightMechanic(ConfigurationSection section) {
-        lightLevel = Math.min(15, section.getInt("light", -1));
-        lightData = lightLevel == -1 ? null : (Light) Material.LIGHT.createBlockData();
+        lightLevel = section.contains("light") ? clampLightLevel(section.getInt("light")) : -1;
+        lightData = lightLevel > 0 ? (Light) Material.LIGHT.createBlockData() : null;
         if (lightData != null) lightData.setLevel(lightLevel);
     }
 
@@ -29,7 +31,7 @@ public class LightMechanic {
     }
 
     public boolean hasLightLevel() {
-        return lightLevel != -1 && lightData != null;
+        return lightLevel > 0 && lightData != null;
     }
 
     public void createBlockLight(Block block) {
@@ -38,7 +40,9 @@ public class LightMechanic {
     }
 
     public static void createBlockLight(Block block, int lightLevel) {
-        int clampedLightLevel = Math.min(15, Math.max(0, lightLevel));
+        int clampedLightLevel = clampLightLevel(lightLevel);
+        if (clampedLightLevel <= 0) return;
+
         Light lightData = (Light) Material.LIGHT.createBlockData();
         lightData.setLevel(clampedLightLevel);
         // If the block attempted placed at is empty, we only place here
@@ -87,6 +91,16 @@ public class LightMechanic {
                 if (stringBlockMechanic.hasLight()) stringBlockMechanic.getLight().createBlockLight(block);
                 else continue;
 
+            ChorusBlockMechanic chorusBlockMechanic = OraxenBlocks.getChorusMechanic(block);
+            if (chorusBlockMechanic != null)
+                if (chorusBlockMechanic.hasLight()) chorusBlockMechanic.getLight().createBlockLight(block);
+                else continue;
+
+            ShapedBlockMechanic shapedBlockMechanic = OraxenBlocks.getShapedMechanic(block);
+            if (shapedBlockMechanic != null)
+                if (shapedBlockMechanic.hasLight()) shapedBlockMechanic.getLight().createBlockLight(block);
+                else continue;
+
             FurnitureMechanic furnitureMechanic = OraxenFurniture.getFurnitureMechanic(block);
             if (furnitureMechanic != null) {
                 Entity baseEntity = furnitureMechanic.getBaseEntity(block);
@@ -94,6 +108,10 @@ public class LightMechanic {
                 furnitureMechanic.setEntityData(baseEntity, FurnitureMechanic.getFurnitureYaw(baseEntity), baseEntity.getFacing());
             }
         }
+    }
+
+    private static int clampLightLevel(int lightLevel) {
+        return Math.min(15, Math.max(0, lightLevel));
     }
 
 }

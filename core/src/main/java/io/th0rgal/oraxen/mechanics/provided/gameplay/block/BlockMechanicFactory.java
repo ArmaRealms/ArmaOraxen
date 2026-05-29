@@ -150,7 +150,7 @@ public class BlockMechanicFactory extends MechanicFactory {
                 MechanicConfigProperty.integer("custom-variation", "Backing-state variation ID", 1),
                 MechanicConfigProperty.list("breaking", "Ordered block breaking rules"),
                 MechanicConfigProperty.list("events", "Click events with actions to run when the placed block is clicked"),
-                MechanicConfigProperty.integer("light", "Light level emitted (0-15)", 0, 0, 15),
+                MechanicConfigProperty.integer("light", "Light level emitted by the placed block (0-15, 0 disables)", 0, 0, 15),
                 MechanicConfigProperty.object("block-sounds", "Custom block sounds", Map.of(
                         "place-sound", MechanicConfigProperty.string("place-sound", "Sound when placed"),
                         "break-sound", MechanicConfigProperty.string("break-sound", "Sound when broken"),
