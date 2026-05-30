@@ -647,7 +647,7 @@ public class StringBlockMechanicListener implements Listener {
             return;
 
         StringBlockMechanic mechanic = OraxenBlocks.getStringMechanic(newData);
-        if (mechanic != null && !mechanic.canPlaceOn(face)) return;
+        if (mechanic != null && !mechanic.canPlaceOn(face, placedAgainst)) return;
 
         // Store oldData incase event(s) is cancelled, set the target blockData
         Block blockAbove = target.getRelative(BlockFace.UP);

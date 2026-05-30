@@ -588,7 +588,7 @@ public class ChorusBlockMechanicListener implements Listener {
             target = placedAgainst.getRelative(face);
         if (!BlockHelpers.isReplaceable(target.getType()))
             return;
-        if (!mechanic.canPlaceOn(face))
+        if (!mechanic.canPlaceOn(face, placedAgainst))
             return;
 
         // Store oldData in case event(s) is cancelled, set the target blockData

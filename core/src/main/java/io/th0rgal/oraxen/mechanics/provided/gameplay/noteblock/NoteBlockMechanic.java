@@ -18,6 +18,7 @@ import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
 import io.th0rgal.oraxen.utils.drops.Drop;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
@@ -93,6 +94,7 @@ public class NoteBlockMechanic extends Mechanic {
     }
 
     public boolean canPlaceOn(org.bukkit.block.BlockFace face) { return placeable == null || placeable.canPlaceOn(face); }
+    public boolean canPlaceOn(org.bukkit.block.BlockFace face, Block block) { return placeable == null || placeable.canPlaceOn(face, block); }
 
     public boolean hasLimitedPlacing() { return limitedPlacing != null; }
     public LimitedPlacing getLimitedPlacing() { return limitedPlacing; }

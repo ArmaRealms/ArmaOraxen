@@ -461,7 +461,7 @@ public class NoteBlockMechanicListener implements Listener {
         if (!BlockHelpers.isReplaceable(target.getType())) return;
 
         NoteBlockMechanic targetOraxen = OraxenBlocks.getNoteBlockMechanic(newData);
-        if (targetOraxen != null && !targetOraxen.canPlaceOn(face)) return;
+        if (targetOraxen != null && !targetOraxen.canPlaceOn(face, placedAgainst)) return;
 
         final NoteBlockMechanic againstMechanic = OraxenBlocks.getNoteBlockMechanic(placedAgainst);
         // Store oldData incase event(s) is cancelled, set the target blockData

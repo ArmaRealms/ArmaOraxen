@@ -361,7 +361,7 @@ public class ShapedBlockMechanicListener implements Listener {
 
     private boolean canPlaceBlock(Player player, Block targetBlock, Block clickedBlock, BlockFace face, ShapedBlockMechanic mechanic) {
         if (!BlockHelpers.isReplaceable(targetBlock.getType())) return false;
-        if (!mechanic.canPlaceOn(face)) return false;
+        if (!mechanic.canPlaceOn(face, clickedBlock)) return false;
 
         Range<Integer> worldHeightRange = Range.of(
             targetBlock.getWorld().getMinHeight(),
