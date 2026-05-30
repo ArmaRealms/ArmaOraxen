@@ -2,6 +2,7 @@ package io.th0rgal.oraxen.pack.generation;
 
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.font.AnimatedGlyph;
 import io.th0rgal.oraxen.font.TextEffect;
 import io.th0rgal.oraxen.utils.HashUtils;
 import io.th0rgal.oraxen.utils.VersionUtil;
@@ -11,6 +12,7 @@ import org.jetbrains.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -384,6 +386,8 @@ class TextShaderGenerator {
                 features.animatedGlyphs() ? "true" : "false",
                 features.textEffects() ? "true" : "false"));
 
+        appendAnimationConstants(sb, features.animatedGlyphs());
+
         // Generate exact trigger colors only for effects that have valid snippets for this target
         List<TextEffect.Definition> enabledEffects = TextEffect.getEnabledEffects().stream()
                 .filter(def -> def.resolveSnippet(target.packFormat(), target.minecraftVersion()) != null)
@@ -428,6 +432,41 @@ class TextShaderGenerator {
         sb.append(");\n");
 
         return sb.toString();
+    }
+
+    private void appendAnimationConstants(StringBuilder sb, boolean includeAnimatedGlyphs) {
+        Map<String, int[]> animationConfigs = new LinkedHashMap<>();
+        if (includeAnimatedGlyphs) {
+            for (AnimatedGlyph glyph : OraxenPlugin.get().getFontManager().getAnimatedGlyphs()) {
+                if (!glyph.isProcessed()) continue;
+
+                int fpsValue = Math.max(AnimatedGlyph.MIN_FPS, Math.min(AnimatedGlyph.MAX_FPS, glyph.getFps()));
+                int loopBit = glyph.isLooping() ? 0 : 0x80;
+                int greenChannel = loopBit | fpsValue;
+                int totalFrames = Math.max(1, Math.min(AnimatedGlyph.MAX_FRAMES, glyph.getFrameCount()));
+                String key = greenChannel + ":" + totalFrames;
+                animationConfigs.putIfAbsent(key, new int[]{greenChannel, totalFrames});
+            }
+        }
+
+        int configCount = animationConfigs.size();
+        int arraySize = Math.max(1, configCount);
+        sb.append(String.format(Locale.ROOT, "const int ORAXEN_ANIM_CONFIG_COUNT = %d;\n", configCount));
+        sb.append("const ivec2 ORAXEN_ANIM_CONFIGS[").append(arraySize).append("] = ivec2[](\n");
+        if (animationConfigs.isEmpty()) {
+            sb.append("    ivec2(0, 0)\n");
+        } else {
+            int index = 0;
+            for (int[] config : animationConfigs.values()) {
+                sb.append(String.format(Locale.ROOT, "    ivec2(%d, %d)", config[0], config[1]));
+                if (index < animationConfigs.size() - 1) {
+                    sb.append(",");
+                }
+                sb.append("\n");
+                index++;
+            }
+        }
+        sb.append(");\n");
     }
 
     private TextEffectSnippets getTextEffectSnippets(TextShaderTarget target) {
@@ -567,7 +606,24 @@ class TextShaderGenerator {
                         // positives (e.g. vanilla white text shadow 63,63,63). That makes
                         // regular text render without shadow. We intentionally only detect
                         // the primary animation marker here to keep vanilla shadows intact.
-                        bool isPrimaryAnim = (rInt == 254);
+                        //
+                        // A red value of 254 can occur in regular RGB gradients. To avoid
+                        // treating those characters as animated glyphs, require the encoded
+                        // FPS/loop and frame-count tuple to match an actually generated
+                        // animated glyph, and require the frame index to be valid.
+                        bool isPrimaryAnim = false;
+                        if (ORAXEN_ANIMATED_GLYPHS && ORAXEN_ANIM_CONFIG_COUNT > 0 && rInt == 254) {
+                            int candidateFrameIndex = bRaw & 0x0F;
+                            int candidateTotalFrames = ((bRaw >> 4) & 0x0F) + 1;
+                            if (candidateFrameIndex < candidateTotalFrames) {
+                                for (int i = 0; i < ORAXEN_ANIM_CONFIG_COUNT; i++) {
+                                    if (gRaw == ORAXEN_ANIM_CONFIGS[i].x && candidateTotalFrames == ORAXEN_ANIM_CONFIGS[i].y) {
+                                        isPrimaryAnim = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
 
                         if (ORAXEN_ANIMATED_GLYPHS && isPrimaryAnim) {
                             int gInt = gRaw;
