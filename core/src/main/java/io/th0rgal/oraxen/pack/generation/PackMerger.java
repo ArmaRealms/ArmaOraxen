@@ -171,7 +171,7 @@ public class PackMerger {
         String packName = packDirectory.getName();
         Logs.logInfo("Processing pack | <blue>" + packName + "</blue>");
 
-        List<String> packRoots = detectResourcePackRoots(packDirectory);
+        List<String> packRoots = detectResourcePackRoots(packDirectory.toPath());
         if (packRoots.isEmpty()) {
             Logs.logWarning("No valid resource pack structure found in <yellow>" + packName + "</yellow>");
             Logs.logWarning("Expected 'assets/' folder at root or nested within the folder");

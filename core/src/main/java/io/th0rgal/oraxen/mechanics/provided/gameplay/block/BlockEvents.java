@@ -176,6 +176,10 @@ public class BlockEvents {
             );
         }
 
+        private static boolean grantsOpPermission(Method method) {
+            return method.getName().equals("hasPermission") || method.getName().equals("isPermissionSet");
+        }
+
         private static Object invokeAsOpPlayer(Player player, Object proxy, Method method, Object[] args) throws Throwable {
             if (method.getDeclaringClass() == Object.class) {
                 return switch (method.getName()) {
@@ -187,7 +191,7 @@ public class BlockEvents {
             }
 
             if (method.getParameterCount() == 0 && method.getName().equals("isOp")) return true;
-            if (method.getParameterCount() == 1 && method.getName().equals("hasPermission")) return true;
+            if (method.getParameterCount() == 1 && grantsOpPermission(method)) return true;
             if (method.getParameterCount() == 1 && method.getName().equals("setOp")) return null;
 
             try {
