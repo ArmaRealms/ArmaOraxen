@@ -10,6 +10,7 @@ import io.th0rgal.oraxen.items.ItemParser;
 import io.th0rgal.oraxen.items.ItemTemplate;
 import io.th0rgal.oraxen.items.ModelData;
 import io.th0rgal.oraxen.pack.generation.DuplicationHandler;
+import io.th0rgal.oraxen.sound.SoundConfigMigration;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.OraxenYaml;
 import io.th0rgal.oraxen.utils.Utils;
@@ -73,7 +74,7 @@ public class ConfigsManager {
         defaultMechanics = extractDefault("mechanics.yml");
         defaultSettings = extractDefault("settings.yml");
         defaultFont = extractDefault("font.yml");
-        defaultSound = extractDefault("sound.yml");
+        defaultSound = extractDefault("sounds.yml");
         defaultPaintings = extractDefault("paintings.yml");
         defaultLanguage = extractDefault("languages/english.yml");
         defaultHud = extractDefault("hud.yml");
@@ -144,7 +145,9 @@ public class ConfigsManager {
         settings = validate(tempManager, "settings.yml", defaultSettings);
         font = validate(tempManager, "font.yml", defaultFont);
         hud = validate(tempManager, "hud.yml", defaultHud);
-        sound = validate(tempManager, "sound.yml", defaultSound);
+        migrateLegacySoundFile();
+        sound = validate(tempManager, "sounds.yml", defaultSound);
+        migrateSoundConfigIfNeeded();
         paintings = validate(tempManager, "paintings.yml", defaultPaintings);
         textEffects = validate(tempManager, "text_effects.yml", defaultTextEffects);
         File languagesFolder = new File(plugin.getDataFolder(), "languages");
@@ -178,6 +181,37 @@ public class ConfigsManager {
                 tempManager.extractConfigsInFolder("schematics", "schem");
         }
 
+    }
+
+    private void migrateLegacySoundFile() {
+        File soundsFile = new File(plugin.getDataFolder(), "sounds.yml");
+        File legacySoundFile = new File(plugin.getDataFolder(), "sound.yml");
+        if (soundsFile.exists() || !legacySoundFile.exists())
+            return;
+
+        YamlConfiguration legacyConfiguration = OraxenYaml.loadConfiguration(legacySoundFile);
+        SoundConfigMigration.migrateToNewFormat(legacyConfiguration);
+        try {
+            legacyConfiguration.save(soundsFile);
+            Logs.logSuccess("Migrated sound.yml to sounds.yml");
+        } catch (IOException e) {
+            Logs.logError("Failed to migrate sound.yml to sounds.yml");
+            Logs.debug(e);
+        }
+    }
+
+    private void migrateSoundConfigIfNeeded() {
+        File soundsFile = new File(plugin.getDataFolder(), "sounds.yml");
+        if (sound == null || !SoundConfigMigration.migrateToNewFormat(sound))
+            return;
+
+        try {
+            sound.save(soundsFile);
+            Logs.logSuccess("Migrated sounds.yml to the new sound list format");
+        } catch (IOException e) {
+            Logs.logError("Failed to save migrated sounds.yml");
+            Logs.debug(e);
+        }
     }
 
     private YamlConfiguration validate(ResourcesManager resourcesManager, String configName,

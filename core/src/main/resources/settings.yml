@@ -241,7 +241,7 @@ Pack:
           # Enabled by default, just switch to enabled to send
           # the below sound whenever someone joins
           enabled: true
-          type: minecraft:welcome
+          type: oraxen:welcome
           volume: 1.0
           pitch: 1.0
         delay: 5 # delay in ticks
