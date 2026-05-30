@@ -16,6 +16,7 @@ import io.th0rgal.oraxen.utils.BlockHelpers;
 import io.th0rgal.oraxen.utils.EventUtils;
 import io.th0rgal.oraxen.utils.ItemUtils;
 import io.th0rgal.oraxen.utils.SchedulerUtil;
+import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
 import io.th0rgal.oraxen.utils.drops.Drop;
 import io.th0rgal.oraxen.utils.wrappers.EnchantmentWrapper;
@@ -150,13 +151,9 @@ public abstract class BreakerSystem {
                     if (item.getEnchantmentLevel(EnchantmentWrapper.EFFICIENCY) >= 5)
                         valueHolder[0] = 10;
 
-                    for (final Entity entity : world.getNearbyEntities(location, 16, 16, 16)) {
-                        if (entity instanceof Player viewer) {
-                            if (furnitureMechanic != null) for (Location barrierLoc : furnitureBarrierLocations)
-                                sendBlockBreak(viewer, barrierLoc, valueHolder[0]);
-                            else sendBlockBreak(viewer, location, valueHolder[0]);
-                        }
-                    }
+                    sendBlockBreakToViewers(world, location,
+                            furnitureMechanic != null ? furnitureBarrierLocations : Collections.singletonList(location),
+                            valueHolder[0]);
 
                     if (valueHolder[0]++ < 10) return;
                     if (EventUtils.callEvent(new BlockBreakEvent(block, player)) && ProtectionLib.canBreak(player, location)) {
@@ -167,20 +164,9 @@ public abstract class BreakerSystem {
 
                     stopBlockBreaker(location);
                     stopBlockHitSound(location);
-                    for (final Entity entity : world.getNearbyEntities(location, 16, 16, 16)) {
-                        if (entity instanceof Player viewer) {
-                            // Send block break animation to each viewer on their own thread
-                            SchedulerUtil.runForEntity(viewer, () -> {
-                                if (furnitureMechanic != null) {
-                                    for (Location barrierLoc : furnitureBarrierLocations) {
-                                        sendBlockBreak(viewer, barrierLoc, valueHolder[0]);
-                                    }
-                                } else {
-                                    sendBlockBreak(viewer, location, valueHolder[0]);
-                                }
-                            });
-                        }
-                    }
+                    sendBlockBreakToViewers(world, location,
+                            furnitureMechanic != null ? furnitureBarrierLocations : Collections.singletonList(location),
+                            valueHolder[0]);
                 });
                 breakerTasks.put(location, breakerTask);
             });
@@ -204,12 +190,33 @@ public abstract class BreakerSystem {
         if (locations.isEmpty()) return;
 
         for (Location resetLocation : locations)
-            SchedulerUtil.runAtLocation(resetLocation, () -> {
-                for (Entity entity : world.getNearbyEntities(resetLocation, 16, 16, 16)) {
-                    if (entity instanceof Player viewer)
-                        SchedulerUtil.runForEntity(viewer, () -> sendBlockBreak(viewer, resetLocation, 10));
+            SchedulerUtil.runAtLocation(resetLocation, () ->
+                    sendBlockBreakToViewers(world, resetLocation, Collections.singletonList(resetLocation), 10));
+    }
+
+    private void sendBlockBreakToViewers(World world, Location origin, List<Location> breakLocations, int stage) {
+        if (breakLocations.isEmpty()) return;
+
+        if (!VersionUtil.isFoliaServer()) {
+            for (final Entity entity : world.getNearbyEntities(origin, 16, 16, 16)) {
+                if (entity instanceof Player viewer) {
+                    for (Location breakLocation : breakLocations)
+                        sendBlockBreak(viewer, breakLocation, stage);
                 }
-            });
+            }
+            return;
+        }
+
+        // Folia does not allow arbitrary nearby-entity scans from a region thread.
+        // Hop to each player's entity scheduler before reading their location/world.
+        for (final Player viewer : Bukkit.getOnlinePlayers()) {
+            SchedulerUtil.runForEntity(viewer, () -> {
+                if (!viewer.isOnline() || !viewer.getWorld().equals(world)) return;
+                if (viewer.getLocation().distanceSquared(origin) > 16 * 16) return;
+                for (Location breakLocation : breakLocations)
+                    sendBlockBreak(viewer, breakLocation, stage);
+            }, null);
+        }
     }
 
     private List<Location> furnitureBarrierLocations(FurnitureMechanic furnitureMechanic, Block block) {
