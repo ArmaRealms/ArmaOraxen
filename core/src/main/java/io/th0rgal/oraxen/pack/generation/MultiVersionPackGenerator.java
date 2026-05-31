@@ -267,10 +267,6 @@ public class MultiVersionPackGenerator {
             return false;
         }
 
-        if (path.startsWith("overlay_")) {
-            return false;
-        }
-
         if (minecraftVersion.isAtLeast(GENERATED_CORE_SHADER_MIN_VERSION)) {
             return false;
         }

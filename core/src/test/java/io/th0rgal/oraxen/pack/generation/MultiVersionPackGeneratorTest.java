@@ -231,7 +231,7 @@ class MultiVersionPackGeneratorTest {
     }
 
     @Test
-    void generatedCoreShaderFilterIgnoresOverlayPaths() throws Exception {
+    void generatedCoreShaderFilterRemovesOverlayPathsForLegacyTargets() throws Exception {
         byte[] content = "generated shader".getBytes(StandardCharsets.UTF_8);
         String overlayPath = "overlay_1_21_4/assets/minecraft/shaders/core/rendertype_text.vsh";
         MultiVersionPackGenerator generator = new MultiVersionPackGenerator(tempDir,
@@ -243,7 +243,7 @@ class MultiVersionPackGeneratorTest {
 
         boolean excluded = (boolean) method.invoke(generator, new MinecraftVersion("1.20.2"), overlayPath, content);
 
-        assertFalse(excluded);
+        assertTrue(excluded);
     }
 
     private String bytesToHex(byte[] bytes) {

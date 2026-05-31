@@ -173,8 +173,8 @@ class TextShaderGenerator {
                 // Base text shaders were skipped (multi-version mode); the combined text+scoreboard
                 // shader would leak 1.21.4+ format into 1.21.3- packs, but the standalone scoreboard
                 // shader uses #version 150 and is safe for all client versions.
-                ResourcePack.writeStringToVirtual("assets/minecraft/shaders/core/", "rendertype_text.json", getScoreboardJson());
-                ResourcePack.writeStringToVirtual("assets/minecraft/shaders/core/", "rendertype_text.vsh", getScoreboardVsh());
+                writeGeneratedCoreShader("assets/minecraft/shaders/core/", "rendertype_text.json", getScoreboardJson());
+                writeGeneratedCoreShader("assets/minecraft/shaders/core/", "rendertype_text.vsh", getScoreboardVsh());
                 // Overlay shader files written by generateTextShadersForTarget() at
                 // overlay_*/assets/minecraft/shaders/core/rendertype_text.* are
                 // animation/effect-only and would otherwise hide the base scoreboard
@@ -203,8 +203,8 @@ class TextShaderGenerator {
                         getCombinedShaderJson(target));
                 Logs.logInfo("Using combined text + scoreboard hiding shaders");
             } else {
-                ResourcePack.writeStringToVirtual("assets/minecraft/shaders/core/", "rendertype_text.json", getScoreboardJson());
-                ResourcePack.writeStringToVirtual("assets/minecraft/shaders/core/", "rendertype_text.vsh", getScoreboardVsh());
+                writeGeneratedCoreShader("assets/minecraft/shaders/core/", "rendertype_text.json", getScoreboardJson());
+                writeGeneratedCoreShader("assets/minecraft/shaders/core/", "rendertype_text.vsh", getScoreboardVsh());
             }
         }
     }
@@ -223,7 +223,7 @@ class TextShaderGenerator {
             // rendertype_gui.vsh / position_color.fsh are version-independent GLSL 150 shaders
             // unrelated to rendertype_text.*, so they are safe to write to the base pack path
             // even when base text shaders are skipped in multi-version mode.
-            ResourcePack.writeStringToVirtual("assets/minecraft/shaders/core/", fileName, scoreTabBackground);
+            writeGeneratedCoreShader("assets/minecraft/shaders/core/", fileName, scoreTabBackground);
         }
     }
 
@@ -762,11 +762,9 @@ class TextShaderGenerator {
             return header.formatted(textShaderConstants, vertexPrelude) + mainBody;
         } else {
             // Pre-1.21.6: use traditional uniform declarations
-            String imports = "#moj_import <fog.glsl>";
+            String imports = getLegacyFogImport(target);
             String header = seeThrough ? """
                 #version 150
-
-                %s
 
                 in vec3 Position;
                 in vec4 Color;
@@ -774,10 +772,8 @@ class TextShaderGenerator {
 
                 uniform mat4 ModelViewMat;
                 uniform mat4 ProjMat;
-                uniform int FogShape;
                 uniform float GameTime;
 
-                out float vertexDistance;
                 out vec4 vertexColor;
                 out vec2 texCoord0;
                 out vec4 effectData;
@@ -808,8 +804,14 @@ class TextShaderGenerator {
                 %s
 
 """;
-            return header.formatted(imports, textShaderConstants, vertexPrelude) + mainBody;
+            return seeThrough
+                    ? header.formatted(textShaderConstants, vertexPrelude) + mainBody
+                    : header.formatted(imports, textShaderConstants, vertexPrelude) + mainBody;
         }
+    }
+
+    private String getLegacyFogImport(TextShaderTarget target) {
+        return target.isAtLeast("1.21.2") ? "#moj_import <minecraft:fog.glsl>" : "#moj_import <fog.glsl>";
     }
 
     private VertexShaderConfig createVertexShaderConfig(TextShaderTarget target, boolean is1_21_6Plus, boolean is26Plus, boolean seeThrough) {
@@ -838,13 +840,13 @@ class TextShaderGenerator {
                 );
             }
         } else {
-            String fogDistance = target.isAtLeast("1.20.2")
-                    ? "vertexDistance = fog_distance(ModelViewMat, pos, FogShape);"
-                    : "vertexDistance = fog_distance(pos, FogShape);";
+            String fogDistance = target.isAtLeast("1.20.5")
+                    ? "vertexDistance = fog_distance(pos, FogShape);"
+                    : "vertexDistance = fog_distance(ModelViewMat, pos, FogShape);";
             if (seeThrough) {
                 return new VertexShaderConfig(
-                        fogDistance,
-                        fogDistance,
+                        "",
+                        "",
                         "Color",
                         "vec4(1.0, 1.0, 1.0, visible)",
                         "int(mod(float(rawFrame), float(totalFrames)))"
@@ -959,7 +961,48 @@ class TextShaderGenerator {
                 """.formatted(fragmentPrelude, sampleExpr, fragmentEffects);
         } else {
             // Pre-1.21.6: use traditional uniform declarations
-            String imports = "#moj_import <fog.glsl>";
+            if (seeThrough) {
+                return """
+                    #version 150
+
+                    uniform sampler2D Sampler0;
+                    uniform vec4 ColorModulator;
+                    uniform float GameTime;
+
+                    in vec4 vertexColor;
+                    in vec2 texCoord0;
+                    in vec4 effectData;
+
+                    out vec4 fragColor;
+
+                    %s
+
+                    void main() {
+                        vec4 color = %s * vertexColor * ColorModulator;
+                        vec4 texColor = color;
+
+                        // Apply text effects if effectData.x >= 0 (effectType, 0 is rainbow)
+                        if (effectData.x >= 0.0 && effectData.y > 0.5) {
+                            int effectType = int(effectData.x + 0.5);
+                            float speed = effectData.y;
+                            float charIndex = effectData.z;
+                            float param = effectData.w;
+                            float timeSeconds = (GameTime <= 1.0) ? (GameTime * 1200.0) : (GameTime / 20.0);
+
+%s
+                        }
+
+                        color = texColor;
+
+                        if (color.a < 0.1) {
+                            discard;
+                        }
+                        fragColor = color;
+                    }
+                    """.formatted(fragmentPrelude, sampleExpr, fragmentEffects);
+            }
+
+            String imports = getLegacyFogImport(target);
 
             return """
                 #version 150
@@ -1088,7 +1131,7 @@ class TextShaderGenerator {
             boolean includeFog = !seeThrough;
             return build1_21ShaderJson(shaderName, seeThrough, true, includeFog, true, false);
         } else {
-            return buildLegacyShaderJson(shaderName, !seeThrough, !seeThrough, true, true, false);
+            return buildLegacyShaderJson(shaderName, !seeThrough, !seeThrough, !seeThrough, true, false);
         }
     }
 
@@ -1156,7 +1199,7 @@ class TextShaderGenerator {
 """;
             return header.formatted(textShaderConstants, vertexPrelude) + mainBody;
         } else {
-            String imports = "#moj_import <fog.glsl>";
+            String imports = getLegacyFogImport(target);
             String header = """
                 #version 150
 
