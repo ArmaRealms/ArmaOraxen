@@ -61,7 +61,7 @@ public class Polymath implements HostingProvider {
             if (jsonOutput.has("url") && jsonOutput.has("sha1")) {
                 packUrl = jsonOutput.get("url").getAsString();
                 sha1 = jsonOutput.get("sha1").getAsString();
-                packUUID = UUID.nameUUIDFromBytes(sha1.getBytes());
+                packUUID = UUID.nameUUIDFromBytes(SHA1Utils.hexToBytes(sha1));
                 return true;
             }
 
