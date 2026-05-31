@@ -60,4 +60,42 @@ class SoundConfigMigrationTest {
         assertFalse(SoundConfigMigration.migrateToNewFormat(config));
         assertEquals("oraxen:music.something", config.getMapList("sounds").get(0).get("id"));
     }
+
+    @Test
+    void mergesLegacySoundFileIntoExistingSoundsFile() throws Exception {
+        YamlConfiguration existingSounds = new YamlConfiguration();
+        existingSounds.loadFromString("""
+                sounds:
+                  - id: oraxen:music.existing
+                    sound: music/existing.ogg
+                  - id: block.glass.place
+                    sounds: []
+                """);
+
+        YamlConfiguration newLegacySound = new YamlConfiguration();
+        newLegacySound.loadFromString("""
+                sounds:
+                  block:
+                    glass:
+                      place:
+                        sound: duplicate.ogg
+                  music:
+                    added:
+                      sound: music/added.ogg
+                      jukebox_song:
+                        length_in_seconds: 90
+                """);
+
+        assertTrue(SoundConfigMigration.mergeSounds(existingSounds, newLegacySound));
+
+        List<Map<?, ?>> sounds = existingSounds.getMapList("sounds");
+        assertEquals(3, sounds.size());
+        assertEquals("oraxen:music.existing", sounds.get(0).get("id"));
+        assertEquals("block.glass.place", sounds.get(1).get("id"));
+        assertEquals("music.added", sounds.get(2).get("id"));
+        assertEquals("music/added.ogg", sounds.get(2).get("sound"));
+
+        Map<?, ?> jukebox = (Map<?, ?>) sounds.get(2).get("jukebox");
+        assertEquals("90s", jukebox.get("duration"));
+    }
 }

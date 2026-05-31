@@ -186,14 +186,26 @@ public class ConfigsManager {
     private void migrateLegacySoundFile() {
         File soundsFile = new File(plugin.getDataFolder(), "sounds.yml");
         File legacySoundFile = new File(plugin.getDataFolder(), "sound.yml");
-        if (soundsFile.exists() || !legacySoundFile.exists())
+        if (!legacySoundFile.exists())
             return;
 
         YamlConfiguration legacyConfiguration = OraxenYaml.loadConfiguration(legacySoundFile);
         SoundConfigMigration.migrateToNewFormat(legacyConfiguration);
+
+        boolean soundsFileAlreadyExists = soundsFile.exists();
+        YamlConfiguration soundsConfiguration = soundsFileAlreadyExists
+                ? OraxenYaml.loadConfiguration(soundsFile)
+                : legacyConfiguration;
+        boolean changed = !soundsFileAlreadyExists
+                || SoundConfigMigration.mergeSounds(soundsConfiguration, legacyConfiguration);
+
         try {
-            legacyConfiguration.save(soundsFile);
-            Logs.logSuccess("Migrated sound.yml to sounds.yml");
+            if (changed || !soundsFileAlreadyExists)
+                soundsConfiguration.save(soundsFile);
+            Logs.logSuccess(soundsFileAlreadyExists
+                    ? "Merged sound.yml into sounds.yml"
+                    : "Migrated sound.yml to sounds.yml");
+            MigrationBackups.moveToMigrated(plugin.getDataFolder(), legacySoundFile);
         } catch (IOException e) {
             Logs.logError("Failed to migrate sound.yml to sounds.yml");
             Logs.debug(e);
@@ -808,6 +820,7 @@ public class ConfigsManager {
             parseMap.put(itemKey, new ItemParser(itemSection));
         }
         boolean configUpdated = false;
+        boolean blockConfigMigrated = false;
         // because we must have parse all the items before building them to be able to
         // use available models
         Map<String, ItemBuilder> map = new LinkedHashMap<>();
@@ -826,9 +839,14 @@ public class ConfigsManager {
             }
             if (itemParser.isConfigUpdated())
                 configUpdated = true;
+            if (itemParser.isBlockConfigMigrated())
+                blockConfigMigrated = true;
         }
 
         if (configUpdated) {
+            if (blockConfigMigrated)
+                MigrationBackups.moveToMigrated(plugin.getDataFolder(), itemFile);
+
             String content = config.saveToString();
             if (VersionUtil.atOrAbove("1.20.5"))
                 content = content.replace("displayname: ", "itemname: ");

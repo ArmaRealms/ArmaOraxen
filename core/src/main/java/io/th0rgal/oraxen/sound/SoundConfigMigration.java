@@ -5,6 +5,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +59,37 @@ public final class SoundConfigMigration {
 
         configuration.set("sounds", migratedSounds);
         return true;
+    }
+
+    /**
+     * Merges sounds from {@code source} into {@code target}. Both configurations are normalized
+     * to the new list format first. Existing sound ids in {@code target} are kept.
+     *
+     * @return true when {@code target} was changed and should be saved
+     */
+    public static boolean mergeSounds(@NotNull YamlConfiguration target, @NotNull YamlConfiguration source) {
+        boolean changed = migrateToNewFormat(target);
+        migrateToNewFormat(source);
+
+        List<Map<String, Object>> targetSounds = getNormalizedSoundMaps(target);
+        Set<String> targetIds = getSoundIds(targetSounds);
+        boolean merged = false;
+
+        for (Map<String, Object> sourceSound : getNormalizedSoundMaps(source)) {
+            Object id = sourceSound.get("id");
+            if (id != null && containsSoundId(targetIds, String.valueOf(id)))
+                continue;
+
+            targetSounds.add(sourceSound);
+            if (id != null)
+                addSoundId(targetIds, String.valueOf(id));
+            merged = true;
+        }
+
+        if (merged)
+            target.set("sounds", targetSounds);
+
+        return changed || merged;
     }
 
     @NotNull
@@ -140,6 +172,41 @@ public final class SoundConfigMigration {
             map.put(key, value);
         }
         return map;
+    }
+
+    @NotNull
+    private static List<Map<String, Object>> getNormalizedSoundMaps(@NotNull YamlConfiguration configuration) {
+        List<Map<String, Object>> normalizedSounds = new ArrayList<>();
+        for (Map<?, ?> sound : configuration.getMapList("sounds"))
+            normalizedSounds.add(normalizeMap(sound));
+        return normalizedSounds;
+    }
+
+    @NotNull
+    private static Set<String> getSoundIds(@NotNull List<Map<String, Object>> sounds) {
+        Set<String> ids = new HashSet<>();
+        for (Map<String, Object> sound : sounds) {
+            Object id = sound.get("id");
+            if (id != null)
+                addSoundId(ids, String.valueOf(id));
+        }
+        return ids;
+    }
+
+    private static boolean containsSoundId(@NotNull Set<String> ids, @NotNull String id) {
+        if (ids.contains(id))
+            return true;
+        if (id.startsWith("minecraft:"))
+            return ids.contains(id.substring("minecraft:".length()));
+        return ids.contains("minecraft:" + id);
+    }
+
+    private static void addSoundId(@NotNull Set<String> ids, @NotNull String id) {
+        ids.add(id);
+        if (id.startsWith("minecraft:"))
+            ids.add(id.substring("minecraft:".length()));
+        else if (!id.contains(":"))
+            ids.add("minecraft:" + id);
     }
 
     private static boolean migrateListEntries(@NotNull YamlConfiguration configuration, @NotNull List<?> soundsList) {

@@ -65,6 +65,7 @@ public class ItemParser {
     private WrappedEcoItem ecoItem;
     private ItemParser templateItem;
     private boolean configUpdated = false;
+    private boolean blockConfigMigrated = false;
 
     public ItemParser(final ConfigurationSection section) {
         this.section = section;
@@ -728,6 +729,7 @@ public class ItemParser {
             OraxenYaml.invalidateKeyCache(mechanicsSection);
             OraxenYaml.invalidateKeyCache(blockSection);
             configUpdated = true;
+            blockConfigMigrated = true;
             Logs.logWarning("Item " + section.getName() + " uses legacy Mechanics." + legacyMechanicID
                     + "; it has been migrated to Mechanics.block.");
             return;
@@ -850,6 +852,10 @@ public class ItemParser {
 
     public boolean isConfigUpdated() {
         return configUpdated;
+    }
+
+    public boolean isBlockConfigMigrated() {
+        return blockConfigMigrated;
     }
 
 }

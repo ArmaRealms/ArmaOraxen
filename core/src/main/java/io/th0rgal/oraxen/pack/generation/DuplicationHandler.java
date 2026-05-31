@@ -3,6 +3,7 @@ package io.th0rgal.oraxen.pack.generation;
 import com.google.gson.*;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.config.AppearanceMode;
+import io.th0rgal.oraxen.config.MigrationBackups;
 import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.sound.SoundConfigMigration;
 import io.th0rgal.oraxen.utils.OraxenYaml;
@@ -1093,16 +1094,23 @@ public class DuplicationHandler {
     private static File getSoundsFile() throws IOException {
         File dataFolder = OraxenPlugin.get().getDataFolder();
         File soundsFile = new File(dataFolder, "sounds.yml");
-        if (soundsFile.exists())
-            return soundsFile;
-
         File legacySoundFile = new File(dataFolder, "sound.yml");
         if (legacySoundFile.exists()) {
             YamlConfiguration legacySoundYaml = OraxenYaml.loadConfiguration(legacySoundFile);
             SoundConfigMigration.migrateToNewFormat(legacySoundYaml);
-            legacySoundYaml.save(soundsFile);
+
+            boolean soundsFileAlreadyExists = soundsFile.exists();
+            YamlConfiguration soundsYaml = soundsFileAlreadyExists
+                    ? OraxenYaml.loadConfiguration(soundsFile)
+                    : legacySoundYaml;
+            if (!soundsFileAlreadyExists || SoundConfigMigration.mergeSounds(soundsYaml, legacySoundYaml))
+                soundsYaml.save(soundsFile);
+            MigrationBackups.moveToMigrated(dataFolder, legacySoundFile);
             return soundsFile;
         }
+
+        if (soundsFile.exists())
+            return soundsFile;
 
         soundsFile.createNewFile();
         return soundsFile;
