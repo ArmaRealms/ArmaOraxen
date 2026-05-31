@@ -14,6 +14,7 @@ import io.th0rgal.oraxen.items.ItemUpdater;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.ItemUtils;
 import org.bukkit.Color;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -22,6 +23,8 @@ import java.util.Map;
 import java.util.Optional;
 
 public class CommandsManager {
+
+    private static final String INVENTORY_VIEW_PERMISSION = "oraxen.command.inventory.view";
 
     public void loadCommands() {
         new CommandAPICommand("oraxen")
@@ -52,7 +55,7 @@ public class CommandsManager {
                         (new TextEffectCommand()).getTextEffectCommand(),
                         (new TextEffectCommand()).getTextEffectsListCommand())
                 .executes((sender, args) -> {
-                    Message.COMMAND_HELP.send(sender);
+                    openInventory(sender);
                 })
                 .register();
     }
@@ -87,13 +90,24 @@ public class CommandsManager {
     private CommandAPICommand getInvCommand() {
         return new CommandAPICommand("inventory")
                 .withAliases("inv")
-                .withPermission("oraxen.command.inventory.view")
+                .withPermission(INVENTORY_VIEW_PERMISSION)
                 .executes((sender, args) -> {
-                    if (sender instanceof final Player player)
-                        OraxenPlugin.get().getInvManager().getItemsView(player).open(player);
-                    else
-                        Message.NOT_PLAYER.send(sender);
+                    openInventory(sender);
                 });
+    }
+
+    private void openInventory(final CommandSender sender) {
+        if (!(sender instanceof final Player player)) {
+            Message.NOT_PLAYER.send(sender);
+            return;
+        }
+
+        if (!player.hasPermission(INVENTORY_VIEW_PERMISSION)) {
+            Message.NO_PERMISSION.send(sender, AdventureUtils.tagResolver("permission", INVENTORY_VIEW_PERMISSION));
+            return;
+        }
+
+        OraxenPlugin.get().getInvManager().getItemsView(player).open(player);
     }
 
     @SuppressWarnings("unchecked")

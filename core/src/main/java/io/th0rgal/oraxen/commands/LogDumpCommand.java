@@ -34,7 +34,7 @@ public class LogDumpCommand {
                     try {
                         Path path = OraxenPlugin.get().getDataFolder().getAbsoluteFile().getParentFile().getParentFile()
                                 .toPath().resolve("logs/latest.log");
-                        logfile = Files.readString(path).replaceAll(packUrl, "[REDACTED]");
+                        logfile = Files.readString(path).replaceAll(packUrl, "*redacted pack url*");
                         logfile += "\n\n" + new LU().hr();
                     } catch (Exception e) {
                         Message.MISSING_LOGS.log();
@@ -87,7 +87,7 @@ public class LogDumpCommand {
             reader = new BufferedReader(inputReader);
             response = reader.readLine();
         } catch (IOException e) {
-            Logs.logWarning("Failed to read hastebin result");
+            Logs.logWarning("Failed to read hastebin result.");
             if (Settings.DEBUG.toBool())
                 e.printStackTrace();
         } finally {
