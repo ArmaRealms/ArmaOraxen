@@ -54,7 +54,7 @@ public class GlyphCommand {
 
                                 if (!onlyShowPermissable) {
                                     permissionMessage += emoji.hasPermission(player) ?
-                                            ("\n" + ChatColor.GREEN + "Permitted") : ("\n" + ChatColor.RED + "No Permission");
+                                            ("\n" + ChatColor.GREEN + "Permitted.") : ("\n" + ChatColor.RED + "No Permission.");
                                 }
                             }
 
