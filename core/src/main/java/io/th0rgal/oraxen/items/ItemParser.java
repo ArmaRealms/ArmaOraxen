@@ -49,6 +49,11 @@ import java.util.function.Function;
 public class ItemParser {
 
     private static final Set<String> LEGACY_BLOCK_MECHANIC_IDS = Set.of("noteblock", "stringblock", "chorusblock", "shaped_block");
+    private static final Map<String, String> LEGACY_BLOCK_MECHANIC_TYPES = Map.of(
+            "noteblock", "FULL",
+            "stringblock", "STRING",
+            "shaped_block", "STAIR"
+    );
 
     public static final Map<String, ModelData> MODEL_DATAS_BY_ID = new HashMap<>();
 
@@ -679,6 +684,8 @@ public class ItemParser {
         if (mechanicsSection == null)
             return;
 
+        migrateLegacyBlockMechanics(mechanicsSection);
+
         for (final String mechanicID : mechanicsSection.getKeys(false)) {
             final MechanicFactory factory = MechanicsManager.getMechanicFactory(mechanicID);
             if (factory == null) {
@@ -699,6 +706,31 @@ public class ItemParser {
             for (final Function<ItemBuilder, ItemBuilder> itemModifier : mechanic.getItemModifiers()) {
                 item = itemModifier.apply(item);
             }
+        }
+    }
+
+    private void migrateLegacyBlockMechanics(final ConfigurationSection mechanicsSection) {
+        if (OraxenYaml.getConfigurationSection(mechanicsSection, "block") != null)
+            return;
+
+        for (final Map.Entry<String, String> legacyMechanic : LEGACY_BLOCK_MECHANIC_TYPES.entrySet()) {
+            final String legacyMechanicID = legacyMechanic.getKey();
+            final ConfigurationSection legacySection = OraxenYaml.getConfigurationSection(mechanicsSection, legacyMechanicID);
+            if (legacySection == null)
+                continue;
+
+            final ConfigurationSection blockSection = mechanicsSection.createSection("block");
+            OraxenYaml.copyConfigurationSection(legacySection, blockSection);
+            if (!blockSection.contains("type"))
+                blockSection.set("type", legacyMechanic.getValue());
+
+            mechanicsSection.set(legacyMechanicID, null);
+            OraxenYaml.invalidateKeyCache(mechanicsSection);
+            OraxenYaml.invalidateKeyCache(blockSection);
+            configUpdated = true;
+            Logs.logWarning("Item " + section.getName() + " uses legacy Mechanics." + legacyMechanicID
+                    + "; it has been migrated to Mechanics.block.");
+            return;
         }
     }
 

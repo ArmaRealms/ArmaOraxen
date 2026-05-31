@@ -163,10 +163,35 @@ public class MechanicsManager {
         registerFactory(mechanicId, constructor);
     }
 
+    private static boolean migrateLegacyBlockFactory(final String mechanicId, final YamlConfiguration mechanicsConfig) {
+        if (!"block".equals(mechanicId) || OraxenYaml.getConfigurationSection(mechanicsConfig, "block") != null)
+            return false;
+
+        final List<String> legacyBlockMechanics = List.of("noteblock", "stringblock", "shaped_block");
+        if (legacyBlockMechanics.stream().noneMatch(legacyMechanic -> OraxenYaml.getConfigurationSection(mechanicsConfig, legacyMechanic) != null))
+            return false;
+
+        final ConfigurationSection blockSection = mechanicsConfig.createSection("block");
+        boolean enabled = false;
+        for (final String legacyMechanic : legacyBlockMechanics) {
+            final ConfigurationSection legacySection = OraxenYaml.getConfigurationSection(mechanicsConfig, legacyMechanic);
+            if (legacySection == null)
+                continue;
+
+            OraxenYaml.copyConfigurationSection(legacySection, blockSection);
+            enabled |= legacySection.getBoolean("enabled", false);
+            mechanicsConfig.set(legacyMechanic, null);
+        }
+        blockSection.set("enabled", enabled);
+        OraxenYaml.invalidateKeyCache(mechanicsConfig);
+        OraxenYaml.invalidateKeyCache(blockSection);
+        return true;
+    }
+
     private static void registerFactory(final String mechanicId, final FactoryConstructor constructor) {
         final Entry<File, YamlConfiguration> mechanicsEntry = OraxenPlugin.get().getResourceManager().getMechanicsEntry();
         final YamlConfiguration mechanicsConfig = mechanicsEntry.getValue();
-        final boolean updated = false;
+        final boolean updated = migrateLegacyBlockFactory(mechanicId, mechanicsConfig);
         ConfigurationSection factorySection = OraxenYaml.getConfigurationSection(mechanicsConfig, mechanicId);
         if (factorySection != null && factorySection.getBoolean("enabled"))
             registerMechanicFactory(mechanicId, constructor.create(factorySection), true);
