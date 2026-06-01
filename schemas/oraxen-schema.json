@@ -7820,7 +7820,7 @@
         },
         "seats": {
           "type": "array",
-          "description": "List of seat offsets relative to the furniture center formatted \u0027\u003cx\u003e,\u003cy\u003e,\u003cz\u003e\u0027"
+          "description": "List of seat offsets relative to the furniture center formatted \u0027\u003cx\u003e,\u003cy\u003e,\u003cz\u003e\u0027 or \u0027\u003cx\u003e,\u003cy\u003e,\u003cz\u003e \u003cyaw\u003e\u0027"
         },
         "barriers": {
           "type": "array",
