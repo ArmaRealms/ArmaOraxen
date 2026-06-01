@@ -54,6 +54,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -338,7 +339,7 @@ public class OraxenBlocks {
     private static <M extends Mechanic, E extends org.bukkit.event.Event & org.bukkit.event.Cancellable> boolean removeCustomBlock(
             Block block, @Nullable Player player, @Nullable Drop overrideDrop,
             M mechanic, String itemID, Drop defaultDrop,
-            BiFunction<M, Player, E> breakEvent, Function<E, Drop> getEventDrop,
+            BiFunction<M, Player, E> breakEvent, Function<E, Drop> getEventDrop, BiConsumer<E, Drop> setEventDrop,
             @Nullable Runnable preRemove, @Nullable Runnable postRemove) {
 
         ItemStack itemInHand = player != null ? player.getInventory().getItemInMainHand() : new ItemStack(Material.AIR);
@@ -346,8 +347,9 @@ public class OraxenBlocks {
 
         if (player != null) {
             E event = breakEvent.apply(mechanic, player);
+            setEventDrop.accept(event, drop);
             if (!EventUtils.callEvent(event)) return false;
-            drop = resolveDropAfterEvent(player, getEventDrop.apply(event));
+            drop = resolveDropAfterEvent(player, getEventDrop.apply(event), overrideDrop != null);
             sendBreakEffects(block, player);
         }
 
@@ -361,8 +363,8 @@ public class OraxenBlocks {
     }
 
     @Nullable
-    private static Drop resolveDropAfterEvent(Player player, Drop eventDrop) {
-        if (player.getGameMode() == GameMode.CREATIVE) return null;
+    static Drop resolveDropAfterEvent(Player player, @Nullable Drop eventDrop, boolean forcedDrop) {
+        if (!forcedDrop && player.getGameMode() == GameMode.CREATIVE) return null;
         return eventDrop;
     }
 
@@ -399,6 +401,7 @@ public class OraxenBlocks {
                 mechanic, mechanic.getItemID(), mechanic.getDrop(tool),
                 (m, p) -> new OraxenNoteBlockBreakEvent(m, block, p),
                 OraxenNoteBlockBreakEvent::getDrop,
+                OraxenNoteBlockBreakEvent::setDrop,
                 null,
                 () -> checkNoteBlockAbove(loc));
     }
@@ -430,6 +433,7 @@ public class OraxenBlocks {
                 mechanic, mechanic.getItemID(), dropForEvent,
                 (m, p) -> new OraxenStringBlockBreakEvent(m, block, p),
                 OraxenStringBlockBreakEvent::getDrop,
+                OraxenStringBlockBreakEvent::setDrop,
                 () -> {
                     if (mechanic.isTall()) blockAbove.setType(Material.AIR);
                 },
@@ -451,6 +455,7 @@ public class OraxenBlocks {
                 mechanic, mechanic.getItemID(), mechanic.getDrop(tool),
                 (m, p) -> new OraxenChorusBlockBreakEvent(m, block, p),
                 OraxenChorusBlockBreakEvent::getDrop,
+                OraxenChorusBlockBreakEvent::setDrop,
                 null,
                 () -> SchedulerUtil.runAtLocationLater(block.getLocation(), 1L,
                         () -> ChorusBlockMechanicListener.fixClientsideUpdate(block.getLocation())));
@@ -465,8 +470,9 @@ public class OraxenBlocks {
 
         if (player != null) {
             OraxenShapedBlockBreakEvent event = new OraxenShapedBlockBreakEvent(mechanic, block, player);
+            event.setDrop(drop);
             if (!EventUtils.callEvent(event)) return false;
-            drop = overrideDrop != null ? overrideDrop : resolveDropAfterEvent(player, event.getDrop());
+            drop = resolveDropAfterEvent(player, event.getDrop(), overrideDrop != null);
             sendBreakEffects(block, player);
         }
         if (drop != null) {
