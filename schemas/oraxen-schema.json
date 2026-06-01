@@ -1,8 +1,8 @@
 {
-  "oraxenVersion": "1.213.0",
+  "oraxenVersion": "1.215.0",
   "minecraftVersion": "1.21.11",
   "serverVersion": "1.21.11-R0.1-SNAPSHOT",
-  "generatedAt": "2026-04-27T13:56:51.702044822Z",
+  "generatedAt": "2026-06-01T20:39:35.037574761Z",
   "enums": {
     "Material": {
       "values": [
@@ -7759,6 +7759,10 @@
           "min": 0,
           "max": 15
         },
+        "lights": {
+          "type": "array",
+          "description": "List of light entries formatted \u0027\u003cx\u003e,\u003cy\u003e,\u003cz\u003e \u003clevel\u003e\u0027"
+        },
         "restricted_rotation": {
           "type": "string",
           "description": "Rotation restriction mode",
@@ -7802,17 +7806,21 @@
           "type": "object",
           "description": "Seat configuration for sittable furniture",
           "properties": {
-            "yaw": {
-              "type": "number",
-              "description": "Seat rotation",
-              "default": 0.0
-            },
             "height": {
               "type": "number",
               "description": "Seat height offset",
               "default": 0.0
+            },
+            "yaw": {
+              "type": "number",
+              "description": "Seat rotation",
+              "default": 0.0
             }
           }
+        },
+        "seats": {
+          "type": "array",
+          "description": "List of seat offsets relative to the furniture center formatted \u0027\u003cx\u003e,\u003cy\u003e,\u003cz\u003e\u0027"
         },
         "barriers": {
           "type": "array",
@@ -7842,48 +7850,6 @@
                 }
               }
             },
-            "scale": {
-              "type": "object",
-              "description": "Scale of the display entity",
-              "properties": {
-                "z": {
-                  "type": "number",
-                  "description": "Z-axis scale",
-                  "default": 1.0
-                },
-                "y": {
-                  "type": "number",
-                  "description": "Y-axis scale",
-                  "default": 1.0
-                },
-                "x": {
-                  "type": "number",
-                  "description": "X-axis scale",
-                  "default": 1.0
-                }
-              }
-            },
-            "translation": {
-              "type": "object",
-              "description": "Position offset in blocks",
-              "properties": {
-                "z": {
-                  "type": "number",
-                  "description": "Z-axis offset",
-                  "default": 0.0
-                },
-                "y": {
-                  "type": "number",
-                  "description": "Y-axis offset",
-                  "default": 0.0
-                },
-                "x": {
-                  "type": "number",
-                  "description": "X-axis offset",
-                  "default": 0.0
-                }
-              }
-            },
             "display_transform": {
               "type": "string",
               "description": "Display transform mode",
@@ -7898,6 +7864,48 @@
                 "GROUND",
                 "FIXED"
               ]
+            },
+            "translation": {
+              "type": "object",
+              "description": "Position offset in blocks",
+              "properties": {
+                "z": {
+                  "type": "number",
+                  "description": "Z-axis offset",
+                  "default": 0.0
+                },
+                "x": {
+                  "type": "number",
+                  "description": "X-axis offset",
+                  "default": 0.0
+                },
+                "y": {
+                  "type": "number",
+                  "description": "Y-axis offset",
+                  "default": 0.0
+                }
+              }
+            },
+            "scale": {
+              "type": "object",
+              "description": "Scale of the display entity",
+              "properties": {
+                "z": {
+                  "type": "number",
+                  "description": "Z-axis scale",
+                  "default": 1.0
+                },
+                "x": {
+                  "type": "number",
+                  "description": "X-axis scale",
+                  "default": 1.0
+                },
+                "y": {
+                  "type": "number",
+                  "description": "Y-axis scale",
+                  "default": 1.0
+                }
+              }
             }
           }
         },
@@ -7914,14 +7922,14 @@
                   "description": "Z-axis scale",
                   "default": 1.0
                 },
-                "y": {
-                  "type": "number",
-                  "description": "Y-axis scale",
-                  "default": 1.0
-                },
                 "x": {
                   "type": "number",
                   "description": "X-axis scale",
+                  "default": 1.0
+                },
+                "y": {
+                  "type": "number",
+                  "description": "Y-axis scale",
                   "default": 1.0
                 }
               }
@@ -7935,14 +7943,14 @@
                   "description": "Z-axis offset",
                   "default": 0.0
                 },
-                "y": {
-                  "type": "number",
-                  "description": "Y-axis offset",
-                  "default": 0.0
-                },
                 "x": {
                   "type": "number",
                   "description": "X-axis offset",
+                  "default": 0.0
+                },
+                "y": {
+                  "type": "number",
+                  "description": "Y-axis offset",
                   "default": 0.0
                 }
               }
@@ -7975,10 +7983,6 @@
               "min": 1,
               "max": 6
             },
-            "title": {
-              "type": "string",
-              "description": "Inventory title"
-            },
             "type": {
               "type": "string",
               "description": "Storage type",
@@ -7988,6 +7992,121 @@
                 "ENDERCHEST",
                 "DISPOSAL"
               ]
+            },
+            "title": {
+              "type": "string",
+              "description": "Inventory title"
+            }
+          }
+        }
+      }
+    },
+    "block": {
+      "category": "gameplay",
+      "description": "Creates custom blocks using the configured backing block type",
+      "_source": "factory",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Backing block type",
+          "values": [
+            "FULL",
+            "STAIR",
+            "SLAB",
+            "DOOR",
+            "TRAPDOOR",
+            "GRATE",
+            "BULB",
+            "STRING",
+            "CHORUS"
+          ]
+        },
+        "appearance": {
+          "type": "object",
+          "description": "Placed block appearance",
+          "properties": {
+            "textures": {
+              "type": "array",
+              "description": "Placed block textures"
+            },
+            "model": {
+              "type": "string",
+              "description": "Placed block model path"
+            }
+          }
+        },
+        "custom-variation": {
+          "type": "integer",
+          "description": "Backing-state variation ID",
+          "default": 1
+        },
+        "breaking": {
+          "type": "array",
+          "description": "Ordered block breaking rules"
+        },
+        "events": {
+          "type": "array",
+          "description": "Click events with actions to run when the placed block is clicked"
+        },
+        "light": {
+          "type": "integer",
+          "description": "Light level emitted by the placed block (0-15, 0 disables)",
+          "default": 0,
+          "min": 0,
+          "max": 15
+        },
+        "placeable": {
+          "type": "object",
+          "description": "Placement face and block restrictions",
+          "properties": {
+            "allow": {
+              "type": "array",
+              "description": "Vanilla block IDs this block may be placed against"
+            },
+            "disallow": {
+              "type": "array",
+              "description": "Vanilla block IDs this block may not be placed against"
+            },
+            "floor": {
+              "type": "boolean",
+              "description": "Allow placement on floors",
+              "default": true
+            },
+            "roof": {
+              "type": "boolean",
+              "description": "Allow placement on ceilings",
+              "default": true
+            },
+            "wall": {
+              "type": "boolean",
+              "description": "Allow placement on walls",
+              "default": true
+            }
+          }
+        },
+        "block-sounds": {
+          "type": "object",
+          "description": "Custom block sounds",
+          "properties": {
+            "break-sound": {
+              "type": "string",
+              "description": "Sound when broken"
+            },
+            "hit-sound": {
+              "type": "string",
+              "description": "Sound when hit"
+            },
+            "fall-sound": {
+              "type": "string",
+              "description": "Sound when fallen on"
+            },
+            "place-sound": {
+              "type": "string",
+              "description": "Sound when placed"
+            },
+            "step-sound": {
+              "type": "string",
+              "description": "Sound when stepped on"
             }
           }
         }
@@ -8094,6 +8213,11 @@
         "break_music_discs": {
           "type": "boolean",
           "description": "Whether item can break music discs",
+          "default": false
+        },
+        "prevent_renaming": {
+          "type": "boolean",
+          "description": "Whether item renaming in anvils is prevented",
           "default": false
         }
       }
@@ -8467,128 +8591,17 @@
     "bedrockbreak": {
       "category": "farming",
       "description": "Allows breaking bedrock (requires ProtocolLib)",
-      "_source": "factory",
       "properties": {
+        "delay": {
+          "type": "integer",
+          "description": "Break delay in ticks",
+          "min": 0
+        },
         "probability": {
           "type": "number",
           "description": "Chance to break (0-1)",
           "min": 0,
           "default": 1.0
-        },
-        "delay": {
-          "type": "integer",
-          "description": "Break delay in ticks",
-          "min": 0
-        }
-      }
-    },
-    "block": {
-      "category": "gameplay",
-      "description": "Creates custom blocks using the configured backing block type",
-      "_source": "factory",
-      "properties": {
-        "type": {
-          "type": "string",
-          "description": "Backing block type",
-          "values": [
-            "FULL",
-            "STAIR",
-            "SLAB",
-            "DOOR",
-            "TRAPDOOR",
-            "GRATE",
-            "BULB",
-            "STRING",
-            "CHORUS"
-          ]
-        },
-        "appearance": {
-          "type": "object",
-          "description": "Placed block appearance",
-          "properties": {
-            "model": {
-              "type": "string",
-              "description": "Placed block model path"
-            },
-            "textures": {
-              "type": "array",
-              "description": "Placed block textures"
-            }
-          }
-        },
-        "custom-variation": {
-          "type": "integer",
-          "description": "Backing-state variation ID",
-          "default": 1
-        },
-        "breaking": {
-          "type": "array",
-          "description": "Ordered block breaking rules",
-          "items": {
-            "type": "object",
-            "properties": {
-              "when": {
-                "type": "array",
-                "description": "Tool materials or item tags that match this rule",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "else": {
-                "type": "boolean",
-                "description": "Fallback rule when no previous tool rule matched"
-              },
-              "hardness": {
-                "type": "number",
-                "description": "Block hardness for this rule",
-                "min": 0.0
-              },
-              "drops": {
-                "type": "array",
-                "description": "Loot entries dropped by this rule",
-                "items": {
-                  "type": "object"
-                }
-              }
-            },
-            "required": [
-              "hardness"
-            ],
-            "additionalProperties": false
-          }
-        },
-        "light": {
-          "type": "integer",
-          "description": "Light level emitted (0-15)",
-          "default": 0,
-          "min": 0,
-          "max": 15
-        },
-        "block-sounds": {
-          "type": "object",
-          "description": "Custom block sounds",
-          "properties": {
-            "place-sound": {
-              "type": "string",
-              "description": "Sound when placed"
-            },
-            "break-sound": {
-              "type": "string",
-              "description": "Sound when broken"
-            },
-            "step-sound": {
-              "type": "string",
-              "description": "Sound when stepped on"
-            },
-            "hit-sound": {
-              "type": "string",
-              "description": "Sound when hit"
-            },
-            "fall-sound": {
-              "type": "string",
-              "description": "Sound when fallen on"
-            }
-          }
         }
       }
     }
