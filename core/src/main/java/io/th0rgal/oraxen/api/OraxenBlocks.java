@@ -202,6 +202,8 @@ public class OraxenBlocks {
             placeStringBlock(location, itemID);
         } else if (isOraxenChorusBlock(itemID)) {
             placeChorusBlock(location, itemID);
+        } else if (getShapedMechanic(itemID) != null) {
+            placeShapedBlock(location, itemID);
         }
     }
 
@@ -219,7 +221,11 @@ public class OraxenBlocks {
             return StringBlockMechanicFactory.getInstance().createTripwireData(itemID);
         } else if (isOraxenChorusBlock(itemID)) {
             return ChorusBlockMechanicFactory.getInstance().createChorusData(itemID);
-        } else return null;
+        } else {
+            ShapedBlockMechanic shapedMechanic = getShapedMechanic(itemID);
+            if (shapedMechanic != null) return shapedMechanic.getPlacedMaterial().createBlockData();
+        }
+        return null;
     }
 
     private static void placeNoteBlock(Location location, String itemID) {
@@ -276,6 +282,34 @@ public class OraxenBlocks {
         if (mechanic == null) return;
 
         createInitialLight(block, mechanic.getItemID());
+    }
+
+    private static void placeShapedBlock(Location location, String itemID) {
+        ShapedBlockMechanic mechanic = getShapedMechanic(itemID);
+        if (mechanic == null) return;
+
+        Block block = location.getBlock();
+        Block upperBlock = block.getRelative(BlockFace.UP);
+        if (mechanic.getBlockType() == ShapedBlockType.DOOR
+                && !BlockHelpers.REPLACEABLE_BLOCKS.contains(upperBlock.getType())) return;
+
+        block.setType(mechanic.getPlacedMaterial(), false);
+        if (block.getBlockData() instanceof org.bukkit.block.data.type.Door door) {
+            door.setHalf(org.bukkit.block.data.Bisected.Half.BOTTOM);
+            block.setBlockData(door, false);
+        }
+        ShapedBlockMechanic.setItemId(new CustomBlockData(block, OraxenPlugin.get()), mechanic.getItemID());
+        createInitialLight(block, mechanic.getItemID());
+
+        if (mechanic.getBlockType() != ShapedBlockType.DOOR) return;
+
+        upperBlock.setType(mechanic.getPlacedMaterial(), false);
+        if (upperBlock.getBlockData() instanceof org.bukkit.block.data.type.Door door) {
+            door.setHalf(org.bukkit.block.data.Bisected.Half.TOP);
+            upperBlock.setBlockData(door, false);
+        }
+        ShapedBlockMechanic.setItemId(new CustomBlockData(upperBlock, OraxenPlugin.get()), mechanic.getItemID());
+        createInitialLight(upperBlock, mechanic.getItemID());
     }
 
     /**
