@@ -12,6 +12,7 @@ import io.th0rgal.oraxen.utils.AdventureUtils;
 import org.bukkit.entity.Player;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.zip.ZipEntry;
 
 public class PackCommand {
@@ -31,7 +32,8 @@ public class PackCommand {
                 .withPermission("oraxen.command.pack.send")
                 .withOptionalArguments(new EntitySelectorArgument.ManyPlayers("targets"))
                 .executes((sender, args) -> {
-                    final Collection<Player> targets = (Collection<Player>) args.getOptional("targets").orElse(sender instanceof Player ? sender : null);
+                    final Collection<Player> targets = (Collection<Player>) args.getOptional("targets")
+                            .orElse(sender instanceof Player player ? List.of(player) : null);
                     if (targets == null) return;
                     
                     var multiVersionManager = OraxenPlugin.get().getMultiVersionUploadManager();
@@ -57,7 +59,8 @@ public class PackCommand {
         return new CommandAPICommand("msg")
                 .withOptionalArguments(new EntitySelectorArgument.ManyPlayers("targets"))
                 .executes((sender, args) -> {
-                    final Collection<Player> targets = (Collection<Player>) args.getOptional("targets").orElse(sender instanceof Player ? sender : null);
+                    final Collection<Player> targets = (Collection<Player>) args.getOptional("targets")
+                            .orElse(sender instanceof Player player ? List.of(player) : null);
                     if (targets == null) return;
 
                     var multiVersionManager = OraxenPlugin.get().getMultiVersionUploadManager();

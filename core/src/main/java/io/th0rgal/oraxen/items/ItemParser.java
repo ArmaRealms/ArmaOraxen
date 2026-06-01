@@ -52,6 +52,7 @@ public class ItemParser {
     private static final Map<String, String> LEGACY_BLOCK_MECHANIC_TYPES = Map.of(
             "noteblock", "FULL",
             "stringblock", "STRING",
+            "chorusblock", "CHORUS",
             "shaped_block", "STAIR"
     );
 
@@ -730,8 +731,9 @@ public class ItemParser {
             OraxenYaml.invalidateKeyCache(blockSection);
             configUpdated = true;
             blockConfigMigrated = true;
-            Logs.logWarning("Item " + section.getName() + " uses legacy Mechanics." + legacyMechanicID
-                    + "; it has been migrated to Mechanics.block.");
+            if (OraxenPlugin.get() != null)
+                Logs.logWarning("Item " + section.getName() + " uses legacy Mechanics." + legacyMechanicID
+                        + "; it has been migrated to Mechanics.block.");
             return;
         }
     }
