@@ -2,6 +2,7 @@ package io.th0rgal.oraxen.mechanics.provided.gameplay.shaped;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.jeff_media.customblockdata.CustomBlockData;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.mechanics.ConfigProperty;
@@ -12,7 +13,10 @@ import io.th0rgal.oraxen.mechanics.MechanicsManager;
 import io.th0rgal.oraxen.mechanics.PropertyType;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -59,6 +63,10 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
     public static final String PROP_HARDNESS = "hardness";
 
     public ShapedBlockMechanicFactory(ConfigurationSection section) {
+        this(section, true);
+    }
+
+    public ShapedBlockMechanicFactory(ConfigurationSection section, boolean registerListeners) {
         super(section);
         instance = this;
         toolTypes = section.getStringList("tool_types");
@@ -75,8 +83,10 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
             generateBlockstates();
         });
 
-        MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(),
-            new ShapedBlockMechanicListener(this));
+        if (registerListeners) {
+            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(),
+                new ShapedBlockMechanicListener(this));
+        }
 
         if (Settings.DEBUG.toBool()) {
             Logs.logSuccess("ShapedBlockMechanicFactory initialized with tool types: " + toolTypes);
@@ -85,6 +95,10 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
 
     public static ShapedBlockMechanicFactory getInstance() {
         return instance;
+    }
+
+    public static void clearInstance(ShapedBlockMechanicFactory factory) {
+        if (instance == factory) instance = null;
     }
 
     /**
@@ -883,6 +897,18 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
      */
     public Map<Material, ShapedBlockMechanic> getAllMechanics() {
         return new HashMap<>(mechanicByMaterial);
+    }
+
+    /**
+     * Get the mechanic for a placed shaped block.
+     */
+    @Nullable
+    public ShapedBlockMechanic getMechanicFromBlock(@NotNull Block block) {
+        if (!isCustomShapedBlock(block.getType())) return null;
+        CustomBlockData blockData = new CustomBlockData(block, OraxenPlugin.get());
+        String itemId = ShapedBlockMechanic.getItemId(blockData);
+        Mechanic mechanic = itemId != null ? getMechanic(itemId) : null;
+        return mechanic instanceof ShapedBlockMechanic shapedMechanic ? shapedMechanic : null;
     }
 
     /**

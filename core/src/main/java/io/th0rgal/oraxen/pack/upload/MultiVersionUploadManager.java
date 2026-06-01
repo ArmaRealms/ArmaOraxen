@@ -127,13 +127,15 @@ public class MultiVersionUploadManager {
         Collection<PackVersion> versions = versionManager.getAllVersions();
         Logs.logInfo("Uploading " + versions.size() + " pack versions...");
 
-        // Create hosting provider once and reuse for all versions (avoids repeated
-        // reflection/initialization for external providers)
-        HostingProvider provider = HostingProviderFactory.createHostingProvider(false);
-
         Map<String, String> currentSHA1s = new HashMap<>();
+        HostingProvider firstProvider = HostingProviderFactory.createHostingProvider(false);
+        boolean createProviderPerVersion = firstProvider.requiresNewInstancePerUpload();
+        int versionIndex = 0;
         for (PackVersion packVersion : versions) {
             try {
+                HostingProvider provider = createProviderPerVersion && versionIndex++ > 0
+                        ? HostingProviderFactory.createHostingProvider(false)
+                        : firstProvider;
                 uploadPackVersion(packVersion, provider);
                 String sha1Hex = packVersion.getPackSHA1Hex();
                 if (sha1Hex != null) {
@@ -169,7 +171,7 @@ public class MultiVersionUploadManager {
         EventUtils.callEvent(event);
 
         // Upload pack (provider calculates SHA-1 internally)
-        boolean success = provider.uploadPack(packVersion.getPackFile());
+        boolean success = provider.uploadPack(packVersion.getPackFile(), packVersion.getMinecraftVersion());
         if (!success) {
             throw new IOException("Failed to upload pack");
         }

@@ -3,6 +3,9 @@ package io.th0rgal.oraxen.mechanics.provided.gameplay.stringblock;
 import io.th0rgal.oraxen.compatibilities.provided.blocklocker.BlockLockerMechanic;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockBreaking;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockEvents;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.block.Placeable;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.light.LightMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.limitedplacing.LimitedPlacing;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.storage.StorageMechanic;
@@ -10,8 +13,12 @@ import io.th0rgal.oraxen.mechanics.provided.gameplay.stringblock.sapling.Sapling
 import io.th0rgal.oraxen.utils.actions.ClickAction;
 import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
 import io.th0rgal.oraxen.utils.drops.Drop;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.Action;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,12 +28,12 @@ import java.util.Map;
 public class StringBlockMechanic extends Mechanic {
 
     private final int customVariation;
-    private final Drop drop;
+    private final BlockBreaking breaking;
+    private final Placeable placeable;
     private final BlockSounds blockSounds;
     private final LimitedPlacing limitedPlacing;
     private final StorageMechanic storage;
     private String model;
-    private final double hardness;
     private final LightMechanic light;
     private final boolean blastResistant;
     private final boolean immovable;
@@ -38,6 +45,7 @@ public class StringBlockMechanic extends Mechanic {
 
     private final BlockLockerMechanic blockLocker;
     private final List<ClickAction> clickActions;
+    private final BlockEvents blockEvents;
 
     // Stackable block support: each variation represents one stack level
     private final List<StackVariation> stackVariations;
@@ -60,14 +68,12 @@ public class StringBlockMechanic extends Mechanic {
         model = section.getString("model");
         customVariation = section.getInt("custom_variation");
         isTall = section.getBoolean("is_tall", false);
-        hardness = section.getDouble("hardness", 1.0D);
+        breaking = new BlockBreaking(section, getItemID());
+        placeable = section.contains("placeable") ? new Placeable(section) : null;
         light = new LightMechanic(section);
         blastResistant = section.getBoolean("blast_resistant", false);
         immovable = section.getBoolean("immovable", false);
         isFalling = section.getBoolean("is_falling", false);
-
-        ConfigurationSection dropSection = section.getConfigurationSection("drop");
-        drop = dropSection != null ? Drop.createDrop(StringBlockMechanicFactory.getInstance().toolTypes, dropSection, getItemID()) : new Drop(new ArrayList<>(), false, false, getItemID());
 
         ConfigurationSection randomPlaceSection = section.getConfigurationSection("random_place");
         randomPlaceBlock = randomPlaceSection != null ? randomPlaceSection.getStringList("blocks") : new ArrayList<>();
@@ -88,6 +94,7 @@ public class StringBlockMechanic extends Mechanic {
         blockLocker = blockLockerSection != null ? new BlockLockerMechanic(blockLockerSection) : null;
 
         clickActions = ClickAction.parseList(section);
+        blockEvents = new BlockEvents(section, getItemID());
 
         // Parse stackable block variations
         List<?> stackList = section.getList("stackable");
@@ -114,6 +121,9 @@ public class StringBlockMechanic extends Mechanic {
         return model != null ? model : section.getString("Pack.model");
     }
 
+    public boolean canPlaceOn(org.bukkit.block.BlockFace face) { return placeable == null || placeable.canPlaceOn(face); }
+    public boolean canPlaceOn(org.bukkit.block.BlockFace face, Block block) { return placeable == null || placeable.canPlaceOn(face, block); }
+
     public boolean hasBlockSounds() {
         return blockSounds != null;
     }
@@ -134,15 +144,35 @@ public class StringBlockMechanic extends Mechanic {
     }
 
     public Drop getDrop() {
-        return drop;
+        return getDrop(new ItemStack(Material.AIR));
+    }
+
+    public Drop getDrop(ItemStack tool) {
+        return breaking.drop(tool);
     }
 
     public boolean hasHardness() {
-        return hardness != -1.0D;
+        return hasHardness(new ItemStack(Material.AIR));
+    }
+
+    public boolean hasHardness(ItemStack tool) {
+        return breaking.hasHardness(tool);
     }
 
     public double getHardness() {
-        return hardness;
+        return getHardness(new ItemStack(Material.AIR));
+    }
+
+    public double getHardness(ItemStack tool) {
+        return breaking.hardness(tool);
+    }
+
+    public double getAttributeSpeedMultiplier(ItemStack tool, Material blockType) {
+        return breaking.attributeSpeedMultiplier(tool, blockType);
+    }
+
+    public double getPacketSpeedMultiplier(ItemStack tool, Material blockType) {
+        return breaking.packetSpeedMultiplier(tool, blockType);
     }
 
     public boolean hasLight() {
@@ -189,6 +219,14 @@ public class StringBlockMechanic extends Mechanic {
         return !clickActions.isEmpty();
     }
 
+    public boolean hasBlockEvents() {
+        return !blockEvents.isEmpty();
+    }
+
+    public boolean runBlockEvents(final Player player, final Action action) {
+        return blockEvents.run(player, action);
+    }
+
     public List<ClickAction> getClickActions() {
         return clickActions;
     }
@@ -202,7 +240,7 @@ public class StringBlockMechanic extends Mechanic {
     }
 
     public boolean isInteractable() {
-        return hasClickActions() || isStorage() || isStackable();
+        return hasClickActions() || hasBlockEvents() || isStorage() || isStackable();
     }
 
     // --- Stackable block API ---

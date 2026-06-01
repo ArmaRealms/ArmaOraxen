@@ -117,7 +117,7 @@ public class OraxenMetrics {
 
         // Key mechanics to track
         Set<String> trackedMechanics = Set.of(
-                "furniture", "noteblock", "stringblock", "block",
+                "furniture", "block",
                 "durability", "repair", "efficiency",
                 "armor_effects", "backpack", "custom",
                 "soulbound", "consumable", "commands",

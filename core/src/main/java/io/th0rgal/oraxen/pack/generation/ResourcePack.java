@@ -17,6 +17,8 @@ import io.th0rgal.oraxen.font.TextEffect;
 import net.kyori.adventure.key.Key;
 import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.items.OraxenMeta;
+import io.th0rgal.oraxen.painting.CustomPainting;
+import io.th0rgal.oraxen.painting.PaintingDatapack;
 import io.th0rgal.oraxen.pack.upload.UploadManager;
 import io.th0rgal.oraxen.utils.*;
 import io.th0rgal.oraxen.utils.customarmor.ComponentArmorModels;
@@ -27,6 +29,7 @@ import io.th0rgal.oraxen.utils.logs.Logs;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
 
 import javax.imageio.ImageIO;
 import java.awt.AlphaComposite;
@@ -211,6 +214,7 @@ public class ResourcePack {
     private void finishSinglePackOutputOnMain(ExecutorService packWorker, List<VirtualFile> output) {
         try {
             soundGenerator.generateSound(output);
+            generatePaintingDatapack(output);
 
             OraxenPackGeneratedEvent event = new OraxenPackGeneratedEvent(output);
             EventUtils.callEvent(event);
@@ -226,6 +230,7 @@ public class ResourcePack {
         try {
             packWorker.submit(() -> {
                 try {
+                    filterGeneratedCoreShadersBelow1214(output, MinecraftVersion.getCurrentVersion());
                     ZipUtils.writeZipFile(pack, output);
                     SchedulerUtil.runTask(this::uploadGeneratedPackAndFinish);
                 } catch (Exception exception) {
@@ -531,6 +536,38 @@ public class ResourcePack {
     private void postProcessOutput(List<VirtualFile> output) {
         postProcessOutputAsyncSafe(output);
         soundGenerator.generateSound(output);
+        generatePaintingDatapack(output);
+    }
+
+    private void generatePaintingDatapack(List<VirtualFile> output) {
+        ConfigurationSection paintingsSection = OraxenPlugin.get().getConfigsManager().getPaintings()
+                .getConfigurationSection("paintings");
+        if (paintingsSection == null) return;
+
+        List<CustomPainting> paintings = new ArrayList<>();
+        for (String key : paintingsSection.getKeys(false)) {
+            ConfigurationSection paintingSection = paintingsSection.getConfigurationSection(key);
+            if (paintingSection == null) continue;
+            if (!paintingSection.getBoolean("enabled", true)) continue;
+
+            try {
+                paintings.add(CustomPainting.fromConfig(key, paintingSection));
+            } catch (IllegalArgumentException exception) {
+                Logs.logWarning("Failed to parse custom painting '" + key + "' in paintings.yml");
+                Logs.debug(exception);
+            }
+        }
+
+        if (!VersionUtil.atOrAbove("1.21")) {
+            if (!paintings.isEmpty()) {
+                Logs.logWarning("Custom paintings require Minecraft 1.21 or newer. Skipping paintings datapack.");
+            }
+            return;
+        }
+
+        PaintingDatapack paintingDatapack = new PaintingDatapack(paintings);
+        paintingDatapack.clearOldDataPack();
+        paintingDatapack.generateAssets(output);
     }
 
     private void postProcessOutputAsyncSafe(List<VirtualFile> output) {
@@ -575,8 +612,34 @@ public class ResourcePack {
         }
 
         // Use MultiVersionPackGenerator for multi-version zip and upload
-        MultiVersionPackGenerator multiVersionGenerator = new MultiVersionPackGenerator(packFolder);
+        MultiVersionPackGenerator multiVersionGenerator = new MultiVersionPackGenerator(packFolder,
+                textShaderGenerator.getGeneratedCoreShaderHashes());
         multiVersionGenerator.generateMultipleVersions(output, switchingFromSinglePack);
+    }
+
+    private void filterGeneratedCoreShadersBelow1214(List<VirtualFile> output, MinecraftVersion targetVersion) {
+        if (targetVersion.isAtLeast(new MinecraftVersion("1.21.4"))) {
+            return;
+        }
+
+        Map<String, String> generatedShaderHashes = textShaderGenerator.getGeneratedCoreShaderHashes();
+        if (generatedShaderHashes.isEmpty()) {
+            return;
+        }
+
+        output.removeIf(file -> generatedShaderHashes.containsKey(file.getPath())
+                && generatedShaderHashes.get(file.getPath()).equals(sha256(file)));
+    }
+
+    private String sha256(VirtualFile file) {
+        try {
+            byte[] content = file.getInputStream().readAllBytes();
+            file.setInputStream(new ByteArrayInputStream(content));
+            return HashUtils.sha256(content);
+        } catch (IOException | IllegalStateException e) {
+            Logs.logWarning("Failed to hash " + file.getPath() + " while filtering generated shaders: " + e.getMessage());
+            return "";
+        }
     }
 
     /**
@@ -880,7 +943,12 @@ public class ResourcePack {
 
     @SafeVarargs
     public final void addModifiers(String groupName, final Consumer<File>... modifiers) {
-        packModifiers.put(groupName, Arrays.asList(modifiers));
+        packModifiers.compute(groupName, (key, existing) -> {
+            List<Consumer<File>> merged = new ArrayList<>();
+            if (existing != null) merged.addAll(existing);
+            merged.addAll(Arrays.asList(modifiers));
+            return merged;
+        });
     }
 
     public static void addOutputFiles(final VirtualFile... files) {
@@ -1305,9 +1373,22 @@ public class ResourcePack {
 
 
     public static void writeStringToVirtual(String folder, String name, String content) {
-        folder = !folder.endsWith("/") ? folder : folder.substring(0, folder.length() - 1);
         addOutputFiles(
-                new VirtualFile(folder, name, new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8))));
+                new VirtualFile(normalizeVirtualFolder(folder), name, new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8))));
+    }
+
+    public static String normalizeVirtualPath(String folder, String name) {
+        String normalizedFolder = normalizeVirtualFolder(folder);
+        String normalizedName = name == null ? "" : name.trim();
+        while (normalizedName.startsWith("/")) normalizedName = normalizedName.substring(1);
+        return normalizedFolder.isEmpty() ? normalizedName : normalizedFolder + "/" + normalizedName;
+    }
+
+    private static String normalizeVirtualFolder(String folder) {
+        String normalizedFolder = folder == null ? "" : folder.trim();
+        while (normalizedFolder.endsWith("/")) normalizedFolder = normalizedFolder.substring(0, normalizedFolder.length() - 1);
+        while (normalizedFolder.startsWith("/")) normalizedFolder = normalizedFolder.substring(1);
+        return normalizedFolder;
     }
 
     public static void deleteFileFromVirtualAndDisk(String folder, String name) {

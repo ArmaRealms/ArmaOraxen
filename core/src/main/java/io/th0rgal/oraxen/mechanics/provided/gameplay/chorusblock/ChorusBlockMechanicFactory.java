@@ -9,6 +9,7 @@ import io.th0rgal.oraxen.mechanics.MechanicsManager;
 import io.th0rgal.oraxen.nms.NMSHandlers;
 import io.th0rgal.oraxen.utils.PaperConfigUpdater;
 import io.th0rgal.oraxen.utils.VersionUtil;
+import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.apache.commons.lang3.Range;
 import org.bukkit.Bukkit;
@@ -36,6 +37,10 @@ public class ChorusBlockMechanicFactory extends MechanicFactory {
     public final boolean customSounds;
 
     public ChorusBlockMechanicFactory(ConfigurationSection section) {
+        this(section, true);
+    }
+
+    public ChorusBlockMechanicFactory(ConfigurationSection section, boolean registerListeners) {
         super(section);
         instance = this;
         variants = new JsonObject();
@@ -50,6 +55,8 @@ public class ChorusBlockMechanicFactory extends MechanicFactory {
                 packFolder -> OraxenPlugin.get().getResourcePack()
                         .writeStringToVirtual("assets/minecraft/blockstates",
                                 "chorus_plant.json", getBlockstateContent()));
+
+        if (!registerListeners) return;
 
         // Register listeners
         MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(),
@@ -103,17 +110,21 @@ public class ChorusBlockMechanicFactory extends MechanicFactory {
     }
 
     public static boolean isEnabled() {
-        return instance != null && MechanicsManager.isMechanicEnabled("chorusblock");
+        return instance != null && MechanicsManager.isMechanicEnabled("block");
     }
 
     public static boolean areCustomSoundsEnabled() {
         ConfigurationSection customSoundsSection = OraxenPlugin.get().getConfigsManager().getMechanics()
                 .getConfigurationSection("custom_block_sounds");
-        return customSoundsSection == null || customSoundsSection.getBoolean("chorusblock", true);
+        return BlockSounds.isBlockSoundEnabled(customSoundsSection);
     }
 
     public static ChorusBlockMechanicFactory getInstance() {
         return instance;
+    }
+
+    public static void clearInstance(ChorusBlockMechanicFactory factory) {
+        if (instance == factory) instance = null;
     }
 
     /**

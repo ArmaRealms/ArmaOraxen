@@ -7506,30 +7506,6 @@
         }
       }
     },
-    "shaped_block": {
-      "category": "gameplay",
-      "description": "Allows creating custom stairs, slabs, doors, trapdoors, grates, and bulbs (transparent blocks) using waxed copper blocks as base",
-      "_source": "factory",
-      "properties": {
-        "type": {
-          "type": "string",
-          "description": "Type of shaped block: STAIR, SLAB, DOOR, TRAPDOOR, GRATE, BULB"
-        },
-        "custom_variation": {
-          "type": "integer",
-          "description": "Custom variation (1-4, maps to copper oxidation states)",
-          "default": 1,
-          "min": 1.0,
-          "max": 4.0
-        },
-        "hardness": {
-          "type": "integer",
-          "description": "Block hardness for mining",
-          "default": 3,
-          "min": -1.0
-        }
-      }
-    },
     "lifeleech": {
       "category": "combat",
       "description": "Heals the player when dealing damage to entities",
@@ -7734,129 +7710,6 @@
         "song": {
           "type": "string",
           "description": "Sound resource location for the music"
-        }
-      }
-    },
-    "noteblock": {
-      "category": "gameplay",
-      "description": "Creates custom blocks using noteblock states (up to 775 variations)",
-      "_source": "factory",
-      "properties": {
-        "custom_variation": {
-          "type": "integer",
-          "description": "Unique variation ID (0-775)",
-          "default": 0,
-          "min": 0,
-          "max": 775
-        },
-        "model": {
-          "type": "string",
-          "description": "Block model path"
-        },
-        "hardness": {
-          "type": "number",
-          "description": "Block break hardness",
-          "default": 1.0,
-          "min": 0.0
-        },
-        "light": {
-          "type": "integer",
-          "description": "Light level emitted (0-15)",
-          "default": 0,
-          "min": 0,
-          "max": 15
-        },
-        "canIgnite": {
-          "type": "boolean",
-          "description": "Whether the block can be ignited",
-          "default": false
-        },
-        "blast_resistant": {
-          "type": "boolean",
-          "description": "Whether block resists explosions",
-          "default": false
-        },
-        "immovable": {
-          "type": "boolean",
-          "description": "Whether block resists pistons",
-          "default": false
-        },
-        "drop": {
-          "type": "object",
-          "description": "Drop configuration when broken",
-          "properties": {
-            "silktouch": {
-              "type": "boolean",
-              "description": "Require silk touch",
-              "default": false
-            },
-            "loots": {
-              "type": "array",
-              "description": "List of loot entries"
-            }
-          }
-        },
-        "directional": {
-          "type": "object",
-          "description": "Directional block configuration",
-          "properties": {
-            "x_block": {
-              "type": "string",
-              "description": "X-axis variant ID"
-            },
-            "z_block": {
-              "type": "string",
-              "description": "Z-axis variant ID"
-            },
-            "parent_block": {
-              "type": "string",
-              "description": "Parent block ID"
-            },
-            "y_block": {
-              "type": "string",
-              "description": "Y-axis variant ID"
-            }
-          }
-        },
-        "farmblock": {
-          "type": "object",
-          "description": "Farm block configuration",
-          "properties": {
-            "dry_block": {
-              "type": "string",
-              "description": "Block ID when dried"
-            },
-            "moisture": {
-              "type": "integer",
-              "description": "Moisture level",
-              "default": 0,
-              "min": 0
-            }
-          }
-        },
-        "log_strip": {
-          "type": "object",
-          "description": "Log stripping configuration",
-          "properties": {
-            "stripped_log": {
-              "type": "string",
-              "description": "Stripped log block ID"
-            },
-            "drop": {
-              "type": "object",
-              "description": "Item dropped on strip",
-              "properties": {
-                "minecraft_type": {
-                  "type": "string",
-                  "description": "Vanilla item type"
-                },
-                "oraxen_item": {
-                  "type": "string",
-                  "description": "Oraxen item ID"
-                }
-              }
-            }
-          }
         }
       }
     },
@@ -8257,111 +8110,6 @@
         }
       }
     },
-    "chorusblock": {
-      "category": "gameplay",
-      "description": "Creates custom blocks using chorus plant states (up to 63 variations)",
-      "_source": "factory",
-      "properties": {
-        "custom_variation": {
-          "type": "integer",
-          "description": "Unique variation ID (1-63)",
-          "default": 1,
-          "min": 1,
-          "max": 63
-        },
-        "model": {
-          "type": "string",
-          "description": "Block model path"
-        },
-        "hardness": {
-          "type": "number",
-          "description": "Block break hardness",
-          "default": 1.0,
-          "min": 0.0
-        },
-        "light": {
-          "type": "integer",
-          "description": "Light level emitted (0-15)",
-          "default": 0,
-          "min": 0,
-          "max": 15
-        },
-        "is_falling": {
-          "type": "boolean",
-          "description": "Whether the block falls like sand",
-          "default": false
-        },
-        "blast_resistant": {
-          "type": "boolean",
-          "description": "Whether the block resists explosions",
-          "default": false
-        },
-        "immovable": {
-          "type": "boolean",
-          "description": "Whether the block can be moved by pistons",
-          "default": false
-        },
-        "drop": {
-          "type": "object",
-          "description": "Drop configuration when broken",
-          "properties": {
-            "silktouch": {
-              "type": "boolean",
-              "description": "Require silk touch",
-              "default": false
-            },
-            "loots": {
-              "type": "array",
-              "description": "List of loot entries"
-            }
-          }
-        },
-        "block_sounds": {
-          "type": "object",
-          "description": "Custom block sounds",
-          "properties": {
-            "break_sound": {
-              "type": "string",
-              "description": "Sound when broken"
-            },
-            "step_sound": {
-              "type": "string",
-              "description": "Sound when stepped on"
-            },
-            "place_sound": {
-              "type": "string",
-              "description": "Sound when placed"
-            },
-            "fall_sound": {
-              "type": "string",
-              "description": "Sound when fallen on"
-            },
-            "hit_sound": {
-              "type": "string",
-              "description": "Sound when hit"
-            }
-          }
-        },
-        "limited_placing": {
-          "type": "object",
-          "description": "Placement restrictions",
-          "properties": {
-            "type": {
-              "type": "string",
-              "description": "ALLOW or DENY list type"
-            },
-            "block_types": {
-              "type": "array",
-              "description": "Block types to allow/deny"
-            }
-          }
-        },
-        "clickActions": {
-          "type": "array",
-          "description": "Actions to perform on click"
-        }
-      }
-    },
     "thor": {
       "category": "combat",
       "description": "Summons lightning bolts on the target location when attacking",
@@ -8716,93 +8464,10 @@
         }
       }
     },
-    "stringblock": {
-      "category": "gameplay",
-      "description": "Creates custom blocks using tripwire states (up to 127 variations)",
-      "_source": "factory",
-      "properties": {
-        "custom_variation": {
-          "type": "integer",
-          "description": "Unique variation ID (1-127)",
-          "default": 1,
-          "min": 1,
-          "max": 127
-        },
-        "model": {
-          "type": "string",
-          "description": "Block model path"
-        },
-        "hardness": {
-          "type": "number",
-          "description": "Block break hardness",
-          "default": 1.0,
-          "min": 0.0
-        },
-        "light": {
-          "type": "integer",
-          "description": "Light level emitted (0-15)",
-          "default": 0,
-          "min": 0,
-          "max": 15
-        },
-        "blast_resistant": {
-          "type": "boolean",
-          "description": "Whether block resists explosions",
-          "default": false
-        },
-        "immovable": {
-          "type": "boolean",
-          "description": "Whether block resists pistons",
-          "default": false
-        },
-        "drop": {
-          "type": "object",
-          "description": "Drop configuration when broken",
-          "properties": {
-            "silktouch": {
-              "type": "boolean",
-              "description": "Require silk touch",
-              "default": false
-            },
-            "loots": {
-              "type": "array",
-              "description": "List of loot entries"
-            }
-          }
-        },
-        "sapling": {
-          "type": "object",
-          "description": "Sapling growth configuration",
-          "properties": {
-            "grow_block": {
-              "type": "string",
-              "description": "Block ID when grown"
-            },
-            "min_light": {
-              "type": "integer",
-              "description": "Minimum light level to grow",
-              "default": 9,
-              "min": 0,
-              "max": 15
-            },
-            "grow_chance": {
-              "type": "number",
-              "description": "Growth chance per check",
-              "default": 0.1,
-              "min": 0.0,
-              "max": 1.0
-            }
-          }
-        },
-        "stackable": {
-          "type": "array",
-          "description": "List of stack variations (custom_variation + model per level)"
-        }
-      }
-    },
     "bedrockbreak": {
       "category": "farming",
       "description": "Allows breaking bedrock (requires ProtocolLib)",
+      "_source": "factory",
       "properties": {
         "probability": {
           "type": "number",
@@ -8819,7 +8484,113 @@
     },
     "block": {
       "category": "gameplay",
-      "description": "Custom block mechanic"
+      "description": "Creates custom blocks using the configured backing block type",
+      "_source": "factory",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Backing block type",
+          "values": [
+            "FULL",
+            "STAIR",
+            "SLAB",
+            "DOOR",
+            "TRAPDOOR",
+            "GRATE",
+            "BULB",
+            "STRING",
+            "CHORUS"
+          ]
+        },
+        "appearance": {
+          "type": "object",
+          "description": "Placed block appearance",
+          "properties": {
+            "model": {
+              "type": "string",
+              "description": "Placed block model path"
+            },
+            "textures": {
+              "type": "array",
+              "description": "Placed block textures"
+            }
+          }
+        },
+        "custom-variation": {
+          "type": "integer",
+          "description": "Backing-state variation ID",
+          "default": 1
+        },
+        "breaking": {
+          "type": "array",
+          "description": "Ordered block breaking rules",
+          "items": {
+            "type": "object",
+            "properties": {
+              "when": {
+                "type": "array",
+                "description": "Tool materials or item tags that match this rule",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "else": {
+                "type": "boolean",
+                "description": "Fallback rule when no previous tool rule matched"
+              },
+              "hardness": {
+                "type": "number",
+                "description": "Block hardness for this rule",
+                "min": 0.0
+              },
+              "drops": {
+                "type": "array",
+                "description": "Loot entries dropped by this rule",
+                "items": {
+                  "type": "object"
+                }
+              }
+            },
+            "required": [
+              "hardness"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "light": {
+          "type": "integer",
+          "description": "Light level emitted (0-15)",
+          "default": 0,
+          "min": 0,
+          "max": 15
+        },
+        "block-sounds": {
+          "type": "object",
+          "description": "Custom block sounds",
+          "properties": {
+            "place-sound": {
+              "type": "string",
+              "description": "Sound when placed"
+            },
+            "break-sound": {
+              "type": "string",
+              "description": "Sound when broken"
+            },
+            "step-sound": {
+              "type": "string",
+              "description": "Sound when stepped on"
+            },
+            "hit-sound": {
+              "type": "string",
+              "description": "Sound when hit"
+            },
+            "fall-sound": {
+              "type": "string",
+              "description": "Sound when fallen on"
+            }
+          }
+        }
+      }
     }
   },
   "pack": {

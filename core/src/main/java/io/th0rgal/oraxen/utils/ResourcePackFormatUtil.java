@@ -13,7 +13,8 @@ import java.lang.reflect.Method;
  */
 public final class ResourcePackFormatUtil {
 
-    private static volatile Integer cached;
+    private static volatile Integer cachedResourcePackFormat;
+    private static volatile Integer cachedDataPackFormat;
     private static final PackFormatThreshold[] PACK_FORMAT_THRESHOLDS = {
             new PackFormatThreshold("26.1", 84),
             new PackFormatThreshold("1.26.1", 84),
@@ -34,22 +35,58 @@ public final class ResourcePackFormatUtil {
             new PackFormatThreshold("1.19", 9),
             new PackFormatThreshold("1.18", 8)
     };
+    private static final PackFormatThreshold[] DATA_PACK_FORMAT_THRESHOLDS = {
+            new PackFormatThreshold("26.1", 84),
+            new PackFormatThreshold("1.26.1", 84),
+            new PackFormatThreshold("1.21.11", 89),
+            new PackFormatThreshold("1.21.10", 88),
+            new PackFormatThreshold("1.21.9", 87),
+            new PackFormatThreshold("1.21.7", 81),
+            new PackFormatThreshold("1.21.6", 80),
+            new PackFormatThreshold("1.21.5", 71),
+            new PackFormatThreshold("1.21.4", 61),
+            new PackFormatThreshold("1.21.2", 57),
+            new PackFormatThreshold("1.21", 48),
+            new PackFormatThreshold("1.20.5", 41),
+            new PackFormatThreshold("1.20.3", 26),
+            new PackFormatThreshold("1.20.2", 18),
+            new PackFormatThreshold("1.20", 15),
+            new PackFormatThreshold("1.19.4", 12),
+            new PackFormatThreshold("1.19.3", 10),
+            new PackFormatThreshold("1.19", 10),
+            new PackFormatThreshold("1.18", 9)
+    };
 
     private ResourcePackFormatUtil() {
     }
 
     public static int getCurrentResourcePackFormat() {
-        Integer local = cached;
+        Integer local = cachedResourcePackFormat;
         if (local != null) return local;
 
-        Integer resolved = resolveViaMinecraftClasses();
+        Integer resolved = resolveViaMinecraftClasses("CLIENT_RESOURCES");
         if (resolved == null) {
             // Fallback: best-effort mapping based on the server version.
             // This should only be used if reflection fails (rare on supported versions).
             resolved = getPackFormatForVersion(MinecraftVersion.getCurrentVersion());
         }
 
-        cached = resolved;
+        cachedResourcePackFormat = resolved;
+        return resolved;
+    }
+
+    public static int getCurrentDataPackFormat() {
+        Integer local = cachedDataPackFormat;
+        if (local != null) return local;
+
+        Integer resolved = resolveViaMinecraftClasses("SERVER_DATA");
+        if (resolved == null) {
+            // Best-effort fallback. Supported servers should resolve this from
+            // Minecraft's own runtime constants.
+            resolved = getDataPackFormatForVersion(MinecraftVersion.getCurrentVersion());
+        }
+
+        cachedDataPackFormat = resolved;
         return resolved;
     }
 
@@ -62,14 +99,22 @@ public final class ResourcePackFormatUtil {
      * @return Pack format number
      */
     public static int getPackFormatForVersion(MinecraftVersion version) {
-        for (PackFormatThreshold threshold : PACK_FORMAT_THRESHOLDS) {
+        return getFormatForVersion(version, PACK_FORMAT_THRESHOLDS, 6);
+    }
+
+    public static int getDataPackFormatForVersion(MinecraftVersion version) {
+        return getFormatForVersion(version, DATA_PACK_FORMAT_THRESHOLDS, 8);
+    }
+
+    private static int getFormatForVersion(MinecraftVersion version, PackFormatThreshold[] thresholds, int fallback) {
+        for (PackFormatThreshold threshold : thresholds) {
             if (version.isAtLeast(threshold.minimumVersion)) {
                 return threshold.packFormat;
             }
         }
 
         // Very old / unknown
-        return 6;
+        return fallback;
     }
 
     private record PackFormatThreshold(MinecraftVersion minimumVersion, int packFormat) {
@@ -79,19 +124,19 @@ public final class ResourcePackFormatUtil {
     }
 
     @Nullable
-    private static Integer resolveViaMinecraftClasses() {
+    private static Integer resolveViaMinecraftClasses(String packTypeName) {
         try {
             Object currentVersion = getCurrentGameVersion();
             if (currentVersion == null) return null;
 
-            Object clientResources = getClientResourcesPackType();
-            if (clientResources == null) return null;
+            Object packType = getPackType(packTypeName);
+            if (packType == null) return null;
 
             // Try preferred method first, then fallback
-            Integer result = tryGetPackVersionFromVersion(currentVersion, clientResources);
+            Integer result = tryGetPackVersionFromVersion(currentVersion, packType);
             if (result != null) return result;
 
-            return tryGetVersionFromPackType(clientResources, currentVersion);
+            return tryGetVersionFromPackType(packType, currentVersion);
         } catch (Throwable t) {
             // Don't hard-fail pack generation because of a reflection mismatch
             return null;
@@ -106,13 +151,13 @@ public final class ResourcePackFormatUtil {
     }
 
     @Nullable
-    private static Object getClientResourcesPackType() throws Exception {
+    private static Object getPackType(String packTypeName) throws Exception {
         Class<?> packTypeClass = Class.forName("net.minecraft.server.packs.PackType");
         Object[] enumConstants = packTypeClass.getEnumConstants();
         if (enumConstants == null) return null;
 
         for (Object constant : enumConstants) {
-            if (constant instanceof Enum<?> enumConstant && "CLIENT_RESOURCES".equals(enumConstant.name())) {
+            if (constant instanceof Enum<?> enumConstant && packTypeName.equals(enumConstant.name())) {
                 return constant;
             }
         }

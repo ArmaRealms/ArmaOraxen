@@ -13,17 +13,20 @@ caveblock:
     generate_model: false # because this is a block, a 2nd model pointing to specified one will be generated anyway
     model: default/caveblock
   Mechanics:
-    noteblock:
-      block_sounds:
-        break_sound: block.glass.break
-        place_sound: block.glass.place
-      custom_variation: 0
-      model: default/caveblock
-      hardness: 1
-      drop:
-        silktouch: false # enable if you want to cancel loots and drop the block when a silktouch pickaxe is used
-        loots:
-          - { oraxen_item: caveblock, probability: 1.0 } # item_section: probability of loot
+    block:
+      type: FULL
+      block-sounds:
+        break-sound: block.glass.break
+        place-sound: block.glass.place
+      custom-variation: 0
+      appearance:
+        model: default/caveblock
+      breaking:
+        - else:
+          hardness: 1
+          drops:
+            - item: caveblock
+              probability: 1.0
 
 amethyst_ore:
   displayname: '<gradient:#4B36B1:#6699FF>Amethyst Ore'
@@ -34,22 +37,28 @@ amethyst_ore:
     textures:
       - default/amethyst_ore
   Mechanics:
-    noteblock:
-      block_sounds:
-        break_sound: block.stone.break
-        place_sound: block.stone.place
-      custom_variation: 1
-      model: amethyst_ore
-      hardness: 6
-      drop:
-        silktouch: true
-        fortune: true
-        minimal_type: IRON
-        best_tools:
-          - PICKAXE
-        loots:
-          - oraxen_item: amethyst
-            probability: 1.0
+    block:
+      type: FULL
+      block-sounds:
+        break-sound: block.stone.break
+        place-sound: block.stone.place
+      custom-variation: 1
+      appearance:
+        model: amethyst_ore
+      breaking:
+        - when:
+            - minecraft:iron_pickaxe
+            - minecraft:golden_pickaxe
+            - minecraft:diamond_pickaxe
+            - minecraft:netherite_pickaxe
+          hardness: 4
+          drops:
+            - item: amethyst
+              probability: 1.0
+              fortune: 1.0
+              
+        - else:
+          hardness: 6
 
 ruby_ore:
   displayname: '<gradient:#FA7CBB:#F14658>Ruby Ore'
@@ -60,22 +69,27 @@ ruby_ore:
     textures:
       - default/ruby_ore
   Mechanics:
-    noteblock:
-      block_sounds:
-        break_sound: block.stone.break
-        place_sound: block.stone.place
-      custom_variation: 2
-      model: ruby_ore
-      hardness: 7
-      drop:
-        silktouch: true
-        fortune: true
-        minimal_type: IRON
-        best_tools:
-          - PICKAXE
-        loots:
-          - oraxen_item: ruby
-            probability: 1.0
+    block:
+      type: FULL
+      block-sounds:
+        break-sound: block.stone.break
+        place-sound: block.stone.place
+      custom-variation: 2
+      appearance:
+        model: ruby_ore
+      breaking:
+        - when:
+            - minecraft:iron_pickaxe
+            - minecraft:golden_pickaxe
+            - minecraft:diamond_pickaxe
+            - minecraft:netherite_pickaxe
+          hardness: 6
+          drops:
+            - item: ruby
+              probability: 1.0
+              fortune: 1.0
+        - else:
+          hardness: 8
 
 
 onyx_ore:
@@ -87,22 +101,27 @@ onyx_ore:
     textures:
       - default/onyx_ore
   Mechanics:
-    noteblock:
-      block_sounds:
-        break_sound: block.stone.break
-        place_sound: block.stone.place
-      custom_variation: 3
-      model: onyx_ore
-      hardness: 8
-      drop:
-        silktouch: true
-        fortune: true
-        minimal_type: IRON
-        best_tools:
-          - PICKAXE
-        loots:
-          - oraxen_item: onyx
-            probability: 1.0
+    block:
+      type: FULL
+      block-sounds:
+        break-sound: block.stone.break
+        place-sound: block.stone.place
+      custom-variation: 3
+      appearance:
+        model: onyx_ore
+      breaking:
+        - when:
+            - minecraft:iron_pickaxe
+            - minecraft:golden_pickaxe
+            - minecraft:diamond_pickaxe
+            - minecraft:netherite_pickaxe
+          hardness: 6
+          drops:
+            - item: onyx
+              probability: 1.0
+              fortune: 1.0
+        - else:
+          hardness: 8
 
 orax_ore:
   displayname: '<gradient:#3685EC:#72C1E4>Orax Ore'
@@ -113,19 +132,24 @@ orax_ore:
     textures:
       - default/orax_ore
   Mechanics:
-    noteblock:
-      block_sounds:
-        break_sound: block.stone.break
-        place_sound: block.stone.place
-      custom_variation: 4
-      model: orax_ore
-      hardness: 8
-      drop:
-        silktouch: true
-        fortune: true
-        minimal_type: IRON
-        best_tools:
-          - PICKAXE
-        loots:
-          - oraxen_item: orax
-            probability: 1.0
+    block:
+      type: FULL
+      block-sounds:
+        break-sound: block.stone.break
+        place-sound: block.stone.place
+      custom-variation: 4
+      appearance:
+        model: orax_ore
+      breaking:
+        - when:
+            - minecraft:iron_pickaxe
+            - minecraft:golden_pickaxe
+            - minecraft:diamond_pickaxe
+            - minecraft:netherite_pickaxe
+          hardness: 6
+          drops:
+            - item: orax
+              probability: 1.0
+              fortune: 1.0
+        - else:
+          hardness: 8

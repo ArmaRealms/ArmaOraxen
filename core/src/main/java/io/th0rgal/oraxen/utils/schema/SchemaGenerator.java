@@ -779,17 +779,12 @@ public class SchemaGenerator {
                         "initial_stage", prop("integer", "Initial growth stage index (for staged plants)", 0, 0),
                         "stages", prop("array", "Inline growth stages - array of objects with: model (string), light (int), evolution (object), drop (object)", null, null)));
 
-        addMechanicIfAbsent(mechanics, "noteblock", "gameplay", "Custom noteblock-based block",
+        addMechanicIfAbsent(mechanics, "block", "gameplay", "Custom block mechanic",
                 Map.of(
+                        "type", propEnum("string", "Block type",
+                                new String[]{"FULL", "STAIR", "SLAB", "DOOR", "TRAPDOOR", "GRATE", "BULB", "STRING", "CHORUS"}),
                         "hardness", prop("number", "Block hardness", 0, null),
                         "light", prop("integer", "Light level (0-15)", 0, null)));
-
-        addMechanicIfAbsent(mechanics, "stringblock", "gameplay", "Custom tripwire-based block",
-                Map.of(
-                        "hardness", prop("number", "Block hardness", 0, null),
-                        "light", prop("integer", "Light level (0-15)", 0, null)));
-
-        addMechanicIfAbsent(mechanics, "block", "gameplay", "Custom block mechanic", Map.of());
 
         // Cosmetic mechanics
         addMechanicIfAbsent(mechanics, "aura", "cosmetic", "Particle aura around player",

@@ -361,6 +361,28 @@ public class NMSHandler implements io.th0rgal.oraxen.nms.NMSHandler {
         return itemStack;
     }
 
+    @Override
+    public @NotNull ItemStack paintingVariantComponent(@NotNull ItemStack itemStack, @NotNull String paintingVariant) {
+        ResourceLocation variantKey = ResourceLocation.tryParse(paintingVariant);
+        if (variantKey == null) {
+            Logs.logWarning("Invalid painting_variant '" + paintingVariant + "'");
+            return itemStack;
+        }
+
+        try {
+            net.minecraft.world.item.ItemStack nmsItem = CraftItemStack.asNMSCopy(itemStack);
+            CompoundTag entityData = new CompoundTag();
+            entityData.putString("id", "painting");
+            entityData.putString("variant", variantKey.toString());
+            nmsItem.set(DataComponents.ENTITY_DATA, CustomData.of(entityData));
+            return CraftItemStack.asBukkitCopy(nmsItem);
+        } catch (RuntimeException exception) {
+            Logs.logError("Failed to set painting_variant '" + paintingVariant + "'");
+            Logs.debug(exception);
+            throw exception;
+        }
+    }
+
     private void convertConfigToNBT(ConfigurationSection config, CompoundTag nbt) {
         for (String key : config.getKeys(false)) {
             Object value = config.get(key);

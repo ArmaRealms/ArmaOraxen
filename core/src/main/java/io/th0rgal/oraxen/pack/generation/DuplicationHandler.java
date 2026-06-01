@@ -3,7 +3,9 @@ package io.th0rgal.oraxen.pack.generation;
 import com.google.gson.*;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.config.AppearanceMode;
+import io.th0rgal.oraxen.config.MigrationBackups;
 import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.sound.SoundConfigMigration;
 import io.th0rgal.oraxen.utils.OraxenYaml;
 import io.th0rgal.oraxen.utils.Utils;
 import io.th0rgal.oraxen.utils.VersionUtil;
@@ -810,8 +812,8 @@ public class DuplicationHandler {
             Logs.logWarning("Found a duplicate <blue>" + Utils.removeParentDirs(name)
                     + "</blue>, attempting to migrate it into Oraxen item configs");
             return migrateItemJson(name);
-        } else if (name.matches("assets/minecraft/sounds.json")) {
-            Logs.logWarning("Found a sounds.json duplicate, trying to migrate it into Oraxens sound.yml config");
+        } else if (name.matches("assets/[^/]+/sounds\\.json")) {
+            Logs.logWarning("Found a sounds.json duplicate, trying to migrate it into Oraxen's sounds.yml config");
             return migrateSoundJson(name);
         } else if (name.startsWith("assets/minecraft/shaders/core/rendertype_text")
                 && Settings.HIDE_SCOREBOARD_NUMBERS.toBool()) {
@@ -1052,40 +1054,34 @@ public class DuplicationHandler {
             }
 
             JsonObject sounds = JsonParser.parseString(fileContent).getAsJsonObject();
-            YamlConfiguration soundYaml = OraxenYaml
-                    .loadConfiguration(new File(OraxenPlugin.get().getDataFolder().getAbsolutePath(), "/sound.yml"));
-            for (String id : sounds.keySet()) {
-                if (soundYaml.contains("sounds." + id)) {
-                    Logs.logWarning("Sound " + id + " is already defined in sound.yml, skipping");
+            File soundsFile = getSoundsFile();
+            YamlConfiguration soundYaml = OraxenYaml.loadConfiguration(soundsFile);
+            boolean migratedConfig = SoundConfigMigration.migrateToNewFormat(soundYaml);
+
+            List<Map<String, Object>> configuredSounds = getConfiguredSounds(soundYaml);
+            Set<String> configuredIds = getConfiguredSoundIds(configuredSounds);
+            String namespace = namespaceFromSoundsJsonPath(name);
+            boolean changed = false;
+
+            for (String soundKey : sounds.keySet()) {
+                String id = namespace.equals("minecraft") ? soundKey : namespace + ":" + soundKey;
+                if (containsSoundId(configuredIds, id)) {
+                    Logs.logWarning("Sound " + id + " is already defined in sounds.yml, skipping");
                     continue;
                 }
-                JsonObject sound = sounds.get(id).getAsJsonObject();
-                boolean replace = sound.get("replace") != null && sound.get("replace").getAsBoolean();
-                String category = sound.get("category") != null && sound.get("category").getAsString() != null
-                        ? sound.get("category").getAsString()
-                        : null;
-                String subtitle = sound.get("subtitle").getAsString() != null ? sound.get("subtitle").getAsString()
-                        : null;
-                JsonArray soundArray = sound.getAsJsonArray("sounds");
-                List<String> soundList = new ArrayList<>();
-                if (soundArray != null)
-                    for (JsonElement s : soundArray)
-                        soundList.add(s.getAsString());
 
-                soundYaml.set("sounds." + id + ".replace", replace);
-                soundYaml.set("sounds." + id + ".category", category != null ? category : "master");
-                if (subtitle != null)
-                    soundYaml.set("sounds." + id + ".subtitle", subtitle);
-                soundYaml.set("sounds." + id + ".sounds", soundList);
-
-                try {
-                    soundYaml.save(new File(OraxenPlugin.get().getDataFolder().getAbsolutePath(), "/sound.yml"));
-                    Logs.logSuccess("Successfully migrated sound <blue>" + id + "</blue> into sound.yml");
-                } catch (IOException e) {
-                    Logs.logWarning("Failed to migrate duplicate file-entry, could not save <blue>" + id
-                            + "</blue> to sound.yml");
-                }
+                JsonObject sound = sounds.get(soundKey).getAsJsonObject();
+                Map<String, Object> migratedSound = soundJsonToConfigMap(id, sound, namespace);
+                configuredSounds.add(migratedSound);
+                addSoundId(configuredIds, id);
+                changed = true;
+                Logs.logSuccess("Successfully migrated sound <blue>" + id + "</blue> into sounds.yml");
             }
+
+            if (changed)
+                soundYaml.set("sounds", configuredSounds);
+            if (changed || migratedConfig)
+                soundYaml.save(soundsFile);
         } catch (Exception e) {
             Logs.logError("Failed to migrate sounds.json");
             Logs.debug(e);
@@ -1093,6 +1089,139 @@ public class DuplicationHandler {
         }
 
         return true;
+    }
+
+    private static File getSoundsFile() throws IOException {
+        File dataFolder = OraxenPlugin.get().getDataFolder();
+        File soundsFile = new File(dataFolder, "sounds.yml");
+        File legacySoundFile = new File(dataFolder, "sound.yml");
+        if (legacySoundFile.exists()) {
+            YamlConfiguration legacySoundYaml = OraxenYaml.loadConfiguration(legacySoundFile);
+            SoundConfigMigration.migrateToNewFormat(legacySoundYaml);
+
+            boolean soundsFileAlreadyExists = soundsFile.exists();
+            YamlConfiguration soundsYaml = soundsFileAlreadyExists
+                    ? OraxenYaml.loadConfiguration(soundsFile)
+                    : legacySoundYaml;
+            if (!soundsFileAlreadyExists || SoundConfigMigration.mergeSounds(soundsYaml, legacySoundYaml))
+                soundsYaml.save(soundsFile);
+            MigrationBackups.moveToMigrated(dataFolder, legacySoundFile);
+            return soundsFile;
+        }
+
+        if (soundsFile.exists())
+            return soundsFile;
+
+        soundsFile.createNewFile();
+        return soundsFile;
+    }
+
+    private static Map<String, Object> soundJsonToConfigMap(String id, JsonObject sound, String namespace) {
+        Map<String, Object> soundMap = new LinkedHashMap<>();
+        soundMap.put("id", id);
+
+        if (sound.has("replace") && sound.get("replace").getAsBoolean())
+            soundMap.put("replace", true);
+        if (sound.has("category") && !sound.get("category").isJsonNull())
+            soundMap.put("category", sound.get("category").getAsString());
+        if (sound.has("subtitle") && !sound.get("subtitle").isJsonNull())
+            soundMap.put("subtitle", sound.get("subtitle").getAsString());
+        if (sound.has("stream") && sound.get("stream").getAsBoolean())
+            soundMap.put("stream", true);
+        if (sound.has("volume") && !sound.get("volume").isJsonNull())
+            soundMap.put("volume", sound.get("volume").getAsFloat());
+        if (sound.has("pitch") && !sound.get("pitch").isJsonNull())
+            soundMap.put("pitch", sound.get("pitch").getAsFloat());
+        if (sound.has("weight") && !sound.get("weight").isJsonNull())
+            soundMap.put("weight", sound.get("weight").getAsInt());
+
+        List<String> soundList = new ArrayList<>();
+        JsonArray soundArray = sound.getAsJsonArray("sounds");
+        if (soundArray != null) {
+            for (JsonElement soundElement : soundArray) {
+                if (soundElement.isJsonPrimitive()) {
+                    soundList.add(namespaceSoundReference(soundElement.getAsString(), namespace));
+                    continue;
+                }
+
+                if (!soundElement.isJsonObject())
+                    continue;
+
+                JsonObject soundObject = soundElement.getAsJsonObject();
+                if (soundObject.has("name") && !soundObject.get("name").isJsonNull())
+                    soundList.add(namespaceSoundReference(soundObject.get("name").getAsString(), namespace));
+                copyFirstSoundProperty(soundMap, soundObject, "stream");
+                copyFirstSoundProperty(soundMap, soundObject, "volume");
+                copyFirstSoundProperty(soundMap, soundObject, "pitch");
+                copyFirstSoundProperty(soundMap, soundObject, "weight");
+            }
+        }
+        soundMap.put("sounds", soundList);
+
+        return soundMap;
+    }
+
+    private static String namespaceSoundReference(String sound, String namespace) {
+        if (namespace.equals("minecraft") || sound.contains(":"))
+            return sound;
+        return namespace + ":" + sound;
+    }
+
+    private static void copyFirstSoundProperty(Map<String, Object> soundMap, JsonObject soundObject, String property) {
+        if (soundMap.containsKey(property) || !soundObject.has(property) || soundObject.get(property).isJsonNull())
+            return;
+
+        JsonElement value = soundObject.get(property);
+        switch (property) {
+            case "stream" -> soundMap.put(property, value.getAsBoolean());
+            case "weight" -> soundMap.put(property, value.getAsInt());
+            default -> soundMap.put(property, value.getAsFloat());
+        }
+    }
+
+    private static List<Map<String, Object>> getConfiguredSounds(YamlConfiguration soundYaml) {
+        List<Map<String, Object>> configuredSounds = new ArrayList<>();
+        for (Map<?, ?> sound : soundYaml.getMapList("sounds")) {
+            Map<String, Object> normalizedSound = new LinkedHashMap<>();
+            for (Map.Entry<?, ?> entry : sound.entrySet())
+                if (entry.getKey() != null)
+                    normalizedSound.put(String.valueOf(entry.getKey()), entry.getValue());
+            configuredSounds.add(normalizedSound);
+        }
+        return configuredSounds;
+    }
+
+    private static Set<String> getConfiguredSoundIds(List<Map<String, Object>> configuredSounds) {
+        Set<String> ids = new HashSet<>();
+        for (Map<String, Object> sound : configuredSounds) {
+            Object id = sound.get("id");
+            if (id != null)
+                addSoundId(ids, String.valueOf(id));
+        }
+        return ids;
+    }
+
+    private static boolean containsSoundId(Set<String> ids, String id) {
+        if (ids.contains(id))
+            return true;
+        if (id.startsWith("minecraft:"))
+            return ids.contains(id.substring("minecraft:".length()));
+        return ids.contains("minecraft:" + id);
+    }
+
+    private static void addSoundId(Set<String> ids, String id) {
+        ids.add(id);
+        if (id.startsWith("minecraft:"))
+            ids.add(id.substring("minecraft:".length()));
+        else if (!id.contains(":"))
+            ids.add("minecraft:" + id);
+    }
+
+    private static String namespaceFromSoundsJsonPath(String path) {
+        String normalized = path.replace('\\', '/');
+        int namespaceStart = "assets/".length();
+        int namespaceEnd = normalized.indexOf('/', namespaceStart);
+        return namespaceEnd == -1 ? "minecraft" : normalized.substring(namespaceStart, namespaceEnd);
     }
 
     private static YamlConfiguration loadMigrateItemYaml(Material material) {

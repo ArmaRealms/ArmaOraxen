@@ -7,6 +7,7 @@ import io.th0rgal.oraxen.utils.SHA1Utils;
 import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.apache.http.HttpEntity;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
@@ -19,6 +20,10 @@ import java.io.IOException;
 import java.util.UUID;
 
 public class Polymath implements HostingProvider {
+
+    private static final int CONNECT_TIMEOUT_MS = 5_000;
+    private static final int CONNECTION_REQUEST_TIMEOUT_MS = 5_000;
+    private static final int SOCKET_TIMEOUT_MS = 30_000;
 
     private final String serverAddress;
     private String packUrl;
@@ -33,6 +38,7 @@ public class Polymath implements HostingProvider {
     public boolean uploadPack(File resourcePack) {
         try(CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpPost request = new HttpPost(serverAddress + "upload");
+            request.setConfig(requestConfig());
 
             HttpEntity httpEntity = MultipartEntityBuilder
                     .create().addTextBody("id", Settings.POLYMATH_SECRET.toString())
@@ -55,7 +61,7 @@ public class Polymath implements HostingProvider {
             if (jsonOutput.has("url") && jsonOutput.has("sha1")) {
                 packUrl = jsonOutput.get("url").getAsString();
                 sha1 = jsonOutput.get("sha1").getAsString();
-                packUUID = UUID.nameUUIDFromBytes(sha1.getBytes());
+                packUUID = UUID.nameUUIDFromBytes(SHA1Utils.hexToBytes(sha1));
                 return true;
             }
 
@@ -69,6 +75,14 @@ public class Polymath implements HostingProvider {
             ex.printStackTrace();
             return false;
         }
+    }
+
+    private static RequestConfig requestConfig() {
+        return RequestConfig.custom()
+                .setConnectTimeout(CONNECT_TIMEOUT_MS)
+                .setConnectionRequestTimeout(CONNECTION_REQUEST_TIMEOUT_MS)
+                .setSocketTimeout(SOCKET_TIMEOUT_MS)
+                .build();
     }
 
     @Override

@@ -4,6 +4,9 @@ import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.compatibilities.provided.blocklocker.BlockLockerMechanic;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockBreaking;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockEvents;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.block.Placeable;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.light.LightMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.limitedplacing.LimitedPlacing;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.directional.DirectionalBlock;
@@ -13,23 +16,26 @@ import io.th0rgal.oraxen.mechanics.provided.gameplay.storage.StorageMechanic;
 import io.th0rgal.oraxen.utils.actions.ClickAction;
 import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
 import io.th0rgal.oraxen.utils.drops.Drop;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.Action;
+import org.bukkit.inventory.ItemStack;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class NoteBlockMechanic extends Mechanic {
 
     public static final NamespacedKey FARMBLOCK_KEY = new NamespacedKey(OraxenPlugin.get(), "farmblock");
     private final int customVariation;
-    private final Drop drop;
+    private final BlockBreaking breaking;
+    private final Placeable placeable;
     private final LimitedPlacing limitedPlacing;
     private final StorageMechanic storage;
     private final BlockSounds blockSounds;
     private String model;
-    private final double hardness;
     private final LightMechanic light;
     private final boolean canIgnite;
     private final boolean isFalling;
@@ -39,6 +45,7 @@ public class NoteBlockMechanic extends Mechanic {
     private final LogStripping logStripping;
     private final DirectionalBlock directionalBlock;
     private final List<ClickAction> clickActions;
+    private final BlockEvents blockEvents;
 
     private final BlockLockerMechanic blockLocker;
 
@@ -52,17 +59,16 @@ public class NoteBlockMechanic extends Mechanic {
 
         model = section.getString("model");
         customVariation = section.getInt("custom_variation");
-        hardness = section.getDouble("hardness", 1.0D);
+        breaking = new BlockBreaking(section, getItemID());
+        placeable = section.contains("placeable") ? new Placeable(section) : null;
 
         light = new LightMechanic(section);
         clickActions = ClickAction.parseList(section);
+        blockEvents = new BlockEvents(section, getItemID());
         canIgnite = section.getBoolean("can_ignite", false);
         isFalling = section.getBoolean("is_falling", false);
         blastResistant = section.getBoolean("blast_resistant", false);
         immovable = section.getBoolean("immovable", false);
-
-        ConfigurationSection dropSection = section.getConfigurationSection("drop");
-        drop = dropSection != null ? Drop.createDrop(NoteBlockMechanicFactory.getInstance().toolTypes, dropSection, getItemID()) : new Drop(new ArrayList<>(), false, false, getItemID());
 
         ConfigurationSection farmBlockSection = section.getConfigurationSection("farmblock");
         farmBlockDryout = farmBlockSection != null ? new FarmBlockDryout(getItemID(), farmBlockSection) : null;
@@ -86,6 +92,9 @@ public class NoteBlockMechanic extends Mechanic {
         ConfigurationSection blockLockerSection = section.getConfigurationSection("blocklocker");
         blockLocker = blockLockerSection != null ? new BlockLockerMechanic(blockLockerSection) : null;
     }
+
+    public boolean canPlaceOn(org.bukkit.block.BlockFace face) { return placeable == null || placeable.canPlaceOn(face); }
+    public boolean canPlaceOn(org.bukkit.block.BlockFace face, Block block) { return placeable == null || placeable.canPlaceOn(face, block); }
 
     public boolean hasLimitedPlacing() { return limitedPlacing != null; }
     public LimitedPlacing getLimitedPlacing() { return limitedPlacing; }
@@ -127,17 +136,45 @@ public class NoteBlockMechanic extends Mechanic {
     }
 
     public Drop getDrop() {
-        return drop;
+        return getDrop(new ItemStack(Material.AIR));
+    }
+
+    public Drop getDrop(ItemStack tool) {
+        if (isDirectional() && !getDirectional().isParentBlock() && !breaking.hasHardness(tool))
+            return directionalBlock.getParentMechanic().getDrop(tool);
+        return breaking.drop(tool);
     }
 
     public boolean hasHardness() {
+        return hasHardness(new ItemStack(Material.AIR));
+    }
+
+    public boolean hasHardness(ItemStack tool) {
         if (isDirectional() && !getDirectional().isParentBlock()) {
-            return hardness != -1.0D || directionalBlock.getParentMechanic().hasHardness();
-        } else return hardness != -1.0D;
+            return breaking.hasHardness(tool) || directionalBlock.getParentMechanic().hasHardness(tool);
+        } else return breaking.hasHardness(tool);
     }
 
     public double getHardness() {
-        return hardness;
+        return getHardness(new ItemStack(Material.AIR));
+    }
+
+    public double getHardness(ItemStack tool) {
+        if (isDirectional() && !getDirectional().isParentBlock() && !breaking.hasHardness(tool))
+            return directionalBlock.getParentMechanic().getHardness(tool);
+        return breaking.hardness(tool);
+    }
+
+    public double getAttributeSpeedMultiplier(ItemStack tool, Material blockType) {
+        if (isDirectional() && !getDirectional().isParentBlock() && !breaking.hasHardness(tool))
+            return directionalBlock.getParentMechanic().getAttributeSpeedMultiplier(tool, blockType);
+        return breaking.attributeSpeedMultiplier(tool, blockType);
+    }
+
+    public double getPacketSpeedMultiplier(ItemStack tool, Material blockType) {
+        if (isDirectional() && !getDirectional().isParentBlock() && !breaking.hasHardness(tool))
+            return directionalBlock.getParentMechanic().getPacketSpeedMultiplier(tool, blockType);
+        return breaking.packetSpeedMultiplier(tool, blockType);
     }
 
     public boolean hasLight() {
@@ -158,6 +195,10 @@ public class NoteBlockMechanic extends Mechanic {
 
     public boolean hasClickActions() { return !clickActions.isEmpty(); }
 
+    public boolean hasBlockEvents() { return !blockEvents.isEmpty(); }
+
+    public boolean runBlockEvents(final Player player, final Action action) { return blockEvents.run(player, action); }
+
     public void runClickActions(final Player player) {
         for (final ClickAction action : clickActions) {
             if (action.canRun(player)) {
@@ -167,7 +208,7 @@ public class NoteBlockMechanic extends Mechanic {
     }
 
     public boolean isInteractable() {
-        return hasClickActions() || isStorage();
+        return hasClickActions() || hasBlockEvents() || isStorage();
     }
 
     public boolean isBlastResistant() {

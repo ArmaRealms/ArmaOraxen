@@ -1,19 +1,23 @@
 package io.th0rgal.oraxen.api;
 
 import com.jeff_media.morepersistentdatatypes.DataType;
+import com.jeff_media.customblockdata.CustomBlockData;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.events.chorusblock.OraxenChorusBlockBreakEvent;
 import io.th0rgal.oraxen.api.events.noteblock.OraxenNoteBlockBreakEvent;
+import io.th0rgal.oraxen.api.events.shapedblock.OraxenShapedBlockBreakEvent;
 import io.th0rgal.oraxen.api.events.stringblock.OraxenStringBlockBreakEvent;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
-import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.chorusblock.ChorusBlockMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.chorusblock.ChorusBlockMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.chorusblock.ChorusBlockMechanicListener;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.NoteBlockMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.NoteBlockMechanicFactory;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.shaped.ShapedBlockMechanic;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.shaped.ShapedBlockMechanicFactory;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.shaped.ShapedBlockType;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.storage.StorageMechanic;
 import io.th0rgal.oraxen.mechanics.MechanicsManager;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.stringblock.StringBlockMechanic;
@@ -27,7 +31,11 @@ import io.th0rgal.oraxen.utils.EventUtils;
 import io.th0rgal.oraxen.utils.SchedulerUtil;
 import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.drops.Drop;
-import org.bukkit.*;
+import org.bukkit.Effect;
+import org.bukkit.GameEvent;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
@@ -42,7 +50,11 @@ import org.bukkit.persistence.PersistentDataType;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.light.LightMechanic;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -101,7 +113,7 @@ public class OraxenBlocks {
             case NOTE_BLOCK -> getNoteBlockMechanic(block) != null;
             case TRIPWIRE -> getStringMechanic(block) != null;
             case CHORUS_PLANT -> getChorusMechanic(block) != null;
-            default -> false;
+            default -> getShapedMechanic(block) != null;
         };
     }
 
@@ -112,9 +124,10 @@ public class OraxenBlocks {
      * @return true if the itemID is an instance of an OraxenBlock, otherwise false
      */
     public static boolean isOraxenBlock(String itemId) {
-        return OraxenItems.hasMechanic(itemId, "noteblock")
-                || OraxenItems.hasMechanic(itemId, "stringblock")
-                || OraxenItems.hasMechanic(itemId, "chorusblock");
+        return OraxenItems.hasMechanic(itemId, "block")
+                || isOraxenNoteBlock(itemId)
+                || isOraxenStringBlock(itemId)
+                || isOraxenChorusBlock(itemId);
     }
 
     /**
@@ -189,6 +202,8 @@ public class OraxenBlocks {
             placeStringBlock(location, itemID);
         } else if (isOraxenChorusBlock(itemID)) {
             placeChorusBlock(location, itemID);
+        } else if (getShapedMechanic(itemID) != null) {
+            placeShapedBlock(location, itemID);
         }
     }
 
@@ -206,7 +221,11 @@ public class OraxenBlocks {
             return StringBlockMechanicFactory.getInstance().createTripwireData(itemID);
         } else if (isOraxenChorusBlock(itemID)) {
             return ChorusBlockMechanicFactory.getInstance().createChorusData(itemID);
-        } else return null;
+        } else {
+            ShapedBlockMechanic shapedMechanic = getShapedMechanic(itemID);
+            if (shapedMechanic != null) return shapedMechanic.getPlacedMaterial().createBlockData();
+        }
+        return null;
     }
 
     private static void placeNoteBlock(Location location, String itemID) {
@@ -265,6 +284,34 @@ public class OraxenBlocks {
         createInitialLight(block, mechanic.getItemID());
     }
 
+    private static void placeShapedBlock(Location location, String itemID) {
+        ShapedBlockMechanic mechanic = getShapedMechanic(itemID);
+        if (mechanic == null) return;
+
+        Block block = location.getBlock();
+        Block upperBlock = block.getRelative(BlockFace.UP);
+        if (mechanic.getBlockType() == ShapedBlockType.DOOR
+                && !BlockHelpers.REPLACEABLE_BLOCKS.contains(upperBlock.getType())) return;
+
+        block.setType(mechanic.getPlacedMaterial(), false);
+        if (block.getBlockData() instanceof org.bukkit.block.data.type.Door door) {
+            door.setHalf(org.bukkit.block.data.Bisected.Half.BOTTOM);
+            block.setBlockData(door, false);
+        }
+        ShapedBlockMechanic.setItemId(new CustomBlockData(block, OraxenPlugin.get()), mechanic.getItemID());
+        createInitialLight(block, mechanic.getItemID());
+
+        if (mechanic.getBlockType() != ShapedBlockType.DOOR) return;
+
+        upperBlock.setType(mechanic.getPlacedMaterial(), false);
+        if (upperBlock.getBlockData() instanceof org.bukkit.block.data.type.Door door) {
+            door.setHalf(org.bukkit.block.data.Bisected.Half.TOP);
+            upperBlock.setBlockData(door, false);
+        }
+        ShapedBlockMechanic.setItemId(new CustomBlockData(upperBlock, OraxenPlugin.get()), mechanic.getItemID());
+        createInitialLight(upperBlock, mechanic.getItemID());
+    }
+
     /**
      * Breaks an OraxenBlock at the given location
      *
@@ -290,10 +337,13 @@ public class OraxenBlocks {
         NoteBlockMechanic noteMechanic = getNoteBlockMechanic(block);
         StringBlockMechanic stringMechanic = getStringMechanic(block);
         ChorusBlockMechanic chorusMechanic = getChorusMechanic(block);
+        ShapedBlockMechanic shapedMechanic = getShapedMechanic(block);
+        ItemStack tool = player != null ? player.getInventory().getItemInMainHand() : new ItemStack(Material.AIR);
         Drop overrideDrop = !forceDrop ? null
-                : noteMechanic != null ? noteMechanic.getDrop()
-                : stringMechanic != null ? stringMechanic.getDrop()
-                : chorusMechanic != null ? chorusMechanic.getDrop()
+                : noteMechanic != null ? noteMechanic.getDrop(tool)
+                : stringMechanic != null ? stringMechanic.getDrop(tool)
+                : chorusMechanic != null ? chorusMechanic.getDrop(tool)
+                : shapedMechanic != null ? shapedMechanic.getDrop(tool)
                 : null;
         return remove(location, player, overrideDrop);
     }
@@ -312,6 +362,7 @@ public class OraxenBlocks {
         if (isOraxenNoteBlock(block)) return removeNoteBlock(block, player, overrideDrop);
         if (isOraxenStringBlock(block)) return removeStringBlock(block, player, overrideDrop);
         if (isOraxenChorusBlock(block)) return removeChorusBlock(block, player, overrideDrop);
+        if (getShapedMechanic(block) != null) return removeShapedBlock(block, player, overrideDrop);
         return false;
     }
 
@@ -322,7 +373,7 @@ public class OraxenBlocks {
     private static <M extends Mechanic, E extends org.bukkit.event.Event & org.bukkit.event.Cancellable> boolean removeCustomBlock(
             Block block, @Nullable Player player, @Nullable Drop overrideDrop,
             M mechanic, String itemID, Drop defaultDrop,
-            BiFunction<M, Player, E> breakEvent, Function<E, Drop> getEventDrop,
+            BiFunction<M, Player, E> breakEvent, Function<E, Drop> getEventDrop, BiConsumer<E, Drop> setEventDrop,
             @Nullable Runnable preRemove, @Nullable Runnable postRemove) {
 
         ItemStack itemInHand = player != null ? player.getInventory().getItemInMainHand() : new ItemStack(Material.AIR);
@@ -330,8 +381,9 @@ public class OraxenBlocks {
 
         if (player != null) {
             E event = breakEvent.apply(mechanic, player);
+            setEventDrop.accept(event, drop);
             if (!EventUtils.callEvent(event)) return false;
-            drop = resolveDropAfterEvent(player, getEventDrop.apply(event));
+            drop = resolveDropAfterEvent(player, getEventDrop.apply(event), overrideDrop != null);
             sendBreakEffects(block, player);
         }
 
@@ -345,8 +397,8 @@ public class OraxenBlocks {
     }
 
     @Nullable
-    private static Drop resolveDropAfterEvent(Player player, Drop eventDrop) {
-        if (player.getGameMode() == GameMode.CREATIVE) return null;
+    static Drop resolveDropAfterEvent(Player player, @Nullable Drop eventDrop, boolean forcedDrop) {
+        if (!forcedDrop && player.getGameMode() == GameMode.CREATIVE) return null;
         return eventDrop;
     }
 
@@ -378,10 +430,12 @@ public class OraxenBlocks {
             mechanic = mechanic.getDirectional().getParentMechanic();
 
         Location loc = block.getLocation();
+        ItemStack tool = player != null ? player.getInventory().getItemInMainHand() : new ItemStack(Material.AIR);
         return removeCustomBlock(block, player, overrideDrop,
-                mechanic, mechanic.getItemID(), mechanic.getDrop(),
+                mechanic, mechanic.getItemID(), mechanic.getDrop(tool),
                 (m, p) -> new OraxenNoteBlockBreakEvent(m, block, p),
                 OraxenNoteBlockBreakEvent::getDrop,
+                OraxenNoteBlockBreakEvent::setDrop,
                 null,
                 () -> checkNoteBlockAbove(loc));
     }
@@ -391,7 +445,8 @@ public class OraxenBlocks {
         if (mechanic == null) return false;
 
         // For stackable blocks, multiply drops by the stack level
-        Drop effectiveDrop = mechanic.getDrop();
+        ItemStack tool = player != null ? player.getInventory().getItemInMainHand() : new ItemStack(Material.AIR);
+        Drop effectiveDrop = mechanic.getDrop(tool);
         if (mechanic.isStackable() && overrideDrop == null && block.getBlockData() instanceof org.bukkit.block.data.type.Tripwire tripwire) {
             int variation = StringBlockMechanicFactory.getCode(tripwire);
             int multiplier = mechanic.getStackDropMultiplier(variation);
@@ -412,6 +467,7 @@ public class OraxenBlocks {
                 mechanic, mechanic.getItemID(), dropForEvent,
                 (m, p) -> new OraxenStringBlockBreakEvent(m, block, p),
                 OraxenStringBlockBreakEvent::getDrop,
+                OraxenStringBlockBreakEvent::setDrop,
                 () -> {
                     if (mechanic.isTall()) blockAbove.setType(Material.AIR);
                 },
@@ -428,13 +484,73 @@ public class OraxenBlocks {
         ChorusBlockMechanic mechanic = getChorusMechanic(block);
         if (mechanic == null) return false;
 
+        ItemStack tool = player != null ? player.getInventory().getItemInMainHand() : new ItemStack(Material.AIR);
         return removeCustomBlock(block, player, overrideDrop,
-                mechanic, mechanic.getItemID(), mechanic.getDrop(),
+                mechanic, mechanic.getItemID(), mechanic.getDrop(tool),
                 (m, p) -> new OraxenChorusBlockBreakEvent(m, block, p),
                 OraxenChorusBlockBreakEvent::getDrop,
+                OraxenChorusBlockBreakEvent::setDrop,
                 null,
                 () -> SchedulerUtil.runAtLocationLater(block.getLocation(), 1L,
                         () -> ChorusBlockMechanicListener.fixClientsideUpdate(block.getLocation())));
+    }
+
+    private static boolean removeShapedBlock(Block block, @Nullable Player player, @Nullable Drop overrideDrop) {
+        ShapedBlockMechanic mechanic = getShapedMechanic(block);
+        if (mechanic == null) return false;
+
+        ItemStack itemInHand = player != null ? player.getInventory().getItemInMainHand() : new ItemStack(Material.AIR);
+        Drop drop = overrideDrop != null ? overrideDrop : mechanic.getDrop(itemInHand);
+
+        if (player != null) {
+            OraxenShapedBlockBreakEvent event = new OraxenShapedBlockBreakEvent(mechanic, block, player);
+            event.setDrop(drop);
+            if (!EventUtils.callEvent(event)) return false;
+            drop = resolveDropAfterEvent(player, event.getDrop(), overrideDrop != null);
+            sendBreakEffects(block, player);
+        }
+        if (drop != null) {
+            int dropCount = getShapedDropCount(block);
+            for (int i = 0; i < dropCount; i++) {
+                drop.spawns(block.getLocation(), itemInHand);
+            }
+        }
+
+        removeLight(block, mechanic.getItemID());
+        clearShapedBlockData(block);
+        clearShapedDoorHalf(block, mechanic);
+        block.setType(Material.AIR);
+        return true;
+    }
+
+    private static int getShapedDropCount(Block block) {
+        if (block.getBlockData() instanceof org.bukkit.block.data.type.Slab slab
+                && slab.getType() == org.bukkit.block.data.type.Slab.Type.DOUBLE) {
+            return 2;
+        }
+        return 1;
+    }
+
+    private static void clearShapedDoorHalf(Block block, ShapedBlockMechanic mechanic) {
+        if (mechanic.getBlockType() != io.th0rgal.oraxen.mechanics.provided.gameplay.shaped.ShapedBlockType.DOOR) return;
+        if (!(block.getBlockData() instanceof org.bukkit.block.data.type.Door door)) return;
+
+        Block otherHalf = door.getHalf() == org.bukkit.block.data.Bisected.Half.BOTTOM
+                ? block.getRelative(BlockFace.UP)
+                : block.getRelative(BlockFace.DOWN);
+        if (!(otherHalf.getBlockData() instanceof org.bukkit.block.data.type.Door otherDoor)) return;
+        if (otherDoor.getHalf() == door.getHalf()) return;
+
+        ShapedBlockMechanic otherMechanic = getShapedMechanic(otherHalf);
+        if (otherMechanic == null || !otherMechanic.getItemID().equals(mechanic.getItemID())) return;
+
+        removeLight(otherHalf, mechanic.getItemID());
+        clearShapedBlockData(otherHalf);
+        otherHalf.setType(Material.AIR);
+    }
+
+    private static void clearShapedBlockData(Block block) {
+        ShapedBlockMechanic.removeItemId(new CustomBlockData(block, OraxenPlugin.get()));
     }
 
     /**
@@ -450,8 +566,7 @@ public class OraxenBlocks {
                     case NOTE_BLOCK -> getNoteBlockMechanic(location.getBlock());
                     case TRIPWIRE -> getStringMechanic(location.getBlock());
                     case CHORUS_PLANT -> getChorusMechanic(location.getBlock());
-                    case MUSHROOM_STEM -> getBlockMechanic(location.getBlock());
-                    default -> null;
+                    default -> getShapedMechanic(location.getBlock());
                 };
     }
 
@@ -534,11 +649,22 @@ public class OraxenBlocks {
     }
 
     @org.jetbrains.annotations.Nullable
-    public static BlockMechanic getBlockMechanic(Block block) {
-        if (!BlockMechanicFactory.isEnabled()) return null;
-        if (block.getType() == Material.MUSHROOM_STEM) {
-            return BlockMechanicFactory.getBlockMechanic(BlockMechanic.getCode(block));
-        } else return null;
+    public static ShapedBlockMechanic getShapedMechanic(Block block) {
+        if (ShapedBlockType.fromMaterial(block.getType()) == null) return null;
+        BlockMechanicFactory blockFactory = BlockMechanicFactory.getInstance();
+        if (blockFactory == null) return null;
+        ShapedBlockMechanicFactory shapedFactory = blockFactory.getShapedBlockFactory();
+        return shapedFactory != null ? shapedFactory.getMechanicFromBlock(block) : null;
+    }
+
+    @org.jetbrains.annotations.Nullable
+    public static ShapedBlockMechanic getShapedMechanic(String itemID) {
+        BlockMechanicFactory blockFactory = BlockMechanicFactory.getInstance();
+        if (blockFactory == null) return null;
+        ShapedBlockMechanicFactory shapedFactory = blockFactory.getShapedBlockFactory();
+        if (shapedFactory == null) return null;
+        Mechanic mechanic = shapedFactory.getMechanic(itemID);
+        return mechanic instanceof ShapedBlockMechanic shapedBlockMechanic ? shapedBlockMechanic : null;
     }
 
     private static void createInitialLight(Block block, String itemID) {
@@ -569,6 +695,8 @@ public class OraxenBlocks {
         if (sbm != null && sbm.hasLight()) return sbm.getLight();
         ChorusBlockMechanic cbm = getChorusMechanic(itemID);
         if (cbm != null && cbm.hasLight()) return cbm.getLight();
+        ShapedBlockMechanic shaped = getShapedMechanic(itemID);
+        if (shaped != null && shaped.hasLight()) return shaped.getLight();
         return null;
     }
 

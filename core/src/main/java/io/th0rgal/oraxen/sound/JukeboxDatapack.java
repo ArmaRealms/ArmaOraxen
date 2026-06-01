@@ -38,7 +38,6 @@ public class JukeboxDatapack extends OraxenDatapack {
             return;
         }
 
-        datapackFolder.toPath().resolve("data/oraxen/jukebox_song").toFile().mkdirs();
         writeMCMeta();
         writeJukeboxSongs();
 
@@ -53,10 +52,14 @@ public class JukeboxDatapack extends OraxenDatapack {
     private void writeJukeboxSongs() {
         for (CustomSound sound : jukeboxSounds) {
             File songFile = datapackFolder.toPath()
-                    .resolve("data/oraxen/jukebox_song/" + sound.getName() + ".json")
+                    .resolve("data")
+                    .resolve(sound.getJukeboxSongNamespace())
+                    .resolve("jukebox_song")
+                    .resolve(sound.getJukeboxSongKey() + ".json")
                     .toFile();
 
             try {
+                FileUtils.forceMkdirParent(songFile);
                 songFile.createNewFile();
                 FileUtils.writeStringToFile(songFile, sound.toJukeboxJson().toString(), StandardCharsets.UTF_8);
             } catch (IOException e) {

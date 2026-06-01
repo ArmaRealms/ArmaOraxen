@@ -4,7 +4,12 @@ import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.api.events.OraxenItemsLoadedEvent;
 import io.th0rgal.oraxen.commands.CommandsManager;
 import io.th0rgal.oraxen.compatibilities.CompatibilitiesManager;
-import io.th0rgal.oraxen.config.*;
+import io.th0rgal.oraxen.commands.TotemAnimationCommand;
+import io.th0rgal.oraxen.config.ConfigsManager;
+import io.th0rgal.oraxen.config.Message;
+import io.th0rgal.oraxen.config.ResourcesManager;
+import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.config.SettingsUpdater;
 import io.th0rgal.oraxen.font.FontManager;
 import io.th0rgal.oraxen.hopper.OraxenHopper;
 import io.th0rgal.oraxen.introduction.IntroductionGuide;
@@ -85,14 +90,10 @@ public class OraxenPlugin extends JavaPlugin {
     public void onLoad() {
         // Download dependencies registered with Hopper
         OraxenHopper.download(this);
-
-        // CommandAPI initialization is currently disabled as CommandAPI 11.0.0 doesn't yet support 1.21.11
-        // CommandAPI.onLoad(new CommandAPIPaperConfig(this).silentLogs(true));
     }
 
     @Override
     public void onEnable() {
-        // CommandAPI.onEnable();
         ProtectionLib.init(this);
         audience = BukkitAudiences.create(this);
         clickActionManager = new ClickActionManager(this);
@@ -103,15 +104,15 @@ public class OraxenPlugin extends JavaPlugin {
         if (Settings.KEEP_UP_TO_DATE.toBool())
             new SettingsUpdater().handleSettingsUpdate();
         if (PacketAdapter.isProtocolLibEnabled()) {
-            if (Settings.DEBUG.toBool()) Logs.logInfo("ProtocolLib is enabled, using ProtocolLibAdapter");
+            if (Settings.DEBUG.toBool()) Logs.logInfo("ProtocolLib is enabled, using ProtocolLibAdapter.");
             packetAdapter = new ProtocolLibAdapter();
             new ProtocolLibBreakerSystem().registerListener();
         } else if (PacketAdapter.isPacketEventsEnabled()) {
-            if (Settings.DEBUG.toBool()) Logs.logInfo("PacketEvents is enabled, using PacketEventsAdapter");
+            if (Settings.DEBUG.toBool()) Logs.logInfo("PacketEvents is enabled, using PacketEventsAdapter.");
             packetAdapter = new PacketEventsAdapter();
             new PacketEventsBreakerSystem().registerListener();
         } else {
-            Logs.logWarning("[OraxenPlugin] Neither ProtocolLib nor PacketEvents is enabled, using EmptyAdapter");
+            Logs.logWarning("Neither ProtocolLib nor PacketEvents is enabled, using EmptyAdapter.");
             packetAdapter = new PacketAdapter.EmptyAdapter();
             Message.MISSING_PROTOCOLLIB.log();
         }
@@ -122,12 +123,9 @@ public class OraxenPlugin extends JavaPlugin {
         });
 
         Bukkit.getPluginManager().registerEvents(new CustomArmorListener(), this);
-        // Only register the attribute-based mining listener when no packet adapter is
-        // present.  When ProtocolLib/PacketEvents is enabled the BreakerSystem cancels
-        // START_DIGGING packets before BlockDamageEvent fires, so the attribute-based
-        // listener would never receive events.  The BreakerSystem's timer-based
-        // approach handles custom hardness in that case instead.
-        if (CustomBlockMiningListener.isSupported() && !packetAdapter.isEnabled()) {
+        // Register this even when the packet breaker is active: BreakerSystem cancels START_DIGGING
+        // before Bukkit fires BlockDamageEvent, so CustomBlockMiningListener becomes a no-op there.
+        if (CustomBlockMiningListener.isSupported()) {
             Bukkit.getPluginManager().registerEvents(new CustomBlockMiningListener(), this);
         }
         NMSHandlers.setup();
@@ -192,6 +190,7 @@ public class OraxenPlugin extends JavaPlugin {
         FurnitureFactory.unregisterEvolution();
         MechanicsManager.unregisterTasks();
         RecipeBuilder.clearAll();
+        TotemAnimationCommand.clearReflectionCaches();
 
         // Clean up backpack cosmetic entities to prevent ghost armor stands
         io.th0rgal.oraxen.mechanics.provided.cosmetic.backpack.BackpackCosmeticManager.getInstance().cleanup();

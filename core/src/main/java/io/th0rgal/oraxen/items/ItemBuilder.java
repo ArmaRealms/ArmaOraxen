@@ -4,6 +4,8 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.ItemAttributeModifiers;
+import io.papermc.paper.registry.RegistryAccess;
+import io.papermc.paper.registry.RegistryKey;
 import com.jeff_media.morepersistentdatatypes.DataType;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
@@ -122,6 +124,8 @@ public class ItemBuilder {
     // 1.21+ properties
     @Nullable
     private JukeboxPlayableComponent jukeboxPlayable;
+    @Nullable
+    private String paintingVariant;
 
     // 1.21.2+ properties
     @Nullable
@@ -629,7 +633,7 @@ public class ItemBuilder {
         try {
             this.jukeboxPlayable = jukeboxPlayable;
         } catch (Exception e) {
-            Logs.logWarning("Error setting JukeboxPlayable: This component is not available in your server version");
+            Logs.logWarning("Error setting JukeboxPlayable; This component is not available in your server version");
             if (Settings.DEBUG.toBool()) {
                 e.printStackTrace();
             }
@@ -852,6 +856,7 @@ public class ItemBuilder {
     public ItemBuilder clone() {
         ItemBuilder clonedBuilder = new ItemBuilder(itemStack.clone());
         clonedBuilder.genericComponents.putAll(genericComponents);
+        clonedBuilder.paintingVariant = paintingVariant;
         clonedBuilder.attributeEntries.clear();
         clonedBuilder.attributeEntries.addAll(attributeEntries);
         if (legacyAttributeModifiers != null) {
@@ -886,6 +891,7 @@ public class ItemBuilder {
         itemStack.setItemMeta(itemMeta);
         applyAttributeModifiersComponent(itemStack);
         finalItemStack = applyConsumableComponent(itemStack);
+        finalItemStack = applyPaintingVariantComponent(finalItemStack);
         finalItemStack = applyGenericComponents(finalItemStack);
 
         return this;
@@ -1133,6 +1139,47 @@ public class ItemBuilder {
         return itemStack;
     }
 
+    private ItemStack applyPaintingVariantComponent(ItemStack itemStack) {
+        if (paintingVariant == null || !VersionUtil.atOrAbove("1.21")) return itemStack;
+
+        Key variantKey;
+        try {
+            variantKey = parsePaintingVariantKey(paintingVariant);
+        } catch (IllegalArgumentException exception) {
+            Logs.logWarning("Invalid painting_variant '" + paintingVariant + "'");
+            Logs.debug(exception);
+            return itemStack;
+        }
+
+        if (VersionUtil.atOrAbove("1.21.5") && VersionUtil.isPaperServer()) {
+            try {
+                Registry<Art> paintingRegistry = RegistryAccess.registryAccess()
+                        .getRegistry(RegistryKey.PAINTING_VARIANT);
+                Art painting = paintingRegistry.get(variantKey);
+                if (painting == null) {
+                    Logs.logWarning("Unknown painting_variant '" + paintingVariant + "'");
+                    return itemStack;
+                }
+                itemStack.setData(DataComponentTypes.PAINTING_VARIANT, painting);
+                return itemStack;
+            } catch (NoClassDefFoundError | NoSuchFieldError | NoSuchMethodError ignored) {
+                // Fall through to the NMS path used by older supported versions.
+            } catch (Exception exception) {
+                Logs.logWarning("Failed to set painting_variant '" + paintingVariant + "'");
+                Logs.debug(exception);
+                return itemStack;
+            }
+        }
+
+        NMSHandler handler = NMSHandlers.getHandler();
+        return handler != null ? handler.paintingVariantComponent(itemStack, variantKey.asString()) : itemStack;
+    }
+
+    private Key parsePaintingVariantKey(String value) {
+        String normalized = value.toLowerCase(Locale.ROOT);
+        return normalized.contains(":") ? Key.key(normalized) : Key.key("oraxen", normalized);
+    }
+
     public void save() {
         regen();
         OraxenItems.getMap().entrySet().stream().filter(entry -> entry.getValue().containsValue(this)).findFirst()
@@ -1297,7 +1344,7 @@ public class ItemBuilder {
 
     /**
      * Sets a generic component on this item
-     * 
+     *
      * @param type      The component type (e.g. "food", "tool", etc.)
      * @param component The component object
      */
@@ -1305,9 +1352,13 @@ public class ItemBuilder {
         genericComponents.put(type, component);
     }
 
+    public void setPaintingVariant(String paintingVariant) {
+        this.paintingVariant = paintingVariant;
+    }
+
     /**
      * Gets a generic component from this item
-     * 
+     *
      * @param type The component type
      * @return The component object, or null if not found
      */
@@ -1318,7 +1369,7 @@ public class ItemBuilder {
 
     /**
      * Checks if this item has a specific component
-     * 
+     *
      * @param type The component type
      * @return true if the component exists
      */

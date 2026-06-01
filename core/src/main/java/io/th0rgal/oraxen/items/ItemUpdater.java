@@ -1,5 +1,6 @@
 package io.th0rgal.oraxen.items;
 
+import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import com.jeff_media.morepersistentdatatypes.DataType;
 import com.jeff_media.persistentdataserializer.PersistentDataSerializer;
 import io.th0rgal.oraxen.OraxenPlugin;
@@ -10,10 +11,20 @@ import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.ItemUtils;
 import io.th0rgal.oraxen.utils.SchedulerUtil;
 import io.th0rgal.oraxen.utils.VersionUtil;
+import io.th0rgal.oraxen.utils.logs.Logs;
+import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.World;
+import org.bukkit.block.BlockState;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
+import org.bukkit.entity.ItemDisplay;
+import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -26,30 +37,91 @@ import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.EntityEquipment;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.inventory.meta.*;
+import org.bukkit.inventory.meta.ArmorMeta;
+import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
+import org.bukkit.inventory.meta.MapMeta;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Queue;
+import java.util.Set;
+import java.util.UUID;
 
 import static io.th0rgal.oraxen.items.ItemBuilder.ORIGINAL_NAME_KEY;
 import static io.th0rgal.oraxen.items.ItemBuilder.UNSTACKABLE_KEY;
 
 public class ItemUpdater implements Listener {
 
+    private static final int STARTUP_ENTITY_BATCH_SIZE = 50;
+    private static final int STARTUP_CHUNK_BATCH_SIZE = 10;
+    private static final int CHUNK_LOAD_TILE_ENTITY_BATCH_SIZE = 5;
+
+    private static final Object STARTUP_SCAN_LOCK = new Object();
+    private static final Object TILE_ENTITY_CHUNK_QUEUE_LOCK = new Object();
+    private static final Queue<Chunk> pendingTileEntityChunks = new ArrayDeque<>();
+    private static final Set<ChunkKey> pendingTileEntityChunkKeys = new HashSet<>();
+    private static SchedulerUtil.ScheduledTask startupContentsTask;
+    private static SchedulerUtil.ScheduledTask startupEntityScanTask;
+    private static SchedulerUtil.ScheduledTask startupChunkScanTask;
+    private static SchedulerUtil.ScheduledTask tileEntityChunkQueueTask;
+
+    public ItemUpdater() {
+        resetQueuedTasks();
+        if (!Settings.UPDATE_ITEMS.toBool()) return;
+        if (VersionUtil.isPaperServer()) Bukkit.getPluginManager().registerEvents(new PaperEntityLoadListener(), OraxenPlugin.get());
+        replaceStartupContentsTask(SchedulerUtil.runTaskLater(OraxenPlugin.get(), 2L, () -> {
+            clearStartupContentsTask();
+            updateLoadedContents();
+        }));
+    }
+
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         if (!Settings.UPDATE_ITEMS.toBool()) return;
 
-        PlayerInventory inventory = event.getPlayer().getInventory();
-        for (int i = 0; i < inventory.getSize(); i++) {
-            ItemStack oldItem = inventory.getItem(i);
-            ItemStack newItem = ItemUpdater.updateItem(oldItem);
-            if (oldItem == null || oldItem.equals(newItem)) continue;
-            inventory.setItem(i, newItem);
+        Player player = event.getPlayer();
+        SchedulerUtil.runForEntity(player, () -> {
+            updateInventory(player.getInventory());
+            updateInventory(player.getEnderChest());
+        });
+    }
+
+    private static final class PaperEntityLoadListener implements Listener {
+        @EventHandler
+        public void onEntityLoad(EntityAddToWorldEvent event) {
+            if (!Settings.UPDATE_ITEMS.toBool() || !Settings.UPDATE_ENTITY_CONTENTS.toBool()) return;
+
+            Entity entity = event.getEntity();
+            if (!shouldUpdateEntityContents(entity)) return;
+
+            SchedulerUtil.runForEntityLater(entity, 2L, () -> {
+                if (!entity.isValid()) return;
+                updateEntityInventories(entity);
+            }, () -> {});
         }
+    }
+
+    @EventHandler
+    public void onChunkLoad(ChunkLoadEvent event) {
+        if (!Settings.UPDATE_ITEMS.toBool() || !Settings.UPDATE_TILE_ENTITY_CONTENTS.toBool() || event.isNewChunk()) return;
+
+        queueTileEntityChunkUpdate(event.getChunk());
     }
 
     @EventHandler
@@ -144,6 +216,339 @@ public class ItemUpdater implements Listener {
 
     private static final NamespacedKey IF_UUID = Objects.requireNonNull(NamespacedKey.fromString("oraxen:if-uuid"));
     private static final NamespacedKey MF_GUI = Objects.requireNonNull(NamespacedKey.fromString("oraxen:mf-gui"));
+
+    public static void updateLoadedEntityContents() {
+        if (!Settings.UPDATE_ITEMS.toBool() || !Settings.UPDATE_ENTITY_CONTENTS.toBool()) return;
+        if (VersionUtil.isFoliaServer()) {
+            Logs.debug("Skipping loaded entity item updates on Folia; entities are updated when they load instead.");
+            return;
+        }
+
+        SchedulerUtil.runTask(() -> {
+            List<Entity> entities = new ArrayList<>();
+            for (World world : Bukkit.getWorlds()) {
+                for (Entity entity : world.getEntities()) {
+                    if (!shouldUpdateEntityContents(entity)) continue;
+                    entities.add(entity);
+                }
+            }
+            processLoadedEntities(entities);
+        });
+    }
+
+    public static void updateLoadedTileEntityContents() {
+        if (!Settings.UPDATE_ITEMS.toBool() || !Settings.UPDATE_TILE_ENTITY_CONTENTS.toBool()) return;
+        if (VersionUtil.isFoliaServer()) {
+            Logs.debug("Skipping loaded tile entity item updates on Folia; tile entities are updated when their chunks load instead.");
+            return;
+        }
+
+        SchedulerUtil.runTask(() -> {
+            List<Chunk> chunks = new ArrayList<>();
+            for (World world : Bukkit.getWorlds()) {
+                for (Chunk chunk : world.getLoadedChunks()) {
+                    chunks.add(chunk);
+                }
+            }
+            processLoadedChunks(chunks);
+        });
+    }
+
+    private static void processLoadedEntities(List<Entity> entities) {
+        replaceStartupEntityScanTask(null);
+        if (entities.isEmpty()) return;
+
+        final int[] index = {0};
+        final StartupScanTask task = new StartupScanTask();
+        // The timer may theoretically finish before its handle is registered on non-standard schedulers.
+        // registerStartupEntityScanTask checks task.finished after assigning the handle and cancels it in that case.
+        SchedulerUtil.ScheduledTask scheduledTask = SchedulerUtil.runTaskTimer(1L, 1L, () -> {
+            try {
+                int batchEnd = Math.min(index[0] + STARTUP_ENTITY_BATCH_SIZE, entities.size());
+                while (index[0] < batchEnd) {
+                    Entity entity = entities.get(index[0]++);
+                    if (!entity.isValid() || !shouldUpdateEntityContents(entity)) continue;
+                    SchedulerUtil.runForEntity(entity, () -> updateEntityInventories(entity), () -> {});
+                }
+                if (index[0] >= entities.size()) finishStartupEntityScanTask(task);
+            } catch (RuntimeException | Error throwable) {
+                finishStartupEntityScanTask(task);
+                throw throwable;
+            }
+        });
+        registerStartupEntityScanTask(task, scheduledTask);
+    }
+
+    private static void processLoadedChunks(List<Chunk> chunks) {
+        replaceStartupChunkScanTask(null);
+        if (chunks.isEmpty()) return;
+
+        final int[] index = {0};
+        final StartupScanTask task = new StartupScanTask();
+        SchedulerUtil.ScheduledTask scheduledTask = SchedulerUtil.runTaskTimer(1L, 1L, () -> {
+            try {
+                int batchEnd = Math.min(index[0] + STARTUP_CHUNK_BATCH_SIZE, chunks.size());
+                while (index[0] < batchEnd) {
+                    Chunk chunk = chunks.get(index[0]++);
+                    SchedulerUtil.runAtLocation(chunkLocation(chunk), () -> {
+                        if (!chunk.isLoaded()) return;
+                        updateTileEntityInventories(chunk);
+                    });
+                }
+                if (index[0] >= chunks.size()) finishStartupChunkScanTask(task);
+            } catch (RuntimeException | Error throwable) {
+                finishStartupChunkScanTask(task);
+                throw throwable;
+            }
+        });
+        registerStartupChunkScanTask(task, scheduledTask);
+    }
+
+    private static void replaceStartupContentsTask(SchedulerUtil.ScheduledTask task) {
+        SchedulerUtil.ScheduledTask oldTask;
+        synchronized (STARTUP_SCAN_LOCK) {
+            oldTask = startupContentsTask;
+            startupContentsTask = task;
+        }
+        cancelTask(oldTask);
+    }
+
+    private static void clearStartupContentsTask() {
+        synchronized (STARTUP_SCAN_LOCK) {
+            startupContentsTask = null;
+        }
+    }
+
+    private static void replaceStartupEntityScanTask(SchedulerUtil.ScheduledTask task) {
+        SchedulerUtil.ScheduledTask oldTask;
+        synchronized (STARTUP_SCAN_LOCK) {
+            oldTask = startupEntityScanTask;
+            startupEntityScanTask = task;
+        }
+        cancelTask(oldTask);
+    }
+
+    private static void registerStartupEntityScanTask(StartupScanTask task, SchedulerUtil.ScheduledTask scheduledTask) {
+        SchedulerUtil.ScheduledTask oldTask;
+        boolean finished;
+        synchronized (STARTUP_SCAN_LOCK) {
+            task.scheduledTask = scheduledTask;
+            finished = task.finished;
+            oldTask = startupEntityScanTask;
+            startupEntityScanTask = finished ? null : scheduledTask;
+        }
+        cancelTask(oldTask);
+        if (finished) cancelTask(scheduledTask);
+    }
+
+    private static void replaceStartupChunkScanTask(SchedulerUtil.ScheduledTask task) {
+        SchedulerUtil.ScheduledTask oldTask;
+        synchronized (STARTUP_SCAN_LOCK) {
+            oldTask = startupChunkScanTask;
+            startupChunkScanTask = task;
+        }
+        cancelTask(oldTask);
+    }
+
+    private static void registerStartupChunkScanTask(StartupScanTask task, SchedulerUtil.ScheduledTask scheduledTask) {
+        SchedulerUtil.ScheduledTask oldTask;
+        boolean finished;
+        synchronized (STARTUP_SCAN_LOCK) {
+            task.scheduledTask = scheduledTask;
+            finished = task.finished;
+            oldTask = startupChunkScanTask;
+            startupChunkScanTask = finished ? null : scheduledTask;
+        }
+        cancelTask(oldTask);
+        if (finished) cancelTask(scheduledTask);
+    }
+
+    private static void finishStartupEntityScanTask(StartupScanTask task) {
+        synchronized (STARTUP_SCAN_LOCK) {
+            task.finished = true;
+            if (startupEntityScanTask == task.scheduledTask) startupEntityScanTask = null;
+        }
+        cancelTask(task.scheduledTask);
+    }
+
+    private static void finishStartupChunkScanTask(StartupScanTask task) {
+        synchronized (STARTUP_SCAN_LOCK) {
+            task.finished = true;
+            if (startupChunkScanTask == task.scheduledTask) startupChunkScanTask = null;
+        }
+        cancelTask(task.scheduledTask);
+    }
+
+    private static void cancelTask(SchedulerUtil.ScheduledTask task) {
+        if (task != null) task.cancel();
+    }
+
+    public static void resetQueuedTasks() {
+        SchedulerUtil.ScheduledTask contentsTask;
+        SchedulerUtil.ScheduledTask entityTask;
+        SchedulerUtil.ScheduledTask chunkTask;
+        synchronized (STARTUP_SCAN_LOCK) {
+            contentsTask = startupContentsTask;
+            entityTask = startupEntityScanTask;
+            chunkTask = startupChunkScanTask;
+            startupContentsTask = null;
+            startupEntityScanTask = null;
+            startupChunkScanTask = null;
+        }
+        cancelTask(contentsTask);
+        cancelTask(entityTask);
+        cancelTask(chunkTask);
+
+        SchedulerUtil.ScheduledTask tileEntityTask;
+        synchronized (TILE_ENTITY_CHUNK_QUEUE_LOCK) {
+            tileEntityTask = tileEntityChunkQueueTask;
+            tileEntityChunkQueueTask = null;
+            pendingTileEntityChunks.clear();
+            pendingTileEntityChunkKeys.clear();
+        }
+        cancelTask(tileEntityTask);
+    }
+
+    private static void updateLoadedContents() {
+        updateLoadedEntityContents();
+        updateLoadedTileEntityContents();
+    }
+
+    private static void queueTileEntityChunkUpdate(Chunk chunk) {
+        ChunkKey key = ChunkKey.from(chunk);
+        synchronized (TILE_ENTITY_CHUNK_QUEUE_LOCK) {
+            if (!pendingTileEntityChunkKeys.add(key)) return;
+            pendingTileEntityChunks.add(chunk);
+            if (tileEntityChunkQueueTask != null) return;
+
+            tileEntityChunkQueueTask = SchedulerUtil.runTaskTimer(1L, 1L, ItemUpdater::processQueuedTileEntityChunks);
+        }
+    }
+
+    private static void processQueuedTileEntityChunks() {
+        SchedulerUtil.ScheduledTask taskToCancel = null;
+        for (int i = 0; i < CHUNK_LOAD_TILE_ENTITY_BATCH_SIZE; i++) {
+            Chunk chunk;
+            synchronized (TILE_ENTITY_CHUNK_QUEUE_LOCK) {
+                chunk = pendingTileEntityChunks.poll();
+                if (chunk == null) {
+                    taskToCancel = finishTileEntityChunkQueueTask();
+                    break;
+                }
+                pendingTileEntityChunkKeys.remove(ChunkKey.from(chunk));
+            }
+
+            SchedulerUtil.runAtLocationLater(chunkLocation(chunk), 1L, () -> {
+                if (!chunk.isLoaded()) return;
+                updateTileEntityInventories(chunk);
+            });
+        }
+
+        if (taskToCancel == null) {
+            synchronized (TILE_ENTITY_CHUNK_QUEUE_LOCK) {
+                if (pendingTileEntityChunks.isEmpty()) taskToCancel = finishTileEntityChunkQueueTask();
+            }
+        }
+        cancelTask(taskToCancel);
+    }
+
+    private static SchedulerUtil.ScheduledTask finishTileEntityChunkQueueTask() {
+        // Called inside TILE_ENTITY_CHUNK_QUEUE_LOCK; caller must cancel the returned task outside the lock.
+        SchedulerUtil.ScheduledTask task = tileEntityChunkQueueTask;
+        tileEntityChunkQueueTask = null;
+        return task;
+    }
+
+    private static Location chunkLocation(Chunk chunk) {
+        return new Location(chunk.getWorld(), chunk.getX() * 16, 0, chunk.getZ() * 16);
+    }
+
+    private static void updateTileEntityInventories(Chunk chunk) {
+        for (BlockState tileEntity : chunk.getTileEntities()) {
+            if (!(tileEntity instanceof InventoryHolder holder)) continue;
+            updateInventory(holder.getInventory());
+        }
+    }
+
+    private static final class StartupScanTask {
+        private volatile SchedulerUtil.ScheduledTask scheduledTask;
+        private volatile boolean finished;
+    }
+
+    private record ChunkKey(UUID worldId, int x, int z) {
+
+        private static ChunkKey from(Chunk chunk) {
+            return new ChunkKey(chunk.getWorld().getUID(), chunk.getX(), chunk.getZ());
+        }
+    }
+
+    public static void updateEntityInventories(Entity entity) {
+        if (entity instanceof ItemFrame itemFrame) {
+            ItemStack oldItem = itemFrame.getItem();
+            ItemStack newItem = updateItem(oldItem);
+            if (!Objects.equals(oldItem, newItem)) itemFrame.setItem(newItem, false);
+        }
+        if (entity instanceof ItemDisplay itemDisplay) {
+            ItemStack oldItem = itemDisplay.getItemStack();
+            ItemStack newItem = updateItem(oldItem);
+            if (!Objects.equals(oldItem, newItem)) itemDisplay.setItemStack(newItem);
+        }
+        if (entity instanceof Item item) {
+            ItemStack oldItem = item.getItemStack();
+            ItemStack newItem = updateItem(oldItem);
+            if (!Objects.equals(oldItem, newItem)) item.setItemStack(newItem);
+        }
+        if (entity instanceof InventoryHolder holder && !(entity instanceof ItemFrame)) updateInventory(holder.getInventory());
+        if (entity instanceof LivingEntity livingEntity) updateEquipment(livingEntity);
+    }
+
+    private static boolean shouldUpdateEntityContents(Entity entity) {
+        if (entity instanceof Player) return false;
+        return entity instanceof ItemFrame
+                || entity instanceof ItemDisplay
+                || entity instanceof Item
+                || entity instanceof InventoryHolder
+                || entity instanceof LivingEntity livingEntity && hasEquipment(livingEntity);
+    }
+
+    private static boolean hasEquipment(LivingEntity livingEntity) {
+        EntityEquipment equipment = livingEntity.getEquipment();
+        if (equipment == null) return false;
+
+        if (!ItemUtils.isEmpty(equipment.getItemInMainHand()) || !ItemUtils.isEmpty(equipment.getItemInOffHand())) return true;
+        for (ItemStack itemStack : equipment.getArmorContents()) {
+            if (!ItemUtils.isEmpty(itemStack)) return true;
+        }
+        return false;
+    }
+
+    private static void updateEquipment(LivingEntity livingEntity) {
+        EntityEquipment equipment = livingEntity.getEquipment();
+        if (equipment == null) return;
+
+        for (EquipmentSlot slot : EquipmentSlot.values()) {
+            try {
+                ItemStack oldItem = equipment.getItem(slot);
+                if (oldItem == null) continue;
+                ItemStack newItem = updateItem(oldItem);
+                if (oldItem.equals(newItem)) continue;
+                equipment.setItem(slot, newItem);
+            } catch (IllegalArgumentException ignored) {
+                // Some entity types do not support every slot exposed by the API.
+            }
+        }
+    }
+
+    public static void updateInventory(Inventory inventory) {
+        if (inventory == null) return;
+        for (int i = 0; i < inventory.getSize(); i++) {
+            ItemStack oldItem = inventory.getItem(i);
+            ItemStack newItem = updateItem(oldItem);
+            if (oldItem == null || oldItem.equals(newItem)) continue;
+            inventory.setItem(i, newItem);
+        }
+    }
+
     public static ItemStack updateItem(ItemStack oldItem) {
         String id = OraxenItems.getIdByItem(oldItem);
         if (id == null) return oldItem;
@@ -258,7 +663,8 @@ public class ItemUpdater implements Listener {
 
             if (VersionUtil.atOrAbove("1.21.2")) {
                 if (newMeta.hasEquippable()) itemMeta.setEquippable(newMeta.getEquippable());
-                else if (oldMeta.hasEquippable()) itemMeta.setEquippable(newMeta.getEquippable());
+                // Preserve old item's equippable data when the new template has none.
+                else if (oldMeta.hasEquippable()) itemMeta.setEquippable(oldMeta.getEquippable());
 
                 if (newMeta.isGlider()) itemMeta.setGlider(true);
                 else if (oldMeta.isGlider()) itemMeta.setGlider(true);

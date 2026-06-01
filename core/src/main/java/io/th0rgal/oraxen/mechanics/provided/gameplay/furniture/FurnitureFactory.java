@@ -13,6 +13,7 @@ import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.jukebox.JukeboxLi
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.text.FurnitureTextEntry;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.text.FurnitureTextPacketBridge;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.text.FurnitureTextRegistry;
+import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Entity;
@@ -82,7 +83,7 @@ public class FurnitureFactory extends MechanicFactory {
     public static boolean areCustomSoundsEnabled() {
         ConfigurationSection customSoundsSection = OraxenPlugin.get().getConfigsManager().getMechanics()
                 .getConfigurationSection("custom_block_sounds");
-        return customSoundsSection == null || customSoundsSection.getBoolean("stringblock_and_furniture", true);
+        return BlockSounds.isFurnitureSoundEnabled(customSoundsSection);
     }
 
     public static FurnitureFactory getInstance() {

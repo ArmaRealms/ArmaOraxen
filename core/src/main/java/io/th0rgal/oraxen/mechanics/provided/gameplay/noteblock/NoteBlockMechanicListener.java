@@ -57,7 +57,7 @@ public class NoteBlockMechanicListener implements Listener {
                 if (mechanic == null) return false;
                 if (mechanic.isDirectional() && !mechanic.getDirectional().isParentBlock())
                     mechanic = mechanic.getDirectional().getParentMechanic();
-                return mechanic.hasHardness();
+                return mechanic.hasHardness(tool);
             }
 
             @Override
@@ -71,17 +71,9 @@ public class NoteBlockMechanicListener implements Listener {
                 if (mechanic == null) return 0;
                 if (mechanic.isDirectional() && !mechanic.getDirectional().isParentBlock())
                     mechanic = mechanic.getDirectional().getParentMechanic();
-                final double hardness = mechanic.getHardness();
-                double modifier = 1;
-                if (mechanic.getDrop().canDrop(tool)) {
-                    modifier *= 0.4;
-                    if (mechanic.getDrop().isTypeEnough(tool)) {
-                        final int diff = mechanic.getDrop().getDiff(tool);
-                        if (diff >= 1) modifier *= Math.pow(0.9, diff);
-                    }
-                }
-                long period = (long) (hardness * modifier);
-                return period == 0 && mechanic.hasHardness() ? 1 : period;
+                final double hardness = mechanic.getHardness(tool);
+                long period = Math.round(hardness * 0.4D / mechanic.getPacketSpeedMultiplier(tool, block.getType()));
+                return period == 0 && mechanic.hasHardness(tool) ? 1 : period;
             }
         };
     }
@@ -468,6 +460,9 @@ public class NoteBlockMechanicListener implements Listener {
         else target = placedAgainst.getRelative(face);
         if (!BlockHelpers.isReplaceable(target.getType())) return;
 
+        NoteBlockMechanic targetOraxen = OraxenBlocks.getNoteBlockMechanic(newData);
+        if (targetOraxen != null && !targetOraxen.canPlaceOn(face, placedAgainst)) return;
+
         final NoteBlockMechanic againstMechanic = OraxenBlocks.getNoteBlockMechanic(placedAgainst);
         // Store oldData incase event(s) is cancelled, set the target blockData
         // newData might be null in some scenarios
@@ -477,7 +472,7 @@ public class NoteBlockMechanicListener implements Listener {
             final BlockPlaceEvent blockPlaceEvent = new BlockPlaceEvent(target, target.getState(), placedAgainst, item, player, true, hand);
             final Material material = newData.getMaterial();
 
-            if (againstMechanic != null && (againstMechanic.isStorage() || againstMechanic.hasClickActions()))
+            if (againstMechanic != null && (againstMechanic.isStorage() || againstMechanic.hasClickActions() || againstMechanic.hasBlockEvents()))
                 blockPlaceEvent.setCancelled(true);
             if (BlockHelpers.isStandingInside(player, target) || !ProtectionLib.canBuild(player, target.getLocation()))
                 blockPlaceEvent.setCancelled(true);
@@ -496,7 +491,6 @@ public class NoteBlockMechanicListener implements Listener {
         }
 
         // This method is run for placing on custom blocks aswell, so this should not be called for vanilla blocks
-        NoteBlockMechanic targetOraxen = OraxenBlocks.getNoteBlockMechanic(newData);
         if (targetOraxen != null) {
 
             OraxenBlocks.place(targetOraxen.getItemID(), target.getLocation());

@@ -4,14 +4,18 @@ import io.th0rgal.oraxen.config.Message;
 import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.pack.upload.hosts.HostingProvider;
 import io.th0rgal.oraxen.utils.AdventureUtils;
+import io.th0rgal.oraxen.utils.SHA1Utils;
 import io.th0rgal.oraxen.utils.SchedulerUtil;
 import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import io.th0rgal.oraxen.OraxenPlugin;
+import net.kyori.adventure.resource.ResourcePackInfo;
+import net.kyori.adventure.resource.ResourcePackRequest;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
+import java.net.URI;
 import java.util.UUID;
 
 public abstract class PackSender {
@@ -79,10 +83,11 @@ public abstract class PackSender {
 
         if (VersionUtil.atOrAbove("1.20.3")) {
             if (useBungeeLayer) {
-                player.removeResourcePacks(uuid);
+                // Do not remove the layer before adding it: proxies that suppress duplicate pack pushes
+                // can otherwise let the remove through and leave the client without the pack.
                 player.addResourcePack(uuid, url, sha1, legacyPrompt, mandatory);
             } else if (VersionUtil.isPaperServer()) {
-                player.setResourcePack(uuid, url, sha1, componentPrompt, mandatory);
+                sendPaperResourcePack(player, uuid, url, sha1, componentPrompt, mandatory);
             } else {
                 player.setResourcePack(uuid, url, sha1, legacyPrompt, mandatory);
             }
@@ -93,6 +98,24 @@ public abstract class PackSender {
                 player.setResourcePack(url, sha1, legacyPrompt, mandatory);
             }
         }
+    }
+
+    private static void sendPaperResourcePack(Player player, UUID uuid, String url, byte[] sha1,
+                                              net.kyori.adventure.text.Component prompt, boolean mandatory) {
+        String hash = SHA1Utils.bytesToHex(sha1);
+        if (hash == null) {
+            player.setResourcePack(uuid, url, sha1, prompt, mandatory);
+            return;
+        }
+
+        ResourcePackInfo info = ResourcePackInfo.resourcePackInfo(uuid, URI.create(url), hash);
+        ResourcePackRequest request = ResourcePackRequest.resourcePackRequest()
+                .required(mandatory)
+                .replace(false)
+                .prompt(prompt)
+                .packs(info)
+                .build();
+        player.sendResourcePacks(request);
     }
 
     public static boolean isSendPreJoinConfigured() {

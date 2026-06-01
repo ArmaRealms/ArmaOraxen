@@ -2,15 +2,16 @@ package io.th0rgal.oraxen.utils.actions;
 
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.utils.logs.Logs;
 import me.gabytm.util.actions.actions.Action;
-import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.springframework.expression.EvaluationContext;
+import org.springframework.expression.EvaluationException;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.ParseException;
-import org.springframework.expression.spel.SpelEvaluationException;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
+import org.springframework.expression.spel.support.SimpleEvaluationContext;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -75,9 +76,12 @@ public class ClickAction {
         if (conditions.isEmpty()) return true;
         if (actions.isEmpty()) return false;
 
-        final StandardEvaluationContext context = new StandardEvaluationContext(player);
+        final EvaluationContext context = SimpleEvaluationContext.forReadOnlyDataBinding()
+                .withInstanceMethods()
+                .withRootObject(player)
+                .build();
         context.setVariable("player", player);
-        context.setVariable("server", Bukkit.getServer());
+        context.setVariable("server", org.bukkit.Bukkit.getServer());
 
         for (final String condition : conditions) {
             try {
@@ -86,8 +90,10 @@ public class ClickAction {
                 if (result == null || !result) {
                     return false;
                 }
-            } catch (ParseException | SpelEvaluationException e) {
+            } catch (ParseException | EvaluationException e) {
+                Logs.logWarning("Failed to evaluate click action condition '" + condition + "' for player " + player.getName() + "; blocking action.");
                 if (Settings.DEBUG.toBool()) e.printStackTrace();
+                return false;
             }
         }
 

@@ -131,7 +131,7 @@ public final class PackDispatchListener implements Listener {
 
         ResourcePackRequest request = ResourcePackRequest.resourcePackRequest()
                 .required(Settings.SEND_PACK_MANDATORY.toBool())
-                .replace(true)
+                .replace(false)
                 .prompt(AdventureUtils.MINI_MESSAGE.deserialize(Settings.SEND_PACK_PROMPT.toString()))
                 .packs(info)
                 .callback((requestId, status, audience) -> {

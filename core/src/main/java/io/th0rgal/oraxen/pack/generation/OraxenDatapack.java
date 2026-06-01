@@ -3,6 +3,7 @@ package io.th0rgal.oraxen.pack.generation;
 import io.th0rgal.oraxen.utils.platform.BukkitWrapper;
 import io.th0rgal.oraxen.utils.VirtualFile;
 import io.th0rgal.oraxen.utils.VersionUtil;
+import io.th0rgal.oraxen.utils.logs.Logs;
 
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
@@ -42,13 +43,16 @@ public abstract class OraxenDatapack {
         this.datapackEnabled = isDatapackEnabled();
     }
 
-    protected void writeMCMeta() {
+    protected boolean writeMCMeta() {
         try {
+            FileUtils.forceMkdir(datapackFolder);
             File packMeta = datapackFolder.toPath().resolve("pack.mcmeta").toFile();
-            packMeta.createNewFile();
             FileUtils.writeStringToFile(packMeta, datapackMeta.toString(), StandardCharsets.UTF_8);
+            return true;
         } catch (IOException e) {
-            e.printStackTrace();
+            Logs.logError("Failed to write datapack pack.mcmeta for " + name + ": " + e.getMessage());
+            Logs.debug(e);
+            return false;
         }
     }
 

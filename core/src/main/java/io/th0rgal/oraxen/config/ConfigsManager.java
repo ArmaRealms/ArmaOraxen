@@ -10,6 +10,7 @@ import io.th0rgal.oraxen.items.ItemParser;
 import io.th0rgal.oraxen.items.ItemTemplate;
 import io.th0rgal.oraxen.items.ModelData;
 import io.th0rgal.oraxen.pack.generation.DuplicationHandler;
+import io.th0rgal.oraxen.sound.SoundConfigMigration;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.OraxenYaml;
 import io.th0rgal.oraxen.utils.Utils;
@@ -52,6 +53,7 @@ public class ConfigsManager {
     private final YamlConfiguration defaultSettings;
     private final YamlConfiguration defaultFont;
     private final YamlConfiguration defaultSound;
+    private final YamlConfiguration defaultPaintings;
     private final YamlConfiguration defaultLanguage;
     private final YamlConfiguration defaultHud;
     private final YamlConfiguration defaultTextEffects;
@@ -59,20 +61,21 @@ public class ConfigsManager {
     private YamlConfiguration settings;
     private YamlConfiguration font;
     private YamlConfiguration sound;
+    private YamlConfiguration paintings;
     private YamlConfiguration language;
     private YamlConfiguration hud;
     private YamlConfiguration textEffects;
     private File itemsFolder;
     private File glyphsFolder;
     private File schematicsFolder;
-    private File gesturesFolder;
 
     public ConfigsManager(JavaPlugin plugin) {
         this.plugin = plugin;
         defaultMechanics = extractDefault("mechanics.yml");
         defaultSettings = extractDefault("settings.yml");
         defaultFont = extractDefault("font.yml");
-        defaultSound = extractDefault("sound.yml");
+        defaultSound = extractDefault("sounds.yml");
+        defaultPaintings = extractDefault("paintings.yml");
         defaultLanguage = extractDefault("languages/english.yml");
         defaultHud = extractDefault("hud.yml");
         defaultTextEffects = extractDefault("text_effects.yml");
@@ -104,6 +107,10 @@ public class ConfigsManager {
 
     public YamlConfiguration getSound() {
         return sound != null ? sound : defaultSound;
+    }
+
+    public YamlConfiguration getPaintings() {
+        return paintings != null ? paintings : defaultPaintings;
     }
 
     public YamlConfiguration getTextEffects() {
@@ -138,7 +145,10 @@ public class ConfigsManager {
         settings = validate(tempManager, "settings.yml", defaultSettings);
         font = validate(tempManager, "font.yml", defaultFont);
         hud = validate(tempManager, "hud.yml", defaultHud);
-        sound = validate(tempManager, "sound.yml", defaultSound);
+        migrateLegacySoundFile();
+        sound = validate(tempManager, "sounds.yml", defaultSound);
+        migrateSoundConfigIfNeeded();
+        paintings = validate(tempManager, "paintings.yml", defaultPaintings);
         textEffects = validate(tempManager, "text_effects.yml", defaultTextEffects);
         File languagesFolder = new File(plugin.getDataFolder(), "languages");
         languagesFolder.mkdir();
@@ -171,14 +181,49 @@ public class ConfigsManager {
                 tempManager.extractConfigsInFolder("schematics", "schem");
         }
 
-        // check gestures
-        gesturesFolder = new File(plugin.getDataFolder(), "gestures");
-        if (!gesturesFolder.exists()) {
-            gesturesFolder.mkdirs();
-            if (Settings.GENERATE_DEFAULT_CONFIGS.toBool())
-                tempManager.extractConfigsInFolder("gestures", "yml");
-        }
+    }
 
+    private void migrateLegacySoundFile() {
+        File soundsFile = new File(plugin.getDataFolder(), "sounds.yml");
+        File legacySoundFile = new File(plugin.getDataFolder(), "sound.yml");
+        if (!legacySoundFile.exists())
+            return;
+
+        YamlConfiguration legacyConfiguration = OraxenYaml.loadConfiguration(legacySoundFile);
+        SoundConfigMigration.migrateToNewFormat(legacyConfiguration);
+
+        boolean soundsFileAlreadyExists = soundsFile.exists();
+        YamlConfiguration soundsConfiguration = soundsFileAlreadyExists
+                ? OraxenYaml.loadConfiguration(soundsFile)
+                : legacyConfiguration;
+        boolean changed = !soundsFileAlreadyExists
+                || SoundConfigMigration.mergeSounds(soundsConfiguration, legacyConfiguration);
+
+        try {
+            if (changed || !soundsFileAlreadyExists)
+                soundsConfiguration.save(soundsFile);
+            Logs.logSuccess(soundsFileAlreadyExists
+                    ? "Merged sound.yml into sounds.yml"
+                    : "Migrated sound.yml to sounds.yml");
+            MigrationBackups.moveToMigrated(plugin.getDataFolder(), legacySoundFile);
+        } catch (IOException e) {
+            Logs.logError("Failed to migrate sound.yml to sounds.yml");
+            Logs.debug(e);
+        }
+    }
+
+    private void migrateSoundConfigIfNeeded() {
+        File soundsFile = new File(plugin.getDataFolder(), "sounds.yml");
+        if (sound == null || !SoundConfigMigration.migrateToNewFormat(sound))
+            return;
+
+        try {
+            sound.save(soundsFile);
+            Logs.logSuccess("Migrated sounds.yml to the new sound list format");
+        } catch (IOException e) {
+            Logs.logError("Failed to save migrated sounds.yml");
+            Logs.debug(e);
+        }
     }
 
     private YamlConfiguration validate(ResourcesManager resourcesManager, String configName,
@@ -775,6 +820,7 @@ public class ConfigsManager {
             parseMap.put(itemKey, new ItemParser(itemSection));
         }
         boolean configUpdated = false;
+        boolean blockConfigMigrated = false;
         // because we must have parse all the items before building them to be able to
         // use available models
         Map<String, ItemBuilder> map = new LinkedHashMap<>();
@@ -793,9 +839,14 @@ public class ConfigsManager {
             }
             if (itemParser.isConfigUpdated())
                 configUpdated = true;
+            if (itemParser.isBlockConfigMigrated())
+                blockConfigMigrated = true;
         }
 
         if (configUpdated) {
+            if (blockConfigMigrated)
+                MigrationBackups.moveToMigrated(plugin.getDataFolder(), itemFile);
+
             String content = config.saveToString();
             if (VersionUtil.atOrAbove("1.20.5"))
                 content = content.replace("displayname: ", "itemname: ");

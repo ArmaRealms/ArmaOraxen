@@ -48,6 +48,14 @@ import java.util.function.Function;
 
 public class ItemParser {
 
+    private static final Set<String> LEGACY_BLOCK_MECHANIC_IDS = Set.of("noteblock", "stringblock", "chorusblock", "shaped_block");
+    private static final Map<String, String> LEGACY_BLOCK_MECHANIC_TYPES = Map.of(
+            "noteblock", "FULL",
+            "stringblock", "STRING",
+            "chorusblock", "CHORUS",
+            "shaped_block", "STAIR"
+    );
+
     public static final Map<String, ModelData> MODEL_DATAS_BY_ID = new HashMap<>();
 
     private final OraxenMeta oraxenMeta;
@@ -58,6 +66,7 @@ public class ItemParser {
     private WrappedEcoItem ecoItem;
     private ItemParser templateItem;
     private boolean configUpdated = false;
+    private boolean blockConfigMigrated = false;
 
     public ItemParser(final ConfigurationSection section) {
         this.section = section;
@@ -233,6 +242,9 @@ public class ItemParser {
         if (!VersionUtil.atOrAbove("1.21"))
             return;
 
+        Optional.ofNullable(OraxenYaml.getString(components, "painting_variant"))
+                .ifPresent(item::setPaintingVariant);
+
         final ConfigurationSection jukeboxSection = OraxenYaml.getConfigurationSection(components, "jukebox_playable");
         if (jukeboxSection != null && VersionUtil.isPaperServer()) {
             try {
@@ -310,6 +322,7 @@ public class ItemParser {
                 normalizedKey.equals("max_stack_size") ||
                 normalizedKey.equals("food") ||
                 normalizedKey.equals("tool") ||
+                normalizedKey.equals("painting_variant") ||
                 normalizedKey.equals("jukebox_playable") ||
                 normalizedKey.equals("equippable") ||
                 normalizedKey.equals("use_cooldown") ||
@@ -673,10 +686,16 @@ public class ItemParser {
         if (mechanicsSection == null)
             return;
 
+        migrateLegacyBlockMechanics(mechanicsSection);
+
         for (final String mechanicID : mechanicsSection.getKeys(false)) {
             final MechanicFactory factory = MechanicsManager.getMechanicFactory(mechanicID);
-            if (factory == null)
+            if (factory == null) {
+                if (LEGACY_BLOCK_MECHANIC_IDS.contains(mechanicID.toLowerCase(Locale.ROOT)))
+                    Logs.logWarning("Item " + section.getName() + " uses legacy Mechanics." + mechanicID
+                            + "; migrate it to Mechanics.block or this mechanic will be ignored.");
                 continue;
+            }
 
             final ConfigurationSection mechanicSection = OraxenYaml.getConfigurationSection(mechanicsSection, mechanicID);
             if (mechanicSection == null)
@@ -689,6 +708,33 @@ public class ItemParser {
             for (final Function<ItemBuilder, ItemBuilder> itemModifier : mechanic.getItemModifiers()) {
                 item = itemModifier.apply(item);
             }
+        }
+    }
+
+    private void migrateLegacyBlockMechanics(final ConfigurationSection mechanicsSection) {
+        if (OraxenYaml.getConfigurationSection(mechanicsSection, "block") != null)
+            return;
+
+        for (final Map.Entry<String, String> legacyMechanic : LEGACY_BLOCK_MECHANIC_TYPES.entrySet()) {
+            final String legacyMechanicID = legacyMechanic.getKey();
+            final ConfigurationSection legacySection = OraxenYaml.getConfigurationSection(mechanicsSection, legacyMechanicID);
+            if (legacySection == null)
+                continue;
+
+            final ConfigurationSection blockSection = mechanicsSection.createSection("block");
+            OraxenYaml.copyConfigurationSection(legacySection, blockSection);
+            if (!blockSection.contains("type"))
+                blockSection.set("type", legacyMechanic.getValue());
+
+            mechanicsSection.set(legacyMechanicID, null);
+            OraxenYaml.invalidateKeyCache(mechanicsSection);
+            OraxenYaml.invalidateKeyCache(blockSection);
+            configUpdated = true;
+            blockConfigMigrated = true;
+            if (OraxenPlugin.get() != null)
+                Logs.logWarning("Item " + section.getName() + " uses legacy Mechanics." + legacyMechanicID
+                        + "; it has been migrated to Mechanics.block.");
+            return;
         }
     }
 
@@ -808,6 +854,10 @@ public class ItemParser {
 
     public boolean isConfigUpdated() {
         return configUpdated;
+    }
+
+    public boolean isBlockConfigMigrated() {
+        return blockConfigMigrated;
     }
 
 }

@@ -2,13 +2,15 @@ package io.th0rgal.oraxen.mechanics.provided.gameplay.shaped;
 
 import com.jeff_media.customblockdata.CustomBlockData;
 import io.th0rgal.oraxen.OraxenPlugin;
+import io.th0rgal.oraxen.api.OraxenBlocks;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.utils.BlockHelpers;
 import io.th0rgal.oraxen.utils.SchedulerUtil;
 import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
-import io.th0rgal.oraxen.utils.drops.Drop;
+import io.th0rgal.oraxen.utils.breaker.BreakerSystem;
+import io.th0rgal.oraxen.utils.breaker.HardnessModifier;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import io.th0rgal.protectionlib.ProtectionLib;
 import org.jetbrains.annotations.Nullable;
@@ -53,10 +55,43 @@ import org.bukkit.persistence.PersistentDataType;
 public class ShapedBlockMechanicListener implements Listener {
 
     private static final NamespacedKey VANILLA_WAXED_KEY = new NamespacedKey(OraxenPlugin.get(), "vanilla_waxed");
+    private static final HardnessModifier HARDNESS_MODIFIER = createHardnessModifier();
     private final ShapedBlockMechanicFactory factory;
 
     public ShapedBlockMechanicListener(ShapedBlockMechanicFactory factory) {
         this.factory = factory;
+        if (OraxenPlugin.get().getPacketAdapter().isEnabled())
+            registerHardnessModifier();
+    }
+
+    private static void registerHardnessModifier() {
+        if (!BreakerSystem.MODIFIERS.contains(HARDNESS_MODIFIER)) {
+            BreakerSystem.MODIFIERS.add(HARDNESS_MODIFIER);
+        }
+    }
+
+    private static HardnessModifier createHardnessModifier() {
+        return new HardnessModifier() {
+            @Override
+            public boolean isTriggered(final Player player, final Block block, final ItemStack tool) {
+                ShapedBlockMechanic mechanic = OraxenBlocks.getShapedMechanic(block);
+                return mechanic != null && mechanic.hasHardness(tool);
+            }
+
+            @Override
+            public void breakBlock(final Player player, final Block block, final ItemStack tool) {
+                block.setType(Material.AIR);
+            }
+
+            @Override
+            public long getPeriod(final Player player, final Block block, final ItemStack tool) {
+                ShapedBlockMechanic mechanic = OraxenBlocks.getShapedMechanic(block);
+                if (mechanic == null) return 0;
+                long period = Math.round(mechanic.getHardness(tool) * 0.4D
+                        / mechanic.getPacketSpeedMultiplier(tool, block.getType()));
+                return period == 0 && mechanic.hasHardness(tool) ? 1 : period;
+            }
+        };
     }
 
     // ==================== VANILLA COPPER HANDLING ====================
@@ -220,15 +255,19 @@ public class ShapedBlockMechanicListener implements Listener {
         if (!event.isNewChunk()) return;
 
         Chunk chunk = event.getChunk();
+        Location chunkLocation = new Location(chunk.getWorld(), chunk.getX() << 4,
+            chunk.getWorld().getMinHeight(), chunk.getZ() << 4);
 
         // Schedule conversion for next tick to ensure chunk is fully loaded
-        SchedulerUtil.runTaskLater(1L, () -> convertWaxedCopperInChunk(chunk));
+        SchedulerUtil.runAtLocationLater(chunkLocation, 1L, () -> convertWaxedCopperInChunk(chunk));
     }
 
     /**
      * Convert all waxed copper blocks in a chunk to non-waxed variants.
      */
     private void convertWaxedCopperInChunk(Chunk chunk) {
+        if (!chunk.isLoaded()) return;
+
         int minY = chunk.getWorld().getMinHeight();
         int maxY = chunk.getWorld().getMaxHeight();
 
@@ -299,7 +338,7 @@ public class ShapedBlockMechanicListener implements Listener {
         }
 
         // Validate placement
-        if (!canPlaceBlock(player, targetBlock, clickedBlock, shapedMechanic)) return;
+        if (!canPlaceBlock(player, targetBlock, clickedBlock, face, shapedMechanic)) return;
 
         // Additional door validation
         if (shapedMechanic.getBlockType() == ShapedBlockType.DOOR) {
@@ -319,8 +358,9 @@ public class ShapedBlockMechanicListener implements Listener {
         return clickedBlock.getRelative(face);
     }
 
-    private boolean canPlaceBlock(Player player, Block targetBlock, Block clickedBlock, ShapedBlockMechanic mechanic) {
+    private boolean canPlaceBlock(Player player, Block targetBlock, Block clickedBlock, BlockFace face, ShapedBlockMechanic mechanic) {
         if (!BlockHelpers.isReplaceable(targetBlock.getType())) return false;
+        if (!mechanic.canPlaceOn(face, clickedBlock)) return false;
 
         Range<Integer> worldHeightRange = Range.of(
             targetBlock.getWorld().getMinHeight(),
@@ -400,7 +440,7 @@ public class ShapedBlockMechanicListener implements Listener {
     private void revertPlacement(Block targetBlock, ShapedBlockMechanic mechanic, org.bukkit.block.BlockState replacedState) {
         // Clean up PDC data before removing blocks
         CustomBlockData blockData = new CustomBlockData(targetBlock, OraxenPlugin.get());
-        blockData.remove(ShapedBlockMechanic.SHAPED_BLOCK_KEY);
+        ShapedBlockMechanic.removeItemId(blockData);
 
         // Restore original block state instead of just setting to AIR
         replacedState.update(true, false);
@@ -408,7 +448,7 @@ public class ShapedBlockMechanicListener implements Listener {
         if (mechanic.getBlockType() == ShapedBlockType.DOOR) {
             Block upperBlock = targetBlock.getRelative(BlockFace.UP);
             CustomBlockData upperBlockData = new CustomBlockData(upperBlock, OraxenPlugin.get());
-            upperBlockData.remove(ShapedBlockMechanic.SHAPED_BLOCK_KEY);
+            ShapedBlockMechanic.removeItemId(upperBlockData);
             // Upper block was always air/replaceable before door placement
             upperBlock.setType(Material.AIR);
         }
@@ -448,33 +488,13 @@ public class ShapedBlockMechanicListener implements Listener {
         }
 
         event.setDropItems(false);
-        handleBlockDrops(block, player, mechanic);
+        if (!OraxenBlocks.remove(block.getLocation(), player)) {
+            event.setCancelled(true);
+            return;
+        }
+
         playBreakSound(block, mechanic);
-        cleanupBlockOnBreak(block, mechanic);
         schedulePostBreakUpdates(block, mechanic);
-    }
-
-    private void handleBlockDrops(Block block, Player player, ShapedBlockMechanic mechanic) {
-        if (player.getGameMode() == GameMode.CREATIVE) return;
-
-        Drop drop = mechanic.getDrop();
-        if (drop == null) return;
-
-        int dropCount = getDropCount(block, mechanic);
-        ItemStack tool = player.getInventory().getItemInMainHand();
-        for (int i = 0; i < dropCount; i++) {
-            drop.spawns(block.getLocation(), tool);
-        }
-    }
-
-    private int getDropCount(Block block, ShapedBlockMechanic mechanic) {
-        if (mechanic.getBlockType() != ShapedBlockType.SLAB) return 1;
-
-        BlockData data = block.getBlockData();
-        if (data instanceof Slab slab && slab.getType() == Slab.Type.DOUBLE) {
-            return 2;
-        }
-        return 1;
     }
 
     private void playBreakSound(Block block, ShapedBlockMechanic mechanic) {
@@ -486,50 +506,10 @@ public class ShapedBlockMechanicListener implements Listener {
         }
     }
 
-    private void cleanupBlockOnBreak(Block block, ShapedBlockMechanic mechanic) {
-        removeBlockLight(block, mechanic);
-        clearCustomBlockData(block);
-        cleanupDoorOtherHalfIfNeeded(block, mechanic);
-    }
-
-    private void removeBlockLight(Block block, ShapedBlockMechanic mechanic) {
-        if (mechanic.hasLight()) {
-            mechanic.getLight().removeBlockLight(block);
-        }
-    }
-
-    private void clearCustomBlockData(Block block) {
-        CustomBlockData blockData = new CustomBlockData(block, OraxenPlugin.get());
-        blockData.remove(ShapedBlockMechanic.SHAPED_BLOCK_KEY);
-    }
-
-    private void cleanupDoorOtherHalfIfNeeded(Block block, ShapedBlockMechanic mechanic) {
-        if (mechanic.getBlockType() == ShapedBlockType.DOOR) {
-            cleanupDoorOtherHalf(block, mechanic);
-        }
-    }
-
-    private void cleanupDoorOtherHalf(Block block, ShapedBlockMechanic mechanic) {
-        BlockData data = block.getBlockData();
-        if (!(data instanceof org.bukkit.block.data.type.Door door)) return;
-
-        Block otherHalf = door.getHalf() == org.bukkit.block.data.Bisected.Half.BOTTOM
-            ? block.getRelative(BlockFace.UP)
-            : block.getRelative(BlockFace.DOWN);
-
-        if (mechanic.hasLight()) {
-            mechanic.getLight().removeBlockLight(otherHalf);
-        }
-
-        CustomBlockData otherBlockData = new CustomBlockData(otherHalf, OraxenPlugin.get());
-        otherBlockData.remove(ShapedBlockMechanic.SHAPED_BLOCK_KEY);
-    }
-
     private void schedulePostBreakUpdates(Block block, ShapedBlockMechanic mechanic) {
         if (mechanic.getBlockType() != ShapedBlockType.STAIR) return;
 
-        Block blockRef = block;
-        SchedulerUtil.runTaskLater(1L, () -> updateAdjacentStairShapes(blockRef));
+        SchedulerUtil.runAtLocationLater(block.getLocation(), 1L, () -> updateAdjacentStairShapes(block));
     }
 
     // ==================== HELPER METHODS ====================
@@ -538,7 +518,7 @@ public class ShapedBlockMechanicListener implements Listener {
                                         ShapedBlockMechanic shapedMechanic, Block clickedBlock,
                                         BlockFace face, Block targetBlock) {
         // Check if clicking on existing slab of same type to make double slab
-        if (clickedBlock.getType() == shapedMechanic.getPlacedMaterial()) {
+        if (clickedBlock.getType() == shapedMechanic.getPlacedMaterial() && getMechanicFromBlock(clickedBlock) == shapedMechanic) {
             BlockData data = clickedBlock.getBlockData();
             if (data instanceof Slab slab) {
                 if (slab.getType() != Slab.Type.DOUBLE) {
@@ -686,7 +666,7 @@ public class ShapedBlockMechanicListener implements Listener {
 
     private void markAsCustomBlock(Block block, ShapedBlockMechanic mechanic) {
         CustomBlockData blockData = new CustomBlockData(block, OraxenPlugin.get());
-        blockData.set(ShapedBlockMechanic.SHAPED_BLOCK_KEY, PersistentDataType.STRING, mechanic.getItemID());
+        ShapedBlockMechanic.setItemId(blockData, mechanic.getItemID());
     }
 
     // ==================== STAIR SHAPE CALCULATION ====================
@@ -756,8 +736,10 @@ public class ShapedBlockMechanicListener implements Listener {
             if (isPerpendicularTo(facing, frontFacing) && canTakeShape(block, stairs, frontFacing.getOppositeFace())) {
                 if (frontFacing == rotateCounterClockwise(facing)) {
                     return org.bukkit.block.data.type.Stairs.Shape.OUTER_LEFT;
-                } else {
+                } else if (frontFacing == rotateClockwise(facing)) {
                     return org.bukkit.block.data.type.Stairs.Shape.OUTER_RIGHT;
+                } else {
+                    return org.bukkit.block.data.type.Stairs.Shape.STRAIGHT;
                 }
             }
         }
@@ -772,8 +754,10 @@ public class ShapedBlockMechanicListener implements Listener {
             if (isPerpendicularTo(facing, backFacing) && canTakeShape(block, stairs, backFacing)) {
                 if (backFacing == rotateCounterClockwise(facing)) {
                     return org.bukkit.block.data.type.Stairs.Shape.INNER_LEFT;
-                } else {
+                } else if (backFacing == rotateClockwise(facing)) {
                     return org.bukkit.block.data.type.Stairs.Shape.INNER_RIGHT;
+                } else {
+                    return org.bukkit.block.data.type.Stairs.Shape.STRAIGHT;
                 }
             }
         }
@@ -931,20 +915,6 @@ public class ShapedBlockMechanicListener implements Listener {
      * Get the mechanic for a placed shaped block.
      */
     public ShapedBlockMechanic getMechanicFromBlock(Block block) {
-        Material material = block.getType();
-
-        // First check if it's a registered shaped block material
-        if (!factory.isCustomShapedBlock(material)) return null;
-
-        // Check if it has our custom marker
-        CustomBlockData blockData = new CustomBlockData(block, OraxenPlugin.get());
-        String itemId = blockData.get(ShapedBlockMechanic.SHAPED_BLOCK_KEY, PersistentDataType.STRING);
-        if (itemId == null) return null;
-
-        Mechanic mechanic = factory.getMechanic(itemId);
-        if (mechanic instanceof ShapedBlockMechanic shapedMechanic) {
-            return shapedMechanic;
-        }
-        return null;
+        return factory.getMechanicFromBlock(block);
     }
 }
