@@ -55,7 +55,7 @@ public class CommandsManager {
                         (new TextEffectCommand()).getTextEffectCommand(),
                         (new TextEffectCommand()).getTextEffectsListCommand())
                 .executes((sender, args) -> {
-                    openInventory(sender);
+                    openInventoryOrHelp(sender);
                 })
                 .register();
     }
@@ -108,6 +108,24 @@ public class CommandsManager {
         }
 
         OraxenPlugin.get().getInvManager().getItemsView(player).open(player);
+    }
+
+    private void openInventoryOrHelp(final CommandSender sender) {
+        if (sender instanceof final Player player && player.hasPermission(INVENTORY_VIEW_PERMISSION)) {
+            OraxenPlugin.get().getInvManager().getItemsView(player).open(player);
+            return;
+        }
+
+        sendRootHelp(sender);
+    }
+
+    private void sendRootHelp(final CommandSender sender) {
+        sender.sendMessage("Oraxen commands");
+        sender.sendMessage("/oraxen inventory - Open the item browser");
+        sender.sendMessage("/oraxen give <player> <item> [amount] - Give an Oraxen item");
+        sender.sendMessage("/oraxen pack <send|msg|extract_default> - Manage the resource pack");
+        sender.sendMessage("/oraxen reload - Reload Oraxen");
+        sender.sendMessage("/oraxen version - Show version information");
     }
 
     @SuppressWarnings("unchecked")
