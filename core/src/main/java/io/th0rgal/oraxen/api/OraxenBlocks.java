@@ -538,6 +538,12 @@ public class OraxenBlocks {
         Block otherHalf = door.getHalf() == org.bukkit.block.data.Bisected.Half.BOTTOM
                 ? block.getRelative(BlockFace.UP)
                 : block.getRelative(BlockFace.DOWN);
+        if (!(otherHalf.getBlockData() instanceof org.bukkit.block.data.type.Door otherDoor)) return;
+        if (otherDoor.getHalf() == door.getHalf()) return;
+
+        ShapedBlockMechanic otherMechanic = getShapedMechanic(otherHalf);
+        if (otherMechanic == null || !otherMechanic.getItemID().equals(mechanic.getItemID())) return;
+
         if (mechanic.hasLight()) mechanic.getLight().removeBlockLight(otherHalf);
         clearShapedBlockData(otherHalf);
         otherHalf.setType(Material.AIR);
