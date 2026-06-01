@@ -516,7 +516,7 @@ public class OraxenBlocks {
             }
         }
 
-        if (mechanic.hasLight()) mechanic.getLight().removeBlockLight(block);
+        removeLight(block, mechanic.getItemID());
         clearShapedBlockData(block);
         clearShapedDoorHalf(block, mechanic);
         block.setType(Material.AIR);
@@ -544,7 +544,7 @@ public class OraxenBlocks {
         ShapedBlockMechanic otherMechanic = getShapedMechanic(otherHalf);
         if (otherMechanic == null || !otherMechanic.getItemID().equals(mechanic.getItemID())) return;
 
-        if (mechanic.hasLight()) mechanic.getLight().removeBlockLight(otherHalf);
+        removeLight(otherHalf, mechanic.getItemID());
         clearShapedBlockData(otherHalf);
         otherHalf.setType(Material.AIR);
     }
