@@ -9,7 +9,6 @@ import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.utils.BlockHelpers;
 import io.th0rgal.oraxen.utils.SchedulerUtil;
 import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
-import io.th0rgal.oraxen.utils.drops.Drop;
 import io.th0rgal.oraxen.utils.breaker.BreakerSystem;
 import io.th0rgal.oraxen.utils.breaker.HardnessModifier;
 import io.th0rgal.oraxen.utils.logs.Logs;
@@ -489,33 +488,13 @@ public class ShapedBlockMechanicListener implements Listener {
         }
 
         event.setDropItems(false);
-        handleBlockDrops(block, player, mechanic);
+        if (!OraxenBlocks.remove(block.getLocation(), player)) {
+            event.setCancelled(true);
+            return;
+        }
+
         playBreakSound(block, mechanic);
-        cleanupBlockOnBreak(block, mechanic);
         schedulePostBreakUpdates(block, mechanic);
-    }
-
-    private void handleBlockDrops(Block block, Player player, ShapedBlockMechanic mechanic) {
-        if (player.getGameMode() == GameMode.CREATIVE) return;
-
-        ItemStack tool = player.getInventory().getItemInMainHand();
-        Drop drop = mechanic.getDrop(tool);
-        if (drop == null) return;
-
-        int dropCount = getDropCount(block, mechanic);
-        for (int i = 0; i < dropCount; i++) {
-            drop.spawns(block.getLocation(), tool);
-        }
-    }
-
-    private int getDropCount(Block block, ShapedBlockMechanic mechanic) {
-        if (mechanic.getBlockType() != ShapedBlockType.SLAB) return 1;
-
-        BlockData data = block.getBlockData();
-        if (data instanceof Slab slab && slab.getType() == Slab.Type.DOUBLE) {
-            return 2;
-        }
-        return 1;
     }
 
     private void playBreakSound(Block block, ShapedBlockMechanic mechanic) {
@@ -525,45 +504,6 @@ public class ShapedBlockMechanicListener implements Listener {
         if (sounds.hasBreakSound()) {
             BlockHelpers.playCustomBlockSound(block.getLocation(), sounds.getBreakSound(), sounds.getBreakVolume(), sounds.getBreakPitch());
         }
-    }
-
-    private void cleanupBlockOnBreak(Block block, ShapedBlockMechanic mechanic) {
-        removeBlockLight(block, mechanic);
-        clearCustomBlockData(block);
-        cleanupDoorOtherHalfIfNeeded(block, mechanic);
-    }
-
-    private void removeBlockLight(Block block, ShapedBlockMechanic mechanic) {
-        if (mechanic.hasLight()) {
-            mechanic.getLight().removeBlockLight(block);
-        }
-    }
-
-    private void clearCustomBlockData(Block block) {
-        CustomBlockData blockData = new CustomBlockData(block, OraxenPlugin.get());
-        ShapedBlockMechanic.removeItemId(blockData);
-    }
-
-    private void cleanupDoorOtherHalfIfNeeded(Block block, ShapedBlockMechanic mechanic) {
-        if (mechanic.getBlockType() == ShapedBlockType.DOOR) {
-            cleanupDoorOtherHalf(block, mechanic);
-        }
-    }
-
-    private void cleanupDoorOtherHalf(Block block, ShapedBlockMechanic mechanic) {
-        BlockData data = block.getBlockData();
-        if (!(data instanceof org.bukkit.block.data.type.Door door)) return;
-
-        Block otherHalf = door.getHalf() == org.bukkit.block.data.Bisected.Half.BOTTOM
-            ? block.getRelative(BlockFace.UP)
-            : block.getRelative(BlockFace.DOWN);
-
-        if (mechanic.hasLight()) {
-            mechanic.getLight().removeBlockLight(otherHalf);
-        }
-
-        CustomBlockData otherBlockData = new CustomBlockData(otherHalf, OraxenPlugin.get());
-        ShapedBlockMechanic.removeItemId(otherBlockData);
     }
 
     private void schedulePostBreakUpdates(Block block, ShapedBlockMechanic mechanic) {
