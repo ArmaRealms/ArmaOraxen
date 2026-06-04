@@ -9,7 +9,7 @@ import io.th0rgal.oraxen.mechanics.provided.gameplay.limitedplacing.LimitedPlaci
 import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.directional.DirectionalBlock;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.storage.StorageMechanic;
 import io.th0rgal.oraxen.utils.*;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.apache.commons.lang3.Range;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -209,7 +209,7 @@ public class NoteBlockMechanicListener implements Listener {
         Player player = event.getPlayer();
         Block block = event.getBlock();
         NoteBlockMechanic mechanic = event.getMechanic();
-        if (!ProtectionLib.canInteract(player, block.getLocation())) return;
+        if (!AntiGriefLib.canInteract(player, block.getLocation())) return;
 
         if (!player.isSneaking()) {
             if (mechanic.hasClickActions()) {
@@ -474,7 +474,7 @@ public class NoteBlockMechanicListener implements Listener {
 
             if (againstMechanic != null && (againstMechanic.isStorage() || againstMechanic.hasClickActions() || againstMechanic.hasBlockEvents()))
                 blockPlaceEvent.setCancelled(true);
-            if (BlockHelpers.isStandingInside(player, target) || !ProtectionLib.canBuild(player, target.getLocation()))
+            if (BlockHelpers.isStandingInside(player, target) || !AntiGriefLib.canBuild(player, target.getLocation()))
                 blockPlaceEvent.setCancelled(true);
             if (!Range.between(target.getWorld().getMinHeight(), target.getWorld().getMaxHeight() - 1).contains(target.getY()))
                 blockPlaceEvent.setCancelled(true);

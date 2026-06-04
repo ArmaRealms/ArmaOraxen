@@ -6,7 +6,7 @@ import io.th0rgal.oraxen.mechanics.provided.gameplay.chorusblock.ChorusBlockMech
 import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.NoteBlockMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.shaped.ShapedBlockMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.stringblock.StringBlockMechanic;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -31,7 +31,7 @@ public class BlockMechanicListener implements Listener {
         if (mechanic == null) return;
 
         Player player = event.getPlayer();
-        if (!ProtectionLib.canInteract(player, block.getLocation())) return;
+        if (!AntiGriefLib.canInteract(player, block.getLocation())) return;
 
         runBlockEvents(mechanic, player, action);
     }

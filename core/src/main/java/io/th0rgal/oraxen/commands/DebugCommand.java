@@ -6,7 +6,7 @@ import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.config.ConfigsManager;
 import io.th0rgal.oraxen.config.Message;
 import io.th0rgal.oraxen.utils.AdventureUtils;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.IOException;
@@ -25,7 +25,7 @@ public class DebugCommand {
                     try {
                         settings.save(configsManager.getSettingsFile());
                         String state = (debugState ? "enabled" : "disabled");
-                        ProtectionLib.setDebug(debugState);
+                        AntiGriefLib.setDebug(debugState);
                         Message.DEBUG_TOGGLE.send(sender, AdventureUtils.tagResolver("state", state));
                     } catch (IOException e) {
                         e.printStackTrace();

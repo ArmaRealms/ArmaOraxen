@@ -151,8 +151,8 @@ compileOnly 'io.th0rgal:oraxen:VERSION'
             <artifactId>PlayerAnimator</artifactId>
         </exclusion>
         <exclusion>
-            <groupId>io.th0rgal</groupId>
-            <artifactId>protectionlib</artifactId>
+            <groupId>net.momirealms</groupId>
+            <artifactId>antigrieflib</artifactId>
         </exclusion>
         <exclusion>
             <groupId>dev.triumphteam</groupId>

@@ -20,7 +20,7 @@ import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
 import io.th0rgal.oraxen.utils.drops.Drop;
 import io.th0rgal.oraxen.utils.wrappers.EnchantmentWrapper;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -156,7 +156,7 @@ public abstract class BreakerSystem {
                             valueHolder[0]);
 
                     if (valueHolder[0]++ < 10) return;
-                    if (EventUtils.callEvent(new BlockBreakEvent(block, player)) && ProtectionLib.canBreak(player, location)) {
+                    if (EventUtils.callEvent(new BlockBreakEvent(block, player)) && AntiGriefLib.canBreak(player, location)) {
                         // Damage item with properties identified earlier
                         ItemUtils.damageItem(player, drop, item);
                         modifier.breakBlock(player, block, item);
@@ -178,7 +178,7 @@ public abstract class BreakerSystem {
 
             // Use entity scheduler for player operations on Folia (player may move to different region)
             SchedulerUtil.runForEntity(player, () -> {
-                if (!ProtectionLib.canBreak(player, location))
+                if (!AntiGriefLib.canBreak(player, location))
                     player.sendBlockChange(location, block.getBlockData());
             });
 

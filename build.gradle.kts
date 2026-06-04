@@ -97,9 +97,11 @@ allprojects {
         }
         maven("https://repo.oraxen.com/releases") {
             content {
-                includeGroup("io.th0rgal") // protectionlib
                 includeGroup("md.thomas.hopper") // hopper
             }
+        }
+        maven("https://repo.momirealms.net/releases/") {
+            content { includeGroup("net.momirealms") } // AntiGriefLib
         }
         maven("https://repo.oraxen.com/snapshots") {
             content {
@@ -112,7 +114,8 @@ allprojects {
         }
         maven("https://maven.enginehub.org/repo/") {
             content {
-                includeGroupAndSubgroups("com.sk89q.worldedit") // world edit
+                includeGroupAndSubgroups("com.sk89q.worldedit") // WorldEdit
+                includeGroupAndSubgroups("com.sk89q.worldguard") // WorldGuard
                 includeGroupAndSubgroups("org.enginehub") // WorldEdit transitive dependencies (lin-bus-bom, etc)
             }
         }

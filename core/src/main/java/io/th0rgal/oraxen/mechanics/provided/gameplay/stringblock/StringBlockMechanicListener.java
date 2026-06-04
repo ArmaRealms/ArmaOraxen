@@ -9,7 +9,7 @@ import io.th0rgal.oraxen.api.events.stringblock.OraxenStringBlockPlaceEvent;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.limitedplacing.LimitedPlacing;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.storage.StorageMechanic;
 import io.th0rgal.oraxen.utils.*;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.apache.commons.lang3.Range;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -667,7 +667,7 @@ public class StringBlockMechanicListener implements Listener {
             else
                 blockAbove.setType(Material.TRIPWIRE);
         }
-        if (!ProtectionLib.canBuild(player, target.getLocation()))
+        if (!AntiGriefLib.canBuild(player, target.getLocation()))
             blockPlaceEvent.setCancelled(true);
         // if (player.getGameMode() == GameMode.ADVENTURE)
         // blockPlaceEvent.setCancelled(true);

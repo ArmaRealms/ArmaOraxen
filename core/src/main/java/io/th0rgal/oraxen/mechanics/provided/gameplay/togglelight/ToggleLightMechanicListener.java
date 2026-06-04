@@ -7,7 +7,7 @@ import io.th0rgal.oraxen.api.events.stringblock.OraxenStringBlockInteractEvent;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.NoteBlockMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.stringblock.StringBlockMechanic;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -30,7 +30,7 @@ public class ToggleLightMechanicListener implements Listener {
         Entity baseEntity = event.getBaseEntity();
 
         if (baseEntity == null) return;
-        if (!ProtectionLib.canInteract(player, block != null ? block.getLocation() : baseEntity.getLocation())) return;
+        if (!AntiGriefLib.canInteract(player, block != null ? block.getLocation() : baseEntity.getLocation())) return;
 
         // For furniture with barriers, toggle based on base entity and update all barrier blocks
         if (furnitureMechanic.hasBarriers(baseEntity)) {
@@ -52,7 +52,7 @@ public class ToggleLightMechanicListener implements Listener {
         Player player = event.getPlayer();
         Block block = event.getBlock();
 
-        if (!ProtectionLib.canInteract(player, block.getLocation())) return;
+        if (!AntiGriefLib.canInteract(player, block.getLocation())) return;
 
         toggleLight.toggle(block);
     }
@@ -68,7 +68,7 @@ public class ToggleLightMechanicListener implements Listener {
         Player player = event.getPlayer();
         Block block = event.getBlock();
 
-        if (!ProtectionLib.canInteract(player, block.getLocation())) return;
+        if (!AntiGriefLib.canInteract(player, block.getLocation())) return;
 
         toggleLight.toggle(block);
     }

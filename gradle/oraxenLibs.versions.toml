@@ -36,9 +36,10 @@ mythic-crucible = { module = "io.lumine:MythicCrucible-API", version = "2.2.0-SN
 mmoitems = { module = "net.Indyuce:MMOItems-API", version = "6.9.5-SNAPSHOT" }
 mythic-lib-dist = { module = "io.lumine:MythicLib-dist", version = "1.7.1-SNAPSHOT" }
 
-# WorldEdit https://worldedit.enginehub.org/en/latest/api/
+# WorldEdit / WorldGuard https://worldedit.enginehub.org/en/latest/api/
 # Repo: https://maven.enginehub.org/repo/
 worldedit-bukkit = { module = "com.sk89q.worldedit:worldedit-bukkit", version = "7.4.0-SNAPSHOT" }
+worldguard-bukkit = { module = "com.sk89q.worldguard:worldguard-bukkit", version = "7.0.17" }
 
 # ModelEngine https://git.lumine.io/mythiccraft/model-engine-4/-/wikis/API
 # Repo: https://mvn.lumine.io/repository/maven-public/
@@ -121,9 +122,9 @@ creative = { module = "team.unnamed:creative-api", version = "1.7.3" }
 # JSON
 javax-json = { module = "org.glassfish:javax.json", version = "1.1.4" }
 
-# ProtectionLib
-# Repo: https://repo.oraxen.com/releases/
-protectionlib = { module = "io.th0rgal:protectionlib", version = "1.8.1" }
+# AntiGriefLib
+# Repo: https://repo.momirealms.net/releases/
+antigrieflib = { module = "net.momirealms:antigrieflib", version = "1.0.11" }
 
 # Repo: Maven Central
 # https://github.com/mfnalex/CustomBlockData
@@ -165,7 +166,7 @@ libraries-shade = [
     "annotations",
     "triumph-gui",
     "javax-json",
-    "protectionlib",
+    "antigrieflib",
     "custom-block-data",
     "more-persistent-data-types",
     "persistent-data-serializer",
@@ -183,6 +184,7 @@ plugins = [
     "protocol-lib",     # ProtocolLib
     "placeholderapi",   # PlaceholderAPI
     "worldedit-bukkit", # WorldEdit
+    "worldguard-bukkit", # WorldGuard
     "eco",
     "libreforge",
     "ecoitems",         # EcoÍtems
