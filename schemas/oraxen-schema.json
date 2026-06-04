@@ -1,8 +1,8 @@
 {
-  "oraxenVersion": "1.215.0",
+  "oraxenVersion": "1.216.0",
   "minecraftVersion": "1.21.11",
   "serverVersion": "1.21.11-R0.1-SNAPSHOT",
-  "generatedAt": "2026-06-01T20:39:35.037574761Z",
+  "generatedAt": "2026-06-04T15:07:55.228689616Z",
   "enums": {
     "Material": {
       "values": [
@@ -7786,16 +7786,16 @@
           "type": "object",
           "description": "Custom hitbox dimensions",
           "properties": {
-            "width": {
+            "height": {
               "type": "number",
-              "description": "Hitbox width",
+              "description": "Hitbox height",
               "default": 1.0,
               "min": 0.0,
               "max": 10.0
             },
-            "height": {
+            "width": {
               "type": "number",
-              "description": "Hitbox height",
+              "description": "Hitbox width",
               "default": 1.0,
               "min": 0.0,
               "max": 10.0
@@ -7830,26 +7830,6 @@
           "type": "object",
           "description": "Display entity configuration",
           "properties": {
-            "brightness": {
-              "type": "object",
-              "description": "Light levels",
-              "properties": {
-                "sky": {
-                  "type": "integer",
-                  "description": "Sky light level",
-                  "default": 0,
-                  "min": 0,
-                  "max": 15
-                },
-                "block": {
-                  "type": "integer",
-                  "description": "Block light level",
-                  "default": 0,
-                  "min": 0,
-                  "max": 15
-                }
-              }
-            },
             "display_transform": {
               "type": "string",
               "description": "Display transform mode",
@@ -7869,11 +7849,6 @@
               "type": "object",
               "description": "Position offset in blocks",
               "properties": {
-                "z": {
-                  "type": "number",
-                  "description": "Z-axis offset",
-                  "default": 0.0
-                },
                 "x": {
                   "type": "number",
                   "description": "X-axis offset",
@@ -7883,6 +7858,11 @@
                   "type": "number",
                   "description": "Y-axis offset",
                   "default": 0.0
+                },
+                "z": {
+                  "type": "number",
+                  "description": "Z-axis offset",
+                  "default": 0.0
                 }
               }
             },
@@ -7890,11 +7870,6 @@
               "type": "object",
               "description": "Scale of the display entity",
               "properties": {
-                "z": {
-                  "type": "number",
-                  "description": "Z-axis scale",
-                  "default": 1.0
-                },
                 "x": {
                   "type": "number",
                   "description": "X-axis scale",
@@ -7904,6 +7879,31 @@
                   "type": "number",
                   "description": "Y-axis scale",
                   "default": 1.0
+                },
+                "z": {
+                  "type": "number",
+                  "description": "Z-axis scale",
+                  "default": 1.0
+                }
+              }
+            },
+            "brightness": {
+              "type": "object",
+              "description": "Light levels",
+              "properties": {
+                "block": {
+                  "type": "integer",
+                  "description": "Block light level",
+                  "default": 0,
+                  "min": 0,
+                  "max": 15
+                },
+                "sky": {
+                  "type": "integer",
+                  "description": "Sky light level",
+                  "default": 0,
+                  "min": 0,
+                  "max": 15
                 }
               }
             }
@@ -7913,36 +7913,10 @@
           "type": "object",
           "description": "Armor stand-specific display configuration",
           "properties": {
-            "scale": {
-              "type": "object",
-              "description": "Scale to inject into generated model display.head",
-              "properties": {
-                "z": {
-                  "type": "number",
-                  "description": "Z-axis scale",
-                  "default": 1.0
-                },
-                "x": {
-                  "type": "number",
-                  "description": "X-axis scale",
-                  "default": 1.0
-                },
-                "y": {
-                  "type": "number",
-                  "description": "Y-axis scale",
-                  "default": 1.0
-                }
-              }
-            },
             "translation": {
               "type": "object",
               "description": "Position offset for armor stand furniture",
               "properties": {
-                "z": {
-                  "type": "number",
-                  "description": "Z-axis offset",
-                  "default": 0.0
-                },
                 "x": {
                   "type": "number",
                   "description": "X-axis offset",
@@ -7952,6 +7926,32 @@
                   "type": "number",
                   "description": "Y-axis offset",
                   "default": 0.0
+                },
+                "z": {
+                  "type": "number",
+                  "description": "Z-axis offset",
+                  "default": 0.0
+                }
+              }
+            },
+            "scale": {
+              "type": "object",
+              "description": "Scale to inject into generated model display.head",
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "description": "X-axis scale",
+                  "default": 1.0
+                },
+                "y": {
+                  "type": "number",
+                  "description": "Y-axis scale",
+                  "default": 1.0
+                },
+                "z": {
+                  "type": "number",
+                  "description": "Z-axis scale",
+                  "default": 1.0
                 }
               }
             }
@@ -7961,14 +7961,14 @@
           "type": "object",
           "description": "Drop configuration when broken",
           "properties": {
+            "loots": {
+              "type": "array",
+              "description": "List of loot entries"
+            },
             "silktouch": {
               "type": "boolean",
               "description": "Require silk touch to drop",
               "default": false
-            },
-            "loots": {
-              "type": "array",
-              "description": "List of loot entries"
             }
           }
         },
@@ -7976,13 +7976,6 @@
           "type": "object",
           "description": "Storage container configuration",
           "properties": {
-            "rows": {
-              "type": "integer",
-              "description": "Number of inventory rows",
-              "default": 1,
-              "min": 1,
-              "max": 6
-            },
             "type": {
               "type": "string",
               "description": "Storage type",
@@ -7996,6 +7989,13 @@
             "title": {
               "type": "string",
               "description": "Inventory title"
+            },
+            "rows": {
+              "type": "integer",
+              "description": "Number of inventory rows",
+              "default": 1,
+              "min": 1,
+              "max": 6
             }
           }
         }
@@ -8059,6 +8059,16 @@
           "type": "object",
           "description": "Placement face and block restrictions",
           "properties": {
+            "roof": {
+              "type": "boolean",
+              "description": "Allow placement on ceilings",
+              "default": true
+            },
+            "wall": {
+              "type": "boolean",
+              "description": "Allow placement on walls",
+              "default": true
+            },
             "allow": {
               "type": "array",
               "description": "Vanilla block IDs this block may be placed against"
@@ -8070,16 +8080,6 @@
             "floor": {
               "type": "boolean",
               "description": "Allow placement on floors",
-              "default": true
-            },
-            "roof": {
-              "type": "boolean",
-              "description": "Allow placement on ceilings",
-              "default": true
-            },
-            "wall": {
-              "type": "boolean",
-              "description": "Allow placement on walls",
               "default": true
             }
           }
