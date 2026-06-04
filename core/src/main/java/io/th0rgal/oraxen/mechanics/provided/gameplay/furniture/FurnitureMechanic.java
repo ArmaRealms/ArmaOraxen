@@ -75,7 +75,6 @@ public class FurnitureMechanic extends Mechanic {
     public final boolean farmblockRequired;
     private final List<BlockLocation> barriers;
     private final boolean hasSeat;
-    private boolean hasSeatYaw;
     private final List<FurnitureSeat> seats;
     private final Drop drop;
     private final EvolvingFurniture evolvingFurniture;
@@ -86,7 +85,6 @@ public class FurnitureMechanic extends Mechanic {
     private final String modelEngineID;
     private final String placedItemId;
     private float seatHeight;
-    private float seatYaw;
     private final List<ClickAction> clickActions;
     private FurnitureType furnitureType;
     private final DisplayEntityProperties displayEntityProperties;
@@ -113,10 +111,18 @@ public class FurnitureMechanic extends Mechanic {
     public record FurnitureLight(BlockLocation offset, int lightLevel) {
     }
 
-    public record FurnitureSeat(double offsetX, double offsetY, double offsetZ) {
+    public record FurnitureSeat(double offsetX, double offsetY, double offsetZ, @Nullable Float yaw) {
+
+        public FurnitureSeat(double offsetX, double offsetY, double offsetZ) {
+            this(offsetX, offsetY, offsetZ, null);
+        }
 
         public Vector offset() {
             return new Vector(offsetX, offsetY, offsetZ);
+        }
+
+        public float yaw(float fallbackYaw) {
+            return yaw != null ? yaw : fallbackYaw;
         }
     }
 
@@ -339,21 +345,27 @@ public class FurnitureMechanic extends Mechanic {
         if (seatSection == null) return List.of();
 
         seatHeight = (float) seatSection.getDouble("height");
-        hasSeatYaw = seatSection.contains("yaw");
-        if (hasSeatYaw) seatYaw = (float) seatSection.getDouble("yaw");
-        return List.of(new FurnitureSeat(0, seatHeight - 1, 0));
+        boolean hasSeatYaw = seatSection.contains("yaw");
+        Float yaw = hasSeatYaw ? (float) seatSection.getDouble("yaw") : null;
+        return List.of(new FurnitureSeat(0, seatHeight - 1, 0, yaw));
     }
 
     @Nullable
     private FurnitureSeat parseSeat(Object seatObject) {
         if (!(seatObject instanceof String string)) {
-            Logs.logError("Invalid seat entry for furniture: " + getItemID() + ". Expected '<x>,<y>,<z>'.");
+            Logs.logError("Invalid seat entry for furniture: " + getItemID() + ". Expected '<x>,<y>,<z>' or '<x>,<y>,<z> <yaw>'.");
             return null;
         }
 
-        String[] offsetParts = string.trim().split("\\s*,\\s*");
+        String[] parts = string.trim().replaceAll("\\s*,\\s*", ",").split("\\s+");
+        if (parts.length < 1 || parts.length > 2) {
+            Logs.logError("Invalid seat entry '" + string + "' for furniture: " + getItemID() + ". Expected '<x>,<y>,<z>' or '<x>,<y>,<z> <yaw>'.");
+            return null;
+        }
+
+        String[] offsetParts = parts[0].split(",");
         if (offsetParts.length != 3) {
-            Logs.logError("Invalid seat entry '" + string + "' for furniture: " + getItemID() + ". Expected '<x>,<y>,<z>'.");
+            Logs.logError("Invalid seat entry '" + string + "' for furniture: " + getItemID() + ". Expected '<x>,<y>,<z>' or '<x>,<y>,<z> <yaw>'.");
             return null;
         }
 
@@ -361,9 +373,10 @@ public class FurnitureMechanic extends Mechanic {
             double offsetX = Double.parseDouble(offsetParts[0]);
             double offsetY = Double.parseDouble(offsetParts[1]);
             double offsetZ = Double.parseDouble(offsetParts[2]);
-            return new FurnitureSeat(offsetX, offsetY, offsetZ);
+            Float yaw = parts.length == 2 ? Float.parseFloat(parts[1]) : null;
+            return new FurnitureSeat(offsetX, offsetY, offsetZ, yaw);
         } catch (NumberFormatException exception) {
-            Logs.logError("Invalid seat entry '" + string + "' for furniture: " + getItemID() + ". Seat offsets must be numbers.");
+            Logs.logError("Invalid seat entry '" + string + "' for furniture: " + getItemID() + ". Seat offsets and yaw must be numbers.");
             return null;
         }
     }
@@ -1339,10 +1352,13 @@ public class FurnitureMechanic extends Mechanic {
     @Nullable
     private UUID spawnSeat(Location rootLocation, FurnitureSeat furnitureSeat, float yaw) {
         Vector rotatedOffset = rotateGroundOffset(furnitureSeat.offset(), yaw);
+        float rotationYaw = furnitureSeat.yaw(yaw);
         Location seatLocation = BlockHelpers.toCenterBlockLocation(rootLocation).add(rotatedOffset);
+        seatLocation.setYaw(rotationYaw);
+        seatLocation.setPitch(0);
         final ArmorStand seat = EntityUtils.spawnEntity(seatLocation, ArmorStand.class, (ArmorStand stand) -> {
             stand.setVisible(false);
-            stand.setRotation(hasSeatYaw ? seatYaw : yaw, 0);
+            stand.setRotation(rotationYaw, 0);
             stand.setInvulnerable(true);
             stand.setPersistent(true);
             stand.setAI(false);
@@ -1609,12 +1625,14 @@ public class FurnitureMechanic extends Mechanic {
             Entity seatEntity = Bukkit.getEntity(seatUuids.get(i));
             if (!(seatEntity instanceof ArmorStand seat)) continue;
 
-            Vector rotatedOffset = rotateGroundOffset(seats.get(i).offset(), yaw);
+            FurnitureSeat furnitureSeat = seats.get(i);
+            Vector rotatedOffset = rotateGroundOffset(furnitureSeat.offset(), yaw);
+            float rotationYaw = furnitureSeat.yaw(yaw);
             Location seatLocation = BlockHelpers.toCenterBlockLocation(rootLocation).add(rotatedOffset);
-            seatLocation.setYaw(hasSeatYaw ? seatYaw : yaw);
+            seatLocation.setYaw(rotationYaw);
             seatLocation.setPitch(0);
             seat.teleport(seatLocation);
-            seat.setRotation(hasSeatYaw ? seatYaw : yaw, 0);
+            seat.setRotation(rotationYaw, 0);
         }
     }
 

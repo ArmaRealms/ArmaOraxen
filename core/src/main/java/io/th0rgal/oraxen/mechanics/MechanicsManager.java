@@ -3,6 +3,7 @@ package io.th0rgal.oraxen.mechanics;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.events.OraxenNativeMechanicsRegisteredEvent;
 import io.th0rgal.oraxen.compatibilities.CompatibilitiesManager;
+import io.th0rgal.oraxen.config.LegacyBlockMechanicMigration;
 import io.th0rgal.oraxen.config.MigrationBackups;
 import io.th0rgal.oraxen.mechanics.provided.combat.knockbackstrike.KnockbackStrikeMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.combat.bleeding.BleedingMechanicFactory;
@@ -165,28 +166,7 @@ public class MechanicsManager {
     }
 
     private static boolean migrateLegacyBlockFactory(final String mechanicId, final YamlConfiguration mechanicsConfig) {
-        if (!"block".equals(mechanicId) || OraxenYaml.getConfigurationSection(mechanicsConfig, "block") != null)
-            return false;
-
-        final List<String> legacyBlockMechanics = List.of("noteblock", "stringblock", "shaped_block");
-        if (legacyBlockMechanics.stream().noneMatch(legacyMechanic -> OraxenYaml.getConfigurationSection(mechanicsConfig, legacyMechanic) != null))
-            return false;
-
-        final ConfigurationSection blockSection = mechanicsConfig.createSection("block");
-        boolean enabled = false;
-        for (final String legacyMechanic : legacyBlockMechanics) {
-            final ConfigurationSection legacySection = OraxenYaml.getConfigurationSection(mechanicsConfig, legacyMechanic);
-            if (legacySection == null)
-                continue;
-
-            OraxenYaml.copyConfigurationSection(legacySection, blockSection);
-            enabled |= legacySection.getBoolean("enabled", false);
-            mechanicsConfig.set(legacyMechanic, null);
-        }
-        blockSection.set("enabled", enabled);
-        OraxenYaml.invalidateKeyCache(mechanicsConfig);
-        OraxenYaml.invalidateKeyCache(blockSection);
-        return true;
+        return "block".equals(mechanicId) && LegacyBlockMechanicMigration.migrate(mechanicsConfig);
     }
 
     private static void registerFactory(final String mechanicId, final FactoryConstructor constructor) {

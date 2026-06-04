@@ -142,6 +142,7 @@ public class ConfigsManager {
     public void validatesConfig() {
         ResourcesManager tempManager = new ResourcesManager(OraxenPlugin.get());
         mechanics = validate(tempManager, "mechanics.yml", defaultMechanics);
+        migrateLegacyBlockMechanics();
         settings = validate(tempManager, "settings.yml", defaultSettings);
         font = validate(tempManager, "font.yml", defaultFont);
         hud = validate(tempManager, "hud.yml", defaultHud);
@@ -181,6 +182,21 @@ public class ConfigsManager {
                 tempManager.extractConfigsInFolder("schematics", "schem");
         }
 
+    }
+
+    private void migrateLegacyBlockMechanics() {
+        File mechanicsFile = new File(plugin.getDataFolder(), "mechanics.yml");
+        if (!LegacyBlockMechanicMigration.migrate(mechanics))
+            return;
+
+        try {
+            MigrationBackups.moveToMigrated(plugin.getDataFolder(), mechanicsFile);
+            mechanics.save(mechanicsFile);
+            Logs.logSuccess("Migrated legacy block mechanics to the unified block mechanic");
+        } catch (IOException e) {
+            Logs.logError("Failed to save migrated mechanics.yml");
+            Logs.debug(e);
+        }
     }
 
     private void migrateLegacySoundFile() {
