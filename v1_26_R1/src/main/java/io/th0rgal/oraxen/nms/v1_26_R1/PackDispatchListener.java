@@ -6,6 +6,7 @@ import io.papermc.paper.event.connection.configuration.AsyncPlayerConnectionConf
 import io.papermc.paper.event.connection.configuration.PlayerConnectionReconfigureEvent;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.pack.dispatch.PackDispatchFilter;
 import io.th0rgal.oraxen.pack.dispatch.PackSender;
 import io.th0rgal.oraxen.pack.receive.PackReceiver;
 import io.th0rgal.oraxen.utils.AdventureUtils;
@@ -103,6 +104,8 @@ public final class PackDispatchListener implements Listener {
 
     @Nullable
     private static CompletableFuture<Void> sendResourcePack(PlayerConfigurationConnection connection) {
+        if (!PackDispatchFilter.canSendPackForConnection(connection)) return null;
+
         String packUrl = OraxenPlugin.get().getPackURL();
         String hash = OraxenPlugin.get().getPackSHA1();
         if (packUrl == null || hash == null) return null;

@@ -219,6 +219,7 @@ Pack:
     send_pre_join: false # Pre-join dispatch (Paper 1.21.7+). Takes priority over send_on_join when supported. Requires explicit opt-in.
     send_on_join: true # Join dispatch (after full join). Default mode for most servers.
     send_on_reload: true
+    stop: [] # Client versions that should not receive the pack. Supports '< 1.12', '= 1.21.11' and '> 1.21.11'.
     delay: -1
     mandatory: true
     disable_movement_on_load: true # If true, players will not be able to move while the pack is loading

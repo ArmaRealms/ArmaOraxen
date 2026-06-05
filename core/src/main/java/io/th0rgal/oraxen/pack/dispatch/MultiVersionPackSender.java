@@ -45,6 +45,8 @@ public class MultiVersionPackSender implements Listener {
      * @param player Player to send pack to
      */
     public void sendPack(Player player) {
+        if (!PackDispatchFilter.canSendPack(player)) return;
+
         // Detect player's client version
         Integer protocolVersion = PlayerVersionDetector.getPlayerProtocolVersion(player);
         PackVersion packVersion;

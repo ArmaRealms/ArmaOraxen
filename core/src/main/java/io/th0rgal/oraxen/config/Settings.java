@@ -144,6 +144,7 @@ public enum Settings {
     SEND_ON_JOIN("Pack.dispatch.send_on_join"),
     SEND_PACK("Pack.dispatch.send_pack"),
     SEND_ON_RELOAD("Pack.dispatch.send_on_reload"),
+    DISPATCH_STOP("Pack.dispatch.stop"),
     SEND_PACK_DELAY("Pack.dispatch.delay"),
     SEND_PACK_MANDATORY("Pack.dispatch.mandatory"),
     SEND_PACK_PROMPT("Pack.dispatch.prompt"),

@@ -31,6 +31,7 @@ public class BukkitPackSender extends PackSender implements Listener {
 
     @Override
     public void sendPack(Player player) {
+        if (!PackDispatchFilter.canSendPack(player)) return;
         sendResourcePack(player, hostingProvider.getPackUUID(), hostingProvider.getPackURL(),
                 hostingProvider.getSHA1(), prompt, mandatory);
     }
