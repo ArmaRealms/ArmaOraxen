@@ -25,7 +25,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.InputStream;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,6 +52,7 @@ public class ConfigsManager {
     private final JavaPlugin plugin;
     private final YamlConfiguration defaultMechanics;
     private final YamlConfiguration defaultSettings;
+    private final String defaultSettingsYaml;
     private final YamlConfiguration defaultFont;
     private final YamlConfiguration defaultSound;
     private final YamlConfiguration defaultPaintings;
@@ -72,7 +74,8 @@ public class ConfigsManager {
     public ConfigsManager(JavaPlugin plugin) {
         this.plugin = plugin;
         defaultMechanics = extractDefault("mechanics.yml");
-        defaultSettings = extractDefault("settings.yml");
+        defaultSettingsYaml = extractDefaultYaml("settings.yml");
+        defaultSettings = OraxenYaml.loadConfiguration(new StringReader(defaultSettingsYaml));
         defaultFont = extractDefault("font.yml");
         defaultSound = extractDefault("sounds.yml");
         defaultPaintings = extractDefault("paintings.yml");
@@ -126,16 +129,20 @@ public class ConfigsManager {
     }
 
     private YamlConfiguration extractDefault(String source) {
-        InputStreamReader inputStreamReader = new InputStreamReader(plugin.getResource(source));
-        try {
-            return OraxenYaml.loadConfiguration(inputStreamReader);
-        } finally {
-            try {
-                inputStreamReader.close();
-            } catch (IOException e) {
+        return OraxenYaml.loadConfiguration(new StringReader(extractDefaultYaml(source)));
+    }
+
+    private String extractDefaultYaml(String source) {
+        try (InputStream inputStream = plugin.getResource(source)) {
+            if (inputStream == null) {
                 Logs.logError("Failed to extract default file: " + source);
-                Logs.debug(e);
+                return "";
             }
+            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            Logs.logError("Failed to extract default file: " + source);
+            Logs.debug(e);
+            return "";
         }
     }
 
@@ -255,7 +262,7 @@ public class ConfigsManager {
                 updated = true;
                 Message.UPDATING_CONFIG.log(AdventureUtils.tagResolver("option", key));
                 if (configName.equals("settings.yml"))
-                    YamlCommentCopier.setWithComments(configuration, defaultConfiguration, key);
+                    YamlCommentCopier.setWithComments(configuration, defaultConfiguration, key, defaultSettingsYaml);
                 else
                     configuration.set(key, defaultConfiguration.get(key));
                 continue;
