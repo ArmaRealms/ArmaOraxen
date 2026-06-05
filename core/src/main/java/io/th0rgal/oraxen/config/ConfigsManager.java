@@ -254,7 +254,10 @@ public class ConfigsManager {
             if (currentValue == null) {
                 updated = true;
                 Message.UPDATING_CONFIG.log(AdventureUtils.tagResolver("option", key));
-                configuration.set(key, defaultConfiguration.get(key));
+                if (configName.equals("settings.yml"))
+                    YamlCommentCopier.setWithComments(configuration, defaultConfiguration, key);
+                else
+                    configuration.set(key, defaultConfiguration.get(key));
                 continue;
             }
             // Migrate language values that lost a required placeholder (e.g. older
