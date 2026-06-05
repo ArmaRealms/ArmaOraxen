@@ -40,9 +40,7 @@ public class CommandsManager {
                         (new DebugCommand()).getDebugCommand(),
                         (new ModelDataCommand()).getHighestModelDataCommand(),
                         (new GlyphCommand()).getGlyphCommand(),
-                        (new GlyphInfoCommand()).getGlyphInfoCommand(),
-                        (new ItemInfoCommand()).getItemInfoCommand(),
-                        (new BlockInfoCommand()).getBlockInfoCommand(),
+                        (new InfoCommand()).getInfoCommand(),
                         (new HudCommand()).getHudCommand(),
                         (new LogDumpCommand().getLogDumpCommand()),
                         (new VersionCommand()).getVersionCommand(),
@@ -124,6 +122,7 @@ public class CommandsManager {
         sender.sendMessage("/oraxen give <player> <item> [amount] - Give an Oraxen item");
         sender.sendMessage("/oraxen pack <send|msg|extract_default> - Manage the resource pack");
         sender.sendMessage("/oraxen reload - Reload Oraxen");
+        sender.sendMessage("/oraxen info <item|glyph|block> <id|all> - Show Oraxen info");
         sender.sendMessage("/oraxen version - Show version information");
     }
 
