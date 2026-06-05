@@ -4,6 +4,8 @@ import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.commands.arguments.OraxenArgument;
 import io.th0rgal.oraxen.config.Message;
 import io.th0rgal.oraxen.utils.AdventureUtils;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandMap;
@@ -318,7 +320,9 @@ public class OraxenCommand {
                 return true;
             }
             if (!result.executed()) {
-                sender.sendMessage("Usage: /" + commandLabel + " " + command.usage());
+                OraxenPlugin.get().getAudience().sender(sender).sendMessage(AdventureUtils.MINI_MESSAGE.deserialize("<prefix> <red>Wrong usage. Use ")
+                        .append(Component.text("/" + commandLabel + " " + command.usage(), NamedTextColor.RED))
+                        .append(AdventureUtils.MINI_MESSAGE.deserialize("<red>.")));
             }
             return true;
         }
