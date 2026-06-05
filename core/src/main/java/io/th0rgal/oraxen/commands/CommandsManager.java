@@ -24,6 +24,7 @@ import java.util.Optional;
 public class CommandsManager {
 
     private static final String INVENTORY_VIEW_PERMISSION = "oraxen.command.inventory.view";
+    private static final int MAX_GIVE_SLOTS = 36;
 
     public void loadCommands() {
         new OraxenCommand("oraxen")
@@ -126,6 +127,19 @@ public class CommandsManager {
         sender.sendMessage("/oraxen version - Show version information");
     }
 
+    private void sendInvalidGiveAmount(final CommandSender sender) {
+        Message.GIVE_INVALID_AMOUNT.send(sender);
+    }
+
+    static boolean isValidGiveAmount(final int amount) {
+        return amount > 0;
+    }
+
+    static int capGiveAmountToInventory(final int amount, final int maxStackSize) {
+        final int slots = amount / maxStackSize + (amount % maxStackSize > 0 ? 1 : 0);
+        return slots > MAX_GIVE_SLOTS ? maxStackSize * MAX_GIVE_SLOTS : amount;
+    }
+
     @SuppressWarnings("unchecked")
     private OraxenCommand getGiveCommand() {
         return new OraxenCommand("give")
@@ -137,16 +151,21 @@ public class CommandsManager {
                 .executes((sender, args) -> {
                     final Collection<Player> targets = (Collection<Player>) args.get(0);
                     final String itemID = (String) args.get(1);
+                    int amount = (int) args.get(2);
+                    if (!isValidGiveAmount(amount)) {
+                        sendInvalidGiveAmount(sender);
+                        return;
+                    }
+
                     final ItemBuilder itemBuilder = OraxenItems.getItemById(itemID);
                     if (itemBuilder == null) {
                         Message.ITEM_NOT_FOUND.send(sender, AdventureUtils.tagResolver("item", itemID));
                         return;
                     }
-                    int amount = (int) args.get(2);
                     final int max = itemBuilder.hasMaxStackSize() ? itemBuilder.getMaxStackSize()
                             : itemBuilder.getType().getMaxStackSize();
-                    final int slots = amount / max + (max % amount > 0 ? 1 : 0);
-                    final ItemStack[] items = itemBuilder.buildArray(slots > 36 ? (amount = max * 36) : amount);
+                    amount = capGiveAmountToInventory(amount, max);
+                    final ItemStack[] items = itemBuilder.buildArray(amount);
 
                     for (final Player target : targets) {
                         final Map<Integer, ItemStack> output = target.getInventory().addItem(items);

@@ -83,6 +83,7 @@ public enum Message {
 
     GIVE_PLAYER("command.give.player"),
     GIVE_PLAYERS("command.give.players"),
+    GIVE_INVALID_AMOUNT("command.give.invalid_amount"),
     TOTEM_ANIMATION_SUCCESS("command.totem_animation.success"),
 
     DYE_SUCCESS("command.dye.success"),
