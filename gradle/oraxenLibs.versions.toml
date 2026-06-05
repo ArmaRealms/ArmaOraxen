@@ -2,7 +2,6 @@
 # often changed version numbers
 adventure = "4.18.0"
 adventure-platform = "4.3.4"
-commandapi = "11.0.0"
 hopper = "1.4.2"
 
 actions = "1.0.0-SNAPSHOT"
@@ -103,10 +102,6 @@ mc-logs = { module = "gs.mclo:java", version = "2.2.1" }
 # No clue where its used in the code tho??
 http = { module = "org.apache.httpcomponents:httpmime", version = "4.5.13" }
 
-# CommandAPI https://docs.commandapi.dev/dev-setup/setup
-# Repo: Maven Central
-commandapi = { module = "dev.jorel:commandapi-bukkit-core", version.ref = "commandapi" }
-
 #
 # Libraries that are shaded and relocated
 #
@@ -174,7 +169,6 @@ libraries-shade = [
     "hopper-bukkit",
 ]
 plugins = [
-    "commandapi",
     "mythic-lib-dist",
     "mmoitems",         # mmo items
     "mythic-crucible",  # mythic curcible

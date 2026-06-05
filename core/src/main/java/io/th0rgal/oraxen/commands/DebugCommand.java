@@ -1,7 +1,6 @@
 package io.th0rgal.oraxen.commands;
 
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.StringArgument;
+import io.th0rgal.oraxen.commands.arguments.StringArgument;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.config.ConfigsManager;
 import io.th0rgal.oraxen.config.Message;
@@ -13,8 +12,8 @@ import java.io.IOException;
 
 public class DebugCommand {
 
-    CommandAPICommand getDebugCommand() {
-        return new CommandAPICommand("debug")
+    OraxenCommand getDebugCommand() {
+        return new OraxenCommand("debug")
                 .withPermission("oraxen.command.debug")
                 .withOptionalArguments(new StringArgument("toggle"))
                 .executes((sender, args) -> {

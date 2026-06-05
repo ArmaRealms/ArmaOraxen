@@ -1,8 +1,7 @@
 package io.th0rgal.oraxen.commands;
 
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.ArgumentSuggestions;
-import dev.jorel.commandapi.arguments.StringArgument;
+import io.th0rgal.oraxen.commands.arguments.ArgumentSuggestions;
+import io.th0rgal.oraxen.commands.arguments.StringArgument;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.items.ItemBuilder;
@@ -17,8 +16,8 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 public class ItemInfoCommand {
 
-    CommandAPICommand getItemInfoCommand() {
-        return new CommandAPICommand("iteminfo")
+    OraxenCommand getItemInfoCommand() {
+        return new OraxenCommand("iteminfo")
                 .withPermission("oraxen.command.iteminfo")
                 .withArguments(new StringArgument("itemid")
                         .replaceSuggestions(ArgumentSuggestions.strings(OraxenItems.getItemNames())))

@@ -1,9 +1,8 @@
 package io.th0rgal.oraxen.commands;
 
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.ArgumentSuggestions;
-import dev.jorel.commandapi.arguments.GreedyStringArgument;
-import dev.jorel.commandapi.arguments.StringArgument;
+import io.th0rgal.oraxen.commands.arguments.ArgumentSuggestions;
+import io.th0rgal.oraxen.commands.arguments.GreedyStringArgument;
+import io.th0rgal.oraxen.commands.arguments.StringArgument;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.font.TextEffect;
 import net.kyori.adventure.text.Component;
@@ -28,8 +27,8 @@ public class TextEffectCommand {
                 .toArray(String[]::new);
     }
 
-    public CommandAPICommand getTextEffectCommand() {
-        return new CommandAPICommand("texteffect")
+    public OraxenCommand getTextEffectCommand() {
+        return new OraxenCommand("texteffect")
                 .withPermission("oraxen.command.texteffect")
                 .withArguments(
                         new StringArgument("effect").replaceSuggestions(ArgumentSuggestions.strings(getEffectNames())),
@@ -80,8 +79,8 @@ public class TextEffectCommand {
     /**
      * Gets a command that lists all available text effects.
      */
-    public CommandAPICommand getTextEffectsListCommand() {
-        return new CommandAPICommand("texteffects")
+    public OraxenCommand getTextEffectsListCommand() {
+        return new OraxenCommand("texteffects")
                 .withPermission("oraxen.command.texteffect")
                 .executes((sender, args) -> {
                     sender.sendMessage("Available text effects:");

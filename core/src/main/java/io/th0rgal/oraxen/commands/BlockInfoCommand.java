@@ -1,8 +1,7 @@
 package io.th0rgal.oraxen.commands;
 
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.ArgumentSuggestions;
-import dev.jorel.commandapi.arguments.StringArgument;
+import io.th0rgal.oraxen.commands.arguments.ArgumentSuggestions;
+import io.th0rgal.oraxen.commands.arguments.StringArgument;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenBlocks;
 import io.th0rgal.oraxen.api.OraxenItems;
@@ -22,8 +21,8 @@ import java.util.Map;
 
 public class BlockInfoCommand {
 
-    CommandAPICommand getBlockInfoCommand() {
-        return new CommandAPICommand("blockinfo")
+    OraxenCommand getBlockInfoCommand() {
+        return new OraxenCommand("blockinfo")
                 .withPermission("oraxen.command.blockinfo")
                 .withArguments(new StringArgument("itemid").replaceSuggestions(ArgumentSuggestions.strings(OraxenItems.getItemNames())))
                 .executes((commandSender, args) -> {

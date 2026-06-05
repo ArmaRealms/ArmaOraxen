@@ -1,11 +1,10 @@
 package io.th0rgal.oraxen.commands;
 
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.ArgumentSuggestions;
-import dev.jorel.commandapi.arguments.EntitySelectorArgument;
-import dev.jorel.commandapi.arguments.GreedyStringArgument;
-import dev.jorel.commandapi.arguments.IntegerArgument;
-import dev.jorel.commandapi.arguments.TextArgument;
+import io.th0rgal.oraxen.commands.arguments.ArgumentSuggestions;
+import io.th0rgal.oraxen.commands.arguments.EntitySelectorArgument;
+import io.th0rgal.oraxen.commands.arguments.GreedyStringArgument;
+import io.th0rgal.oraxen.commands.arguments.IntegerArgument;
+import io.th0rgal.oraxen.commands.arguments.TextArgument;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.config.Message;
@@ -27,7 +26,7 @@ public class CommandsManager {
     private static final String INVENTORY_VIEW_PERMISSION = "oraxen.command.inventory.view";
 
     public void loadCommands() {
-        new CommandAPICommand("oraxen")
+        new OraxenCommand("oraxen")
                 .withAliases("o", "oxn")
                 .withPermission("oraxen.command")
                 .withSubcommands(getDyeCommand(), getInvCommand(), getSimpleGiveCommand(), getGiveCommand(),
@@ -67,8 +66,8 @@ public class CommandsManager {
                 Integer.valueOf(colorStr.substring(5, 7), 16));
     }
 
-    private CommandAPICommand getDyeCommand() {
-        return new CommandAPICommand("dye")
+    private OraxenCommand getDyeCommand() {
+        return new OraxenCommand("dye")
                 .withPermission("oraxen.command.dye")
                 .withArguments(new GreedyStringArgument("color"))
                 .executes((sender, args) -> {
@@ -87,8 +86,8 @@ public class CommandsManager {
                 });
     }
 
-    private CommandAPICommand getInvCommand() {
-        return new CommandAPICommand("inventory")
+    private OraxenCommand getInvCommand() {
+        return new OraxenCommand("inventory")
                 .withAliases("inv")
                 .withPermission(INVENTORY_VIEW_PERMISSION)
                 .executes((sender, args) -> {
@@ -129,8 +128,8 @@ public class CommandsManager {
     }
 
     @SuppressWarnings("unchecked")
-    private CommandAPICommand getGiveCommand() {
-        return new CommandAPICommand("give")
+    private OraxenCommand getGiveCommand() {
+        return new OraxenCommand("give")
                 .withPermission("oraxen.command.give")
                 .withArguments(new EntitySelectorArgument.ManyPlayers("targets"),
                         new TextArgument("item")
@@ -173,8 +172,8 @@ public class CommandsManager {
     }
 
     @SuppressWarnings("unchecked")
-    private CommandAPICommand getSimpleGiveCommand() {
-        return new CommandAPICommand("give")
+    private OraxenCommand getSimpleGiveCommand() {
+        return new OraxenCommand("give")
                 .withPermission("oraxen.command.give")
                 .withArguments(new EntitySelectorArgument.ManyPlayers("targets"),
                         new TextArgument("item")
@@ -211,8 +210,8 @@ public class CommandsManager {
                 });
     }
 
-    private CommandAPICommand getTakeCommand() {
-        return new CommandAPICommand("take")
+    private OraxenCommand getTakeCommand() {
+        return new OraxenCommand("take")
                 .withPermission("oraxen.command.take")
                 .withArguments(
                         new EntitySelectorArgument.ManyPlayers("targets"),

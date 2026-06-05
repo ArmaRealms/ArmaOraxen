@@ -2,9 +2,8 @@ package io.th0rgal.oraxen.commands;
 
 import com.jeff_media.customblockdata.CustomBlockData;
 import com.jeff_media.morepersistentdatatypes.DataType;
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.EntitySelectorArgument;
-import dev.jorel.commandapi.arguments.IntegerArgument;
+import io.th0rgal.oraxen.commands.arguments.EntitySelectorArgument;
+import io.th0rgal.oraxen.commands.arguments.IntegerArgument;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenFurniture;
 import io.th0rgal.oraxen.config.Message;
@@ -33,15 +32,15 @@ import static io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureM
 
 public class UpdateCommand {
 
-    CommandAPICommand getUpdateCommand() {
-        return new CommandAPICommand("update")
+    OraxenCommand getUpdateCommand() {
+        return new OraxenCommand("update")
                 .withPermission("oraxen.command.update")
                 .withSubcommands(getFurnitureUpdateCommand(), getItemUpdateCommand());
     }
 
     @SuppressWarnings("unchecked")
-    private CommandAPICommand getItemUpdateCommand() {
-        return new CommandAPICommand("item")
+    private OraxenCommand getItemUpdateCommand() {
+        return new OraxenCommand("item")
                 .withArguments(new EntitySelectorArgument.ManyEntities("targets"))
                 .executesPlayer((player, args) -> {
                     final Collection<Player> targets = ((Collection<Entity>) args.get("targets")).stream().filter(entity -> entity instanceof Player).map(e -> (Player) e).toList();
@@ -62,8 +61,8 @@ public class UpdateCommand {
     }
 
     @SuppressWarnings("unchecked")
-    private CommandAPICommand getFurnitureUpdateCommand() {
-        return new CommandAPICommand("furniture")
+    private OraxenCommand getFurnitureUpdateCommand() {
+        return new OraxenCommand("furniture")
                 .withOptionalArguments(new IntegerArgument("radius"))
                 .executesPlayer((player, args) -> {
                     int radius = (int) args.getOptional("radius").orElse(10);

@@ -3,7 +3,6 @@ package io.th0rgal.oraxen.hopper;
 import md.thomas.hopper.Dependency;
 import md.thomas.hopper.FailurePolicy;
 import md.thomas.hopper.LogLevel;
-import md.thomas.hopper.Platform;
 import md.thomas.hopper.bukkit.BukkitHopper;
 import md.thomas.hopper.version.UpdatePolicy;
 import org.bukkit.Bukkit;
@@ -16,11 +15,7 @@ import java.util.regex.Pattern;
 /**
  * Handles automatic downloading of dependencies using Hopper.
  * <p>
- * This class registers and downloads:
- * <ul>
- *   <li>CommandAPI - Required for Oraxen commands</li>
- *   <li>PacketEvents - If neither ProtocolLib nor PacketEvents is installed</li>
- * </ul>
+ * This class registers and downloads PacketEvents when neither ProtocolLib nor PacketEvents is installed.
  * Downloaded plugins are automatically loaded at runtime without requiring a server restart.
  */
 public final class OraxenHopper {
@@ -30,10 +25,6 @@ public final class OraxenHopper {
     private static boolean enabled = true;
 
     // Patterns to match plugin jar files
-    // Matches: CommandAPI.jar, CommandAPI-11.0.0.jar, CommandAPI-11.0.0-Paper.jar
-    private static final Pattern COMMANDAPI_PATTERN = Pattern.compile(
-        "(?i)^commandapi([-_][\\d][\\w.-]*)?\\.jar$"
-    );
     // Matches: ProtocolLib.jar, ProtocolLib-5.4.0.jar
     private static final Pattern PROTOCOLLIB_PATTERN = Pattern.compile(
         "(?i)^protocollib([-_][\\d][\\w.-]*)?\\.jar$"
@@ -62,38 +53,11 @@ public final class OraxenHopper {
             return;
         }
 
-        Platform platform = Platform.detect();
-
         BukkitHopper.register(plugin, deps -> {
             // We check for files in the plugins folder as a reliable baseline; the classpath check catches
             // cases where the library is already loaded (e.g. installed server plugin with an atypical jar name)
-            boolean hasCommandAPI = pluginJarExists(COMMANDAPI_PATTERN) || classExists("dev.jorel.commandapi.CommandAPI");
             boolean hasProtocolLib = pluginJarExists(PROTOCOLLIB_PATTERN) || classExists("com.comphenix.protocol.ProtocolLib");
             boolean hasPacketEvents = pluginJarExists(PACKETEVENTS_PATTERN) || classExists("com.github.retrooper.packetevents.PacketEvents");
-
-            // CommandAPI is required for Oraxen commands
-            if (!hasCommandAPI) {
-                // Primary source: Modrinth
-                deps.require(Dependency.modrinth("commandapi")
-                    .name("CommandAPI")
-                    .minVersion("11.0.0")
-                    .updatePolicy(UpdatePolicy.MINOR)
-                    .onFailure(FailurePolicy.WARN_SKIP)
-                    .build());
-
-                // Fallback source: GitHub releases
-                String commandApiPattern = switch (platform) {
-                    case PAPER, FOLIA, PURPUR -> "*-Paper.jar";
-                    default -> "*-Spigot.jar";
-                };
-                deps.require(Dependency.github("CommandAPI/CommandAPI")
-                    .name("CommandAPI")
-                    .minVersion("11.0.0")
-                    .assetPattern(commandApiPattern)
-                    .updatePolicy(UpdatePolicy.MINOR)
-                    .onFailure(FailurePolicy.WARN_SKIP)
-                    .build());
-            }
 
             // PacketEvents is optional but recommended (if neither ProtocolLib nor PacketEvents is available)
             if (!hasProtocolLib && !hasPacketEvents) {
@@ -147,7 +111,7 @@ public final class OraxenHopper {
                 logger.warning("  - " + failed.path().getFileName() + ": " + failed.error());
             }
         }
-        // Hopper's QUIET mode already logs: "[Hopper] Loaded: CommandAPI 11.1.0, PacketEvents 2.11.1"
+        // Hopper's QUIET mode already logs loaded dependencies.
 
         return !requiresRestart;
     }

@@ -6,7 +6,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import dev.jorel.commandapi.CommandAPICommand;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.config.Message;
 import io.th0rgal.oraxen.config.ResourcesManager;
@@ -30,13 +29,13 @@ public class RemoveDefaultsCommand {
     private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
     private static final String GLOBAL_LANG_NOTICE = "This file is for editing all languages at once. To edit a specific language, use the corresponding file in the 'languages' folder.";
 
-    CommandAPICommand getRemoveDefaultsCommand() {
-        CommandAPICommand confirmed = new CommandAPICommand("confirm")
+    OraxenCommand getRemoveDefaultsCommand() {
+        OraxenCommand confirmed = new OraxenCommand("confirm")
                 .withPermission("oraxen.command.remove-defaults")
                 .executes((sender, args) -> {
                     removeDefaults(sender);
                 });
-        return new CommandAPICommand("remove-defaults")
+        return new OraxenCommand("remove-defaults")
                 .withPermission("oraxen.command.remove-defaults")
                 .withSubcommand(confirmed)
                 .executes((sender, args) -> {

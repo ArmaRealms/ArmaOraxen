@@ -193,7 +193,6 @@ tasks {
     runServer {
         downloadPlugins {
             hangar("ProtocolLib", "5.4.0")
-            hangar("CommandAPI", "11.1.0")
         }
         minecraftVersion(runServerVersion)
         jvmArgs("-Dcom.mojang.eula.agree=true")
@@ -264,7 +263,6 @@ bukkit {
     foliaSupported = true
     authors = listOf("th0rgal", "https://github.com/oraxen/oraxen/blob/master/CONTRIBUTORS.md")
     softDepend = listOf(
-        "CommandAPI",
         "ProtocolLib",
         "packetevents",
         "LightAPI", "PlaceholderAPI", "MythicMobs", "MMOItems", "MythicCrucible", "MythicMobs", "BossShopPro",

@@ -1,8 +1,7 @@
 package io.th0rgal.oraxen.commands;
 
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.ArgumentSuggestions;
-import dev.jorel.commandapi.arguments.TextArgument;
+import io.th0rgal.oraxen.commands.arguments.ArgumentSuggestions;
+import io.th0rgal.oraxen.commands.arguments.TextArgument;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenFurniture;
 import io.th0rgal.oraxen.api.OraxenItems;
@@ -97,8 +96,8 @@ public class ReloadCommand {
         Message.RELOAD.send(sender, AdventureUtils.tagResolver("reloaded", reloaded));
     }
 
-    CommandAPICommand getReloadCommand() {
-        return new CommandAPICommand("reload")
+    OraxenCommand getReloadCommand() {
+        return new OraxenCommand("reload")
                 .withAliases("rl")
                 .withPermission("oraxen.command.reload")
                 .withArguments(new TextArgument("type").replaceSuggestions(

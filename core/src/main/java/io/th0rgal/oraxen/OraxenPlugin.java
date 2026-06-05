@@ -3,6 +3,7 @@ package io.th0rgal.oraxen;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.api.events.OraxenItemsLoadedEvent;
 import io.th0rgal.oraxen.commands.CommandsManager;
+import io.th0rgal.oraxen.commands.OraxenCommand;
 import io.th0rgal.oraxen.compatibilities.CompatibilitiesManager;
 import io.th0rgal.oraxen.commands.TotemAnimationCommand;
 import io.th0rgal.oraxen.config.ConfigsManager;
@@ -200,7 +201,7 @@ public class OraxenPlugin extends JavaPlugin {
                 NMSHandlers.getHandler().glyphHandler().uninject(player);
 
         CompatibilitiesManager.disableCompatibilities();
-        // CommandAPI.onDisable();
+        OraxenCommand.unregisterAll();
         Message.PLUGIN_UNLOADED.log();
     }
 

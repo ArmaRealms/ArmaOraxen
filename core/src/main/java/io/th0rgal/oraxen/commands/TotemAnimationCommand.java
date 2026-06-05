@@ -1,9 +1,8 @@
 package io.th0rgal.oraxen.commands;
 
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.ArgumentSuggestions;
-import dev.jorel.commandapi.arguments.EntitySelectorArgument;
-import dev.jorel.commandapi.arguments.TextArgument;
+import io.th0rgal.oraxen.commands.arguments.ArgumentSuggestions;
+import io.th0rgal.oraxen.commands.arguments.EntitySelectorArgument;
+import io.th0rgal.oraxen.commands.arguments.TextArgument;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.config.Message;
 import io.th0rgal.oraxen.items.ItemBuilder;
@@ -37,8 +36,8 @@ public class TotemAnimationCommand {
     private static volatile boolean loggedDeathProtectionFailure;
     private static volatile boolean loggedPacketEventsFailure;
 
-    CommandAPICommand getTotemAnimationCommand() {
-        return new CommandAPICommand("totem-animation")
+    OraxenCommand getTotemAnimationCommand() {
+        return new OraxenCommand("totem-animation")
                 .withPermission("oraxen.command.totem-animation")
                 .withArguments(
                         new EntitySelectorArgument.OnePlayer("player"),

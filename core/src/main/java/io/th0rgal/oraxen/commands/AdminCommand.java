@@ -1,7 +1,6 @@
 package io.th0rgal.oraxen.commands;
 
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.*;
+import io.th0rgal.oraxen.commands.arguments.*;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenBlocks;
 import io.th0rgal.oraxen.api.OraxenFurniture;
@@ -14,14 +13,14 @@ import java.util.*;
 
 public class AdminCommand {
 
-    CommandAPICommand getAdminCommand() {
-        return new CommandAPICommand("admin")
+    OraxenCommand getAdminCommand() {
+        return new OraxenCommand("admin")
                 .withPermission("oraxen.command.admin")
                 .withSubcommands(getFurniturePlaceRemoveCommand(), getNoteblockPlaceRemoveCommand());
     }
 
-    private CommandAPICommand getNoteblockPlaceRemoveCommand() {
-        return new CommandAPICommand("block")
+    private OraxenCommand getNoteblockPlaceRemoveCommand() {
+        return new OraxenCommand("block")
                 .withArguments(new TextArgument("block").replaceSuggestions(ArgumentSuggestions.strings(OraxenBlocks.getBlockIDs())))
                 .withArguments(new TextArgument("type").replaceSuggestions(ArgumentSuggestions.strings("place", "remove")))
                 .withOptionalArguments(new LocationArgument("location"))
@@ -45,10 +44,10 @@ public class AdminCommand {
                 });
     }
 
-    private CommandAPICommand getFurniturePlaceRemoveCommand() {
+    private OraxenCommand getFurniturePlaceRemoveCommand() {
         Set<String> furnitureIDs = OraxenFurniture.getFurnitureIDs();
         furnitureIDs.add("all");
-        return new CommandAPICommand("furniture")
+        return new OraxenCommand("furniture")
                 .withArguments(
                         new TextArgument("type").replaceSuggestions(ArgumentSuggestions.strings("place", "remove")),
                         new TextArgument("furniture").replaceSuggestions(ArgumentSuggestions.strings(furnitureIDs))

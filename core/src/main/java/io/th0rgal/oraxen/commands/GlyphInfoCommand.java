@@ -1,8 +1,7 @@
 package io.th0rgal.oraxen.commands;
 
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.ArgumentSuggestions;
-import dev.jorel.commandapi.arguments.StringArgument;
+import io.th0rgal.oraxen.commands.arguments.ArgumentSuggestions;
+import io.th0rgal.oraxen.commands.arguments.StringArgument;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.font.Glyph;
 import io.th0rgal.oraxen.utils.AdventureUtils;
@@ -14,8 +13,8 @@ import net.kyori.adventure.text.format.NamedTextColor;
 
 public class GlyphInfoCommand {
 
-    CommandAPICommand getGlyphInfoCommand() {
-        return new CommandAPICommand("glyphinfo")
+    OraxenCommand getGlyphInfoCommand() {
+        return new OraxenCommand("glyphinfo")
                 .withPermission("oraxen.command.glyphinfo")
                 .withArguments(new StringArgument("glyphid").replaceSuggestions(ArgumentSuggestions.strings(OraxenPlugin.get().getFontManager().getGlyphs().stream().map(Glyph::getName).toList())))
                 .executes(((sender, args) -> {
