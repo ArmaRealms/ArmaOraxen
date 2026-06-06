@@ -228,6 +228,10 @@ public class OraxenPlugin extends JavaPlugin {
     }
 
     public void setUploadManager(final UploadManager uploadManager) {
+        UploadManager previousUploadManager = this.uploadManager;
+        if (previousUploadManager != null && previousUploadManager != uploadManager) {
+            previousUploadManager.unregister();
+        }
         this.uploadManager = uploadManager;
     }
 

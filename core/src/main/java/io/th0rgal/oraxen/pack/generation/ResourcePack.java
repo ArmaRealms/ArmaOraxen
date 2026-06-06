@@ -104,12 +104,9 @@ public class ResourcePack {
 
                 // Unregister and clear single-pack manager if switching from single-pack mode.
                 // Clearing the reference prevents getPackURL()/getPackSHA1() from returning
-                // stale data from the old mode's manager.
-                UploadManager oldUploadManager = OraxenPlugin.get().getUploadManager();
-                if (oldUploadManager != null) {
-                    oldUploadManager.unregister();
-                    OraxenPlugin.get().setUploadManager(null);
-                }
+                // stale data from the old mode's manager. setUploadManager(null) unregisters
+                // the old manager, so a separate unregister() call is not needed.
+                OraxenPlugin.get().setUploadManager(null);
 
                 generateMultiVersion(switchingFromSinglePack);
                 finishGeneration();
