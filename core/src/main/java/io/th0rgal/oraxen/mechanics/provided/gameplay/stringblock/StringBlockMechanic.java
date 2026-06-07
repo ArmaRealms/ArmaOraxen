@@ -151,6 +151,10 @@ public class StringBlockMechanic extends Mechanic {
         return breaking.drop(tool);
     }
 
+    public BlockBreaking.DurabilityAction getDurabilityAction(ItemStack tool) {
+        return breaking.durabilityAction(tool);
+    }
+
     public boolean hasHardness() {
         return hasHardness(new ItemStack(Material.AIR));
     }

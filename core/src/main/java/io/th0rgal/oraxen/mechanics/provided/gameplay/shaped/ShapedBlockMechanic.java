@@ -117,6 +117,10 @@ public class ShapedBlockMechanic extends Mechanic {
         return breaking.drop(tool);
     }
 
+    public BlockBreaking.DurabilityAction getDurabilityAction(ItemStack tool) {
+        return breaking.durabilityAction(tool);
+    }
+
     public double getHardness() {
         return getHardness(new ItemStack(Material.AIR));
     }

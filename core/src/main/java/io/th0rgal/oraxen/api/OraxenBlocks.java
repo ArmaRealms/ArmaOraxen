@@ -9,6 +9,8 @@ import io.th0rgal.oraxen.api.events.shapedblock.OraxenShapedBlockBreakEvent;
 import io.th0rgal.oraxen.api.events.stringblock.OraxenStringBlockBreakEvent;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockBreaking;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockDurability;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.chorusblock.ChorusBlockMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.chorusblock.ChorusBlockMechanicFactory;
@@ -385,6 +387,7 @@ public class OraxenBlocks {
             if (!EventUtils.callEvent(event)) return false;
             drop = resolveDropAfterEvent(player, getEventDrop.apply(event), overrideDrop != null);
             sendBreakEffects(block, player);
+            BlockDurability.applyConfigured(player, itemInHand, getDurabilityAction(mechanic, itemInHand));
         }
 
         if (drop != null) drop.spawns(block.getLocation(), itemInHand);
@@ -400,6 +403,15 @@ public class OraxenBlocks {
     static Drop resolveDropAfterEvent(Player player, @Nullable Drop eventDrop, boolean forcedDrop) {
         if (!forcedDrop && player.getGameMode() == GameMode.CREATIVE) return null;
         return eventDrop;
+    }
+
+    @Nullable
+    private static BlockBreaking.DurabilityAction getDurabilityAction(Mechanic mechanic, ItemStack tool) {
+        if (mechanic instanceof NoteBlockMechanic noteBlockMechanic) return noteBlockMechanic.getDurabilityAction(tool);
+        if (mechanic instanceof StringBlockMechanic stringBlockMechanic) return stringBlockMechanic.getDurabilityAction(tool);
+        if (mechanic instanceof ChorusBlockMechanic chorusBlockMechanic) return chorusBlockMechanic.getDurabilityAction(tool);
+        if (mechanic instanceof ShapedBlockMechanic shapedBlockMechanic) return shapedBlockMechanic.getDurabilityAction(tool);
+        return null;
     }
 
     private static void sendBreakEffects(Block block, Player player) {
@@ -508,6 +520,7 @@ public class OraxenBlocks {
             if (!EventUtils.callEvent(event)) return false;
             drop = resolveDropAfterEvent(player, event.getDrop(), overrideDrop != null);
             sendBreakEffects(block, player);
+            BlockDurability.applyConfigured(player, itemInHand, mechanic.getDurabilityAction(itemInHand));
         }
         if (drop != null) {
             int dropCount = getShapedDropCount(block);

@@ -145,6 +145,14 @@ public class NoteBlockMechanic extends Mechanic {
         return breaking.drop(tool);
     }
 
+    public BlockBreaking.DurabilityAction getDurabilityAction(ItemStack tool) {
+        BlockBreaking.DurabilityAction action = breaking.durabilityAction(tool);
+        if (action != null) return action;
+        if (isDirectional() && !getDirectional().isParentBlock())
+            return directionalBlock.getParentMechanic().getDurabilityAction(tool);
+        return null;
+    }
+
     public boolean hasHardness() {
         return hasHardness(new ItemStack(Material.AIR));
     }

@@ -117,6 +117,10 @@ public class ChorusBlockMechanic extends Mechanic {
         return breaking.drop(tool);
     }
 
+    public BlockBreaking.DurabilityAction getDurabilityAction(ItemStack tool) {
+        return breaking.durabilityAction(tool);
+    }
+
     public boolean canPlaceOn(org.bukkit.block.BlockFace face) { return placeable == null || placeable.canPlaceOn(face); }
     public boolean canPlaceOn(org.bukkit.block.BlockFace face, Block block) { return placeable == null || placeable.canPlaceOn(face, block); }
 
