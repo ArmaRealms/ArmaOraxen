@@ -7,6 +7,7 @@ import io.th0rgal.oraxen.utils.logs.Logs;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -396,19 +397,30 @@ public final class CustomPaintingRegistry {
         private Optional<?> optionalComponent(String value) throws ReflectiveOperationException {
             if (value == null || value.isBlank()) return Optional.empty();
 
-            try {
-                Class<?> paperAdventureClass = Class.forName("io.papermc.paper.adventure.PaperAdventure");
-                for (Method method : paperAdventureClass.getMethods()) {
-                    if (!method.getName().equals("asVanilla") || method.getParameterCount() != 1) continue;
-                    Object component = method.invoke(null, AdventureUtils.MINI_MESSAGE.deserialize(value));
-                    return Optional.of(component);
-                }
-            } catch (ReflectiveOperationException | RuntimeException ignored) {
-                // Fall back to a literal vanilla component below.
-            }
+            net.kyori.adventure.text.Component adventureComponent = AdventureUtils.MINI_MESSAGE.deserialize(value);
+            Object vanillaComponent = asVanillaComponent(adventureComponent);
+            if (vanillaComponent != null) return Optional.of(vanillaComponent);
 
             Class<?> componentClass = Class.forName("net.minecraft.network.chat.Component");
-            return Optional.of(componentClass.getMethod("literal", String.class).invoke(null, value));
+            String legacyText = AdventureUtils.LEGACY_SERIALIZER.serialize(adventureComponent);
+            return Optional.of(componentClass.getMethod("literal", String.class).invoke(null, legacyText));
+        }
+
+        private Object asVanillaComponent(net.kyori.adventure.text.Component component) {
+            try {
+                Class<?> paperAdventureClass = Class.forName("io.papermc.paper.adventure.PaperAdventure");
+                for (Method method : paperAdventureClass.getDeclaredMethods()) {
+                    if (!method.getName().equals("asVanilla") || method.getParameterCount() != 1) continue;
+                    if (!Modifier.isStatic(method.getModifiers())) continue;
+                    if (!method.getParameterTypes()[0].isAssignableFrom(net.kyori.adventure.text.Component.class)) continue;
+
+                    method.setAccessible(true);
+                    return method.invoke(null, component);
+                }
+            } catch (ReflectiveOperationException | RuntimeException ignored) {
+                // Fall back to a legacy-formatted literal vanilla component.
+            }
+            return null;
         }
 
         private boolean containsKey(Object registry, Object location) throws ReflectiveOperationException {
