@@ -1346,6 +1346,10 @@ public class ItemBuilder {
         genericComponents.put(type, component);
     }
 
+    public String getPaintingVariant() {
+        return paintingVariant;
+    }
+
     public void setPaintingVariant(String paintingVariant) {
         this.paintingVariant = paintingVariant;
     }

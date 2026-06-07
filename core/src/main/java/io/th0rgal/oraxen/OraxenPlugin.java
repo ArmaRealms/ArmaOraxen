@@ -26,6 +26,7 @@ import io.th0rgal.oraxen.nms.NMSHandlers;
 import io.th0rgal.oraxen.pack.dispatch.PackLoadingManager;
 import io.th0rgal.oraxen.pack.generation.PackVersionManager;
 import io.th0rgal.oraxen.painting.CustomPainting;
+import io.th0rgal.oraxen.painting.CustomPaintingListener;
 import io.th0rgal.oraxen.painting.CustomPaintingRegistry;
 import io.th0rgal.oraxen.pack.generation.ResourcePack;
 import io.th0rgal.oraxen.pack.upload.UploadManager;
@@ -153,6 +154,7 @@ public class OraxenPlugin extends JavaPlugin {
         hudManager.registerTask();
         hudManager.parsedHudDisplays = hudManager.generateHudDisplays();
         Bukkit.getPluginManager().registerEvents(new ItemUpdater(), this);
+        Bukkit.getPluginManager().registerEvents(new CustomPaintingListener(), this);
         Bukkit.getPluginManager().registerEvents(new PackLoadingManager(), this);
         io.th0rgal.oraxen.pack.generation.MultiVersionPackValidator.validateAndLogWarnings();
         resourcePack.generate();
