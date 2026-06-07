@@ -25,13 +25,13 @@ class PackDispatchFilterTest {
 
     @Test
     void supportsGreaterThanRules() {
-        assertFalse(PackDispatchFilter.canSendPack(775, "26.1.1", List.of("> 1.21.11")));
+        assertFalse(PackDispatchFilter.canSendPack(775, "26.1.2", List.of("> 1.21.11")));
         assertTrue(PackDispatchFilter.canSendPack(774, "1.21.11", List.of("> 1.21.11")));
     }
 
     @Test
     void supportsCanonicalAndRuntimeVersionAliases() {
-        assertFalse(PackDispatchFilter.canSendPack(775, "26.1.1", List.of("= 1.26.1")));
+        assertFalse(PackDispatchFilter.canSendPack(775, "26.1.2", List.of("= 1.26.1.2")));
         assertFalse(PackDispatchFilter.canSendPack(775, "1.26.1", List.of("= 26.1")));
     }
 

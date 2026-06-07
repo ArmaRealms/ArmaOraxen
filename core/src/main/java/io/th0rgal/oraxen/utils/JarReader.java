@@ -13,6 +13,7 @@ import java.util.jar.JarFile;
 public class JarReader {
 
     public static String getManifestContent() {
+        if (OraxenPlugin.get() == null) return "";
         JarFile jarFile = OraxenPlugin.getJarFile();
         if (jarFile == null) return "";
         Enumeration<JarEntry> entries = jarFile.entries();

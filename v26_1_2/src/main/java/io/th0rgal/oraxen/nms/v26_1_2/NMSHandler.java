@@ -1,4 +1,4 @@
-package io.th0rgal.oraxen.nms.v1_26_R1;
+package io.th0rgal.oraxen.nms.v26_1_2;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -92,7 +92,7 @@ public class NMSHandler implements io.th0rgal.oraxen.nms.NMSHandler {
     private final Listener packDispatchListener;
 
     public NMSHandler() {
-        this.glyphHandler = new io.th0rgal.oraxen.nms.v1_26_R1.GlyphHandler();
+        this.glyphHandler = new io.th0rgal.oraxen.nms.v26_1_2.GlyphHandler();
         this.packDispatchListener = new PackDispatchListener();
 
         // mineableWith tag handling

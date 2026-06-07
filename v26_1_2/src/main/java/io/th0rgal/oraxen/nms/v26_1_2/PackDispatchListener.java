@@ -1,4 +1,4 @@
-package io.th0rgal.oraxen.nms.v1_26_R1;
+package io.th0rgal.oraxen.nms.v26_1_2;
 
 import com.destroystokyo.paper.event.player.PlayerConnectionCloseEvent;
 import io.papermc.paper.connection.PlayerConfigurationConnection;

@@ -4,7 +4,7 @@ plugins {
     id("com.gradleup.shadow") version "9.4.1"
 }
 
-// Paper 26.1.2 dev bundle for v1_26_R1 NMS module
+// Paper 26.1.2 dev bundle for v26_1_2 NMS module
 // Note: modern Paper dev bundles don't provide reobf mappings, so we ship Mojang-mapped
 
 dependencies {

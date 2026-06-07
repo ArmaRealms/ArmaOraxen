@@ -1,4 +1,4 @@
-package io.th0rgal.oraxen.nms.v1_26_R1;
+package io.th0rgal.oraxen.nms.v26_1_2;
 
 import java.lang.reflect.Method;
 
@@ -6,7 +6,7 @@ import java.lang.reflect.Method;
  * Reflection-based helper to handle the ResourceLocation → Identifier rename
  * that occurred in Paper 26.x's Mojang-mapped API.
  *
- * This class is only used by the v1_26_R1 NMS module (Paper 26.x+).
+ * This class is only used by the v26_1_2 NMS module (Paper 26.1.2).
  * The ResourceLocation fallback is retained for defensive resilience only.
  */
 public final class ResourceLocationHelper {

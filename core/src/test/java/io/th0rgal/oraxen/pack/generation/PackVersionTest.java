@@ -132,8 +132,8 @@ class PackVersionTest {
         PackVersion v1_20_2 = new PackVersion("1.20.2", 18, 18, 21, packFile);
         PackVersion v1_20 = new PackVersion("1.20", 15, 15, 17, packFile);
 
-        // Protocol 775 (26.1.1) should map to format 84.
-        assertTrue(v26_1.supportsProtocol(775), "Protocol 775 (26.1.1) should match format 84");
+        // Protocol 775 (26.1.2) should map to format 84.
+        assertTrue(v26_1.supportsProtocol(775), "Protocol 775 (26.1.2) should match format 84");
 
         // Protocol 774 (1.21.11) should map to format 75.
         assertTrue(v1_21_11.supportsProtocol(774), "Protocol 774 (1.21.11) should match format 75");
