@@ -34,8 +34,8 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
     // Map of Material -> Mechanic for quick lookup
     private final Map<Material, ShapedBlockMechanic> mechanicByMaterial = new HashMap<>();
 
-    // Track which variations are used per block type
-    private final Map<ShapedBlockType, boolean[]> usedVariations = new HashMap<>();
+    // Track which item owns each variation per block type
+    private final Map<ShapedBlockType, Map<Integer, String>> usedVariations = new HashMap<>();
 
     // Store model names for blockstate generation
     private final Map<Material, String> modelByMaterial = new HashMap<>();
@@ -75,7 +75,7 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
 
         // Initialize variation tracking
         for (ShapedBlockType type : ShapedBlockType.values()) {
-            usedVariations.put(type, new boolean[4]);
+            usedVariations.put(type, new HashMap<>());
         }
 
         // Register pack modifier to generate blockstate files after all items are parsed
@@ -126,13 +126,14 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
         ShapedBlockType type = mechanic.getBlockType();
         int variation = mechanic.getCustomVariation();
 
-        boolean[] variations = usedVariations.get(type);
-        if (variations[variation - 1]) {
+        Map<Integer, String> variations = usedVariations.get(type);
+        String previousItem = variations.get(variation);
+        if (previousItem != null && !previousItem.equals(mechanic.getItemID())) {
             Logs.logError("Duplicate custom_variation " + variation + " for " + type +
-                " shaped block in item: " + mechanic.getItemID());
+                " shaped block in item: " + mechanic.getItemID() + " (already used by " + previousItem + ")");
             return null;
         }
-        variations[variation - 1] = true;
+        variations.put(variation, mechanic.getItemID());
 
         // Register the mechanic by material
         mechanicByMaterial.put(mechanic.getPlacedMaterial(), mechanic);
