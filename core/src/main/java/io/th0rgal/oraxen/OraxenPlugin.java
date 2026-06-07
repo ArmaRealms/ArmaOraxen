@@ -25,6 +25,8 @@ import io.th0rgal.oraxen.nms.GlyphHandlers;
 import io.th0rgal.oraxen.nms.NMSHandlers;
 import io.th0rgal.oraxen.pack.dispatch.PackLoadingManager;
 import io.th0rgal.oraxen.pack.generation.PackVersionManager;
+import io.th0rgal.oraxen.painting.CustomPainting;
+import io.th0rgal.oraxen.painting.CustomPaintingRegistry;
 import io.th0rgal.oraxen.pack.generation.ResourcePack;
 import io.th0rgal.oraxen.pack.upload.UploadManager;
 import io.th0rgal.oraxen.recipes.builders.RecipeBuilder;
@@ -130,6 +132,7 @@ public class OraxenPlugin extends JavaPlugin {
             Bukkit.getPluginManager().registerEvents(new CustomBlockMiningListener(), this);
         }
         NMSHandlers.setup();
+        reloadCustomPaintings();
 
         // Auto-update Paper config for block updates (noteblock, tripwire, chorus)
         var updatedSettings = PaperConfigUpdater.ensureAllBlockUpdatesDisabled();
@@ -217,6 +220,11 @@ public class OraxenPlugin extends JavaPlugin {
         configsManager = new ConfigsManager(this);
         configsManager.validatesConfig();
         resourceManager = new ResourcesManager(this);
+    }
+
+    public void reloadCustomPaintings() {
+        CustomPaintingRegistry.reload(CustomPainting.fromConfigSection(
+                configsManager.getPaintings().getConfigurationSection("paintings")));
     }
 
     public ConfigsManager getConfigsManager() {

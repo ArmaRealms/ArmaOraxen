@@ -1140,7 +1140,8 @@ public class ItemBuilder {
     }
 
     private ItemStack applyPaintingVariantComponent(ItemStack itemStack) {
-        if (paintingVariant == null || !VersionUtil.atOrAbove("1.21")) return itemStack;
+        if (paintingVariant == null) return itemStack;
+        if (!VersionUtil.atOrAbove("1.21.5") || !VersionUtil.isPaperServer()) return itemStack;
 
         Key variantKey;
         try {
@@ -1151,28 +1152,21 @@ public class ItemBuilder {
             return itemStack;
         }
 
-        if (VersionUtil.atOrAbove("1.21.5") && VersionUtil.isPaperServer()) {
-            try {
-                Registry<Art> paintingRegistry = RegistryAccess.registryAccess()
-                        .getRegistry(RegistryKey.PAINTING_VARIANT);
-                Art painting = paintingRegistry.get(variantKey);
-                if (painting == null) {
-                    Logs.logWarning("Unknown painting_variant '" + paintingVariant + "'");
-                    return itemStack;
-                }
-                itemStack.setData(DataComponentTypes.PAINTING_VARIANT, painting);
-                return itemStack;
-            } catch (NoClassDefFoundError | NoSuchFieldError | NoSuchMethodError ignored) {
-                // Fall through to the NMS path used by older supported versions.
-            } catch (Exception exception) {
-                Logs.logWarning("Failed to set painting_variant '" + paintingVariant + "'");
-                Logs.debug(exception);
+        try {
+            Registry<Art> paintingRegistry = RegistryAccess.registryAccess()
+                    .getRegistry(RegistryKey.PAINTING_VARIANT);
+            Art painting = paintingRegistry.get(variantKey);
+            if (painting == null) {
+                Logs.logWarning("Unknown painting_variant '" + paintingVariant + "'");
                 return itemStack;
             }
+            itemStack.setData(DataComponentTypes.PAINTING_VARIANT, painting);
+            return itemStack;
+        } catch (Exception exception) {
+            Logs.logWarning("Failed to set painting_variant '" + paintingVariant + "'");
+            Logs.debug(exception);
+            return itemStack;
         }
-
-        NMSHandler handler = NMSHandlers.getHandler();
-        return handler != null ? handler.paintingVariantComponent(itemStack, variantKey.asString()) : itemStack;
     }
 
     private Key parsePaintingVariantKey(String value) {

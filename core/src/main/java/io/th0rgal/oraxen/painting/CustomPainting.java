@@ -9,6 +9,8 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public record CustomPainting(
@@ -23,6 +25,25 @@ public record CustomPainting(
 
     private static final int MIN_SIZE = 1;
     private static final int MAX_SIZE = 16;
+
+    public static List<CustomPainting> fromConfigSection(@Nullable ConfigurationSection paintingsSection) {
+        List<CustomPainting> paintings = new ArrayList<>();
+        if (paintingsSection == null) return paintings;
+
+        for (String key : paintingsSection.getKeys(false)) {
+            ConfigurationSection paintingSection = paintingsSection.getConfigurationSection(key);
+            if (paintingSection == null) continue;
+            if (!paintingSection.getBoolean("enabled", true)) continue;
+
+            try {
+                paintings.add(fromConfig(key, paintingSection));
+            } catch (IllegalArgumentException exception) {
+                Logs.logWarning("Failed to parse custom painting '" + key + "' in paintings.yml");
+                Logs.debug(exception);
+            }
+        }
+        return paintings;
+    }
 
     public static CustomPainting fromConfig(String key, ConfigurationSection section) {
         Key variantKey = parseKey(key);
