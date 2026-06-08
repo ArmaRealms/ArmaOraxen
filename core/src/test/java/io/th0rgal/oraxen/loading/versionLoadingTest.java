@@ -81,7 +81,7 @@ public class versionLoadingTest {
         for (String version : paperVersions) {
             System.out.println("Testing Paper " + version + "...");
             runPaperAndAssertOraxenLoads(version);
-            System.out.println("Paper " + version + " loaded Oraxen successfully.");
+            System.out.println("Paper " + version + " loaded Oraxen successfully.\n");
         }
     }
 
@@ -204,29 +204,29 @@ public class versionLoadingTest {
     private static Path ensurePaperJarExists(String version) throws IOException {
         Path paperJar = paperDir.resolve(version + ".jar");
         if (Files.exists(paperJar)) {
-            System.out.println("Using existing Paper jar for " + version + ": " + paperJar);
+            System.out.println("Using existing Paper jar for " + version + " at " + paperJar + ".");
             return paperJar;
         }
 
         String downloadUrl = paperDownloadUrls.get(version);
         if (downloadUrl == null) {
-            throw new IllegalArgumentException("No Paper download URL configured for " + version);
+            throw new IllegalArgumentException("No Paper download URL configured for " + version + ".");
         }
 
-        System.out.println("Downloading Paper " + version + " from " + downloadUrl);
+        System.out.println("Downloading Paper " + version + " from " + downloadUrl + ".");
         Files.createDirectories(paperDir);
-        Path temporaryJar = paperDir.resolve(version + ".jar.download");
+        Path temporaryJar = paperDir.resolve(version + ".jar.download.");
         try (var inputStream = URI.create(downloadUrl).toURL().openStream()) {
             Files.copy(inputStream, temporaryJar, StandardCopyOption.REPLACE_EXISTING);
         }
         Files.move(temporaryJar, paperJar, StandardCopyOption.REPLACE_EXISTING);
-        System.out.println("Downloaded Paper " + version + " to " + paperJar);
+        System.out.println("Downloaded Paper " + version + " to " + paperJar + ".");
         return paperJar;
     }
 
     private static void failWithServerOutput(String version, String reason, StringBuilder output) {
         Path latestLog = serverDir.resolve("logs").resolve("latest.log");
-        String message = "Paper " + version + " failed: " + reason + "\n\nSee server log: " + latestLog.toAbsolutePath();
+        String message = "Paper " + version + " failed with reason \"" + reason + "\".\n\nSee server log at " + latestLog.toAbsolutePath() + ".";
         System.err.println(message);
         fail(message);
     }
