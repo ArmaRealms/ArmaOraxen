@@ -12,8 +12,29 @@ tasks {
     shadowJar.get().archiveFileName.set("oraxen-${pluginVersion}.jar")
     build.get().dependsOn(shadowJar)
     
+    compileTestJava {
+        if (!project.hasProperty("runVersionLoadingTest")) {
+            exclude("io/th0rgal/oraxen/loading/versionLoadingTest.java")
+        }
+    }
+
     test {
-        useJUnitPlatform()
+        useJUnitPlatform {
+            if (!project.hasProperty("runVersionLoadingTest")) {
+                excludeTags("version-loading")
+            }
+        }
+
+        if (project.hasProperty("runVersionLoadingTest")) {
+            testLogging {
+                events("passed", "failed", "skipped", "standardOut", "standardError")
+                exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+                showExceptions = true
+                showCauses = true
+                showStackTraces = true
+                showStandardStreams = true
+            }
+        }
     }
 }
 
