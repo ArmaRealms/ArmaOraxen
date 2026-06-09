@@ -80,6 +80,7 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("org.mockito:mockito-core:5.11.0")
     testImplementation("org.mockito:mockito-junit-jupiter:5.11.0")
+    testImplementation(oraxenLibs.spring.expression)
     testImplementation("net.kyori:adventure-api:4.18.0")
     testImplementation(oraxenLibs.adventure.platform)
     testImplementation("net.kyori:adventure-text-minimessage:4.18.0")
