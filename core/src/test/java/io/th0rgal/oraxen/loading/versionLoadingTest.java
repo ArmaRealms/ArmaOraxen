@@ -1,7 +1,12 @@
 package io.th0rgal.oraxen.loading;
 
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -18,43 +23,50 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.jar.JarFile;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+/*
+* Downloads a server jar, cleans up the server, builds and deploys Oraxen to the server, sets the Java Version and verifies Oraxen loads fine on the server.
+* Supports 1.20.4-26.1.2.
+*
+* Run all versions via './gradlew :core:test --tests io.th0rgal.oraxen.loading.versionLoadingTest -PrunVersionLoadingTest=true'.
+* Run a specific version via './gradlew :core:test --tests "io.th0rgal.oraxen.loading.versionLoadingTest.<Version>'.
+* <Version> can be e.g. 'Paper_1_21_11'.
+* */
+
+@Execution(ExecutionMode.SAME_THREAD)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class versionLoadingTest {
 
     private static final Path serverDir = Path.of(System.getProperty("user.home"), "Oraxen", "Servers");
     private static final Path pluginsDir = serverDir.resolve("plugins");
     private static final Path paperDir = serverDir.resolve("Paper");
+    private static final Path logsDir = serverDir.resolve("logs");
+    
+    private static final Duration serverTimeout = Duration.ofMinutes(3);
+    private static final Duration serverStopDelay = Duration.ofSeconds(4);
+    private static volatile Throwable previousVersionFailure;
+    private static Path builtPluginJar;
+
     private static final List<String> paperVersions = List.of(
-            "1.20.4",
-            "1.20.5",
-            "1.20.6",
-            "1.21",
-            // 1.21.1 and 1.21.2 are intentionally excluded because they do not have Paper jars.
-            "1.21.3",
-            "1.21.4",
-            "1.21.5",
-            "1.21.6",
-            "1.21.7",
-            "1.21.8",
-            "1.21.9",
-            "1.21.10",
-            "1.21.11",
+            "1.20.4", "1.20.5", "1.20.6", "1.21",
+            "1.21.3", "1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11",
             "26.1.2"
     );
-    private static final Duration serverTimeout = Duration.ofMinutes(3);
 
-    private static final Map<String, String> javaVersions = Map.of(
+    private static final Map<String, String> javaHomes = Map.of(
             "1.20.4-1.21.11", "C:\\Program Files\\Java\\jdk-21\\",
             "26.1.2", "C:\\Program Files\\Java\\jdk-25\\"
     );
 
-    private static final Map<String, String> paperDownloadUrls = Map.ofEntries(
+    private static final Map<String, String> paperURLs = Map.ofEntries(
             Map.entry("26.1.2", "https://fill-data.papermc.io/v1/objects/d30fae0c74092b10855f0412ca6b265c60301a013d34bc28a2a41bf5682dd80b/paper-26.1.2-69.jar"),
-            Map.entry("1.21.11", "https://fill-data.papermc.io/v1/objects/d30fae0c74092b10855f0412ca6b265c60301a013d34bc28a2a41bf5682dd80b/paper-26.1.2-69.jar"),
+            Map.entry("1.21.11", "https://fill-data.papermc.io/v1/objects/5ffef465eeeb5f2a3c23a24419d97c51afd7dbb4923ff42df9a3f58bba1ccfba/paper-1.21.11-132.jar"),
             Map.entry("1.21.10", "https://fill-data.papermc.io/v1/objects/158703f75a26f842ea656b3dc6d75bf3d1ec176b97a2c36384d0b80b3871af53/paper-1.21.10-130.jar"),
             Map.entry("1.21.9", "https://fill-data.papermc.io/v1/objects/aec002e77c7566e49494fdf05430b96078ffd1d7430e652d4f338fef951e7a10/paper-1.21.9-59.jar"),
             Map.entry("1.21.8", "https://fill-data.papermc.io/v1/objects/8de7c52c3b02403503d16fac58003f1efef7dd7a0256786843927fa92ee57f1e/paper-1.21.8-60.jar"),
@@ -69,78 +81,154 @@ public class versionLoadingTest {
             Map.entry("1.20.4", "https://fill-data.papermc.io/v1/objects/cabed3ae77cf55deba7c7d8722bc9cfd5e991201c211665f9265616d9fe5c77b/paper-1.20.4-499.jar")
     );
 
-    @Test
-    @Tag("version-loading")
-    void runPaper() throws Exception {
-        Path projectDir = findProjectDir();
+    @Test @Tag("version-loading") @Order(1) void Paper_1_20_4() throws Exception { testPaper("1.20.4"); }
+    @Test @Tag("version-loading") @Order(2) void Paper_1_20_5() throws Exception { testPaper("1.20.5"); }
+    @Test @Tag("version-loading") @Order(3) void Paper_1_20_6() throws Exception { testPaper("1.20.6"); }
+    @Test @Tag("version-loading") @Order(4) void Paper_1_21() throws Exception { testPaper("1.21"); }
+    @Test @Tag("version-loading") @Order(5) void Paper_1_21_3() throws Exception { testPaper("1.21.3"); }
+    @Test @Tag("version-loading") @Order(6) void Paper_1_21_4() throws Exception { testPaper("1.21.4"); }
+    @Test @Tag("version-loading") @Order(7) void Paper_1_21_5() throws Exception { testPaper("1.21.5"); }
+    @Test @Tag("version-loading") @Order(8) void Paper_1_21_6() throws Exception { testPaper("1.21.6"); }
+    @Test @Tag("version-loading") @Order(9) void Paper_1_21_7() throws Exception { testPaper("1.21.7"); }
+    @Test @Tag("version-loading") @Order(10) void Paper_1_21_8() throws Exception { testPaper("1.21.8"); }
+    @Test @Tag("version-loading") @Order(11) void Paper_1_21_9() throws Exception { testPaper("1.21.9"); }
+    @Test @Tag("version-loading") @Order(12) void Paper_1_21_10() throws Exception { testPaper("1.21.10"); }
+    @Test @Tag("version-loading") @Order(13) void Paper_1_21_11() throws Exception { testPaper("1.21.11"); }
+    @Test @Tag("version-loading") @Order(14) void Paper_26_1_2() throws Exception { testPaper("26.1.2"); }
 
-        buildPlugin(projectDir);
-        prepareServerDirectory();
-        copyBuiltJar(findBuiltJar(projectDir));
-
-        for (String version : paperVersions) {
-            System.out.println("Testing Paper " + version + "...");
-            runPaperAndAssertOraxenLoads(version);
-            System.out.println("Paper " + version + " loaded Oraxen successfully.\n");
+    private static void testPaper(String version) throws Exception {
+        assumeTrue(previousVersionFailure == null, "Skipping because a previous Paper version failed: " + previousVersionFailure);
+        try {
+            assertTrue(paperVersions.contains(version), "Unexpected Paper version " + version);
+            Path projectDir = findProjectDir();
+            buildPluginIfNeeded(projectDir);
+            prepareServerDir();
+            copyBuiltJar(builtPluginJar);
+            runPaper(version);
+        } catch (Exception | Error failure) {
+            previousVersionFailure = failure;
+            throw failure;
         }
     }
 
-    private static Path findProjectDir() {
-        Path current = Path.of("").toAbsolutePath();
-        while (current != null) {
-            if (Files.exists(current.resolve("gradlew")) || Files.exists(current.resolve("gradlew.bat"))) {
-                return current;
-            }
-            current = current.getParent();
-        }
-        throw new IllegalStateException("Could not find project directory containing gradlew");
-    }
+    private static void buildPluginIfNeeded(Path projectDir) throws Exception {
+        if (builtPluginJar != null && Files.exists(builtPluginJar)) return;
 
-    private static void buildPlugin(Path projectDir) throws IOException, InterruptedException {
         boolean windows = System.getProperty("os.name").toLowerCase().contains("win");
         ProcessBuilder builder = windows
-                ? new ProcessBuilder("cmd", "/c", ".\\gradlew", "build")
-                : new ProcessBuilder("./gradlew", "build");
-        builder.directory(projectDir.toFile());
+                ? new ProcessBuilder("cmd", "/c", ".\\gradlew", ":core:shadowJar", "-x", "test")
+                : new ProcessBuilder("./gradlew", ":core:shadowJar", "-x", "test");
+        builder.directory(projectDir.toFile()).redirectErrorStream(true);
         builder.environment().put("CI", "true");
-        builder.redirectErrorStream(true);
-
         Process process = builder.start();
-        String output = readAllOutput(process);
+        String output = readAll(process);
         assertTrue(process.waitFor(10, TimeUnit.MINUTES), "Timed out while building Oraxen");
         assertTrue(process.exitValue() == 0, "Gradle build failed:\n" + output);
+        builtPluginJar = findBuiltJar(projectDir);
     }
 
-    private static void prepareServerDirectory() throws IOException {
+    private static void prepareServerDir() throws IOException {
         Files.createDirectories(serverDir);
-
         try (Stream<Path> paths = Files.walk(serverDir)) {
             paths.sorted(Comparator.reverseOrder())
                     .filter(path -> !path.equals(serverDir))
-                    // Keep Paper jars in place so Paper/<version>.jar can be started after cleanup.
                     .filter(path -> !path.equals(paperDir) && !path.startsWith(paperDir))
-                    .forEach(path -> {
-                        try {
-                            Files.deleteIfExists(path);
-                        } catch (IOException exception) {
-                            throw new RuntimeException("Failed to delete " + path, exception);
-                        }
-                    });
+                    .filter(path -> !path.equals(logsDir) && !path.startsWith(logsDir))
+                    .forEach(versionLoadingTest::delete);
         }
-
         Files.createDirectories(pluginsDir);
         Files.createDirectories(paperDir);
         Files.writeString(serverDir.resolve("eula.txt"), "eula=true\n", StandardCharsets.UTF_8);
     }
 
+    private static void runPaper(String version) throws Exception {
+        ensurePaperJar(version);
+        ProcessBuilder builder = new ProcessBuilder("java", "-Xmx1G", "-jar", "Paper/" + version + ".jar", "--nogui", "--port", "25590");
+        builder.directory(serverDir.toFile()).redirectErrorStream(true);
+        builder.environment().put("JAVA_HOME", javaHome(version));
+        builder.environment().put("PATH", javaHome(version) + "bin;" + builder.environment().getOrDefault("PATH", ""));
+
+        Process process = builder.start();
+        StringBuilder output = new StringBuilder();
+        try {
+            detectPassOrFail(version, process, output);
+        } finally {
+            Thread.sleep(serverStopDelay.toMillis());
+            stopServer(process);
+        }
+    }
+
+    private static void detectPassOrFail(String version, Process process, StringBuilder output) throws Exception {
+        boolean enabled = false;
+        Instant deadline = Instant.now().plus(serverTimeout);
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+            while (Instant.now().isBefore(deadline)) {
+                if (!reader.ready()) {
+                    if (!process.isAlive()) failWithServerOutput(version, "Paper exited with code " + process.exitValue() + " before Oraxen loaded");
+                    Thread.sleep(100);
+                    continue;
+                }
+                String line = reader.readLine();
+                if (line == null) break;
+                output.append(line).append(System.lineSeparator());
+                String lower = line.toLowerCase();
+                if (lower.contains("enabling oraxen") || lower.contains("oraxen") && lower.contains("enabled")) enabled = true;
+                if (lower.contains("disabling oraxen")) failWithServerOutput(version, "Oraxen was disabled during startup");
+                if (lower.contains("error occurred while enabling oraxen")) failWithServerOutput(version, "Paper reported an error while enabling Oraxen");
+                if (enabled && line.contains("Done (")) return;
+            }
+        }
+        failWithServerOutput(version, "Timed out after " + serverTimeout + " waiting for Oraxen to load");
+    }
+
+    private static Path ensurePaperJar(String version) throws IOException {
+        Path jar = paperDir.resolve(version + ".jar");
+        if (Files.exists(jar) && !paperURLs.containsKey(version)) return jar;
+        String url = Optional.ofNullable(paperURLs.get(version)).orElseGet(() -> latestPaperUrl(version));
+        Files.createDirectories(paperDir);
+        Path temp = paperDir.resolve(version + ".jar.download");
+        try (var input = URI.create(url).toURL().openStream()) {
+            Files.copy(input, temp, StandardCopyOption.REPLACE_EXISTING);
+        }
+        Files.move(temp, jar, StandardCopyOption.REPLACE_EXISTING);
+        return jar;
+    }
+
+    private static String latestPaperUrl(String version) {
+        try (var input = URI.create("https://api.papermc.io/v2/projects/paper/versions/" + version + "/builds").toURL().openStream()) {
+            String json = new String(input.readAllBytes(), StandardCharsets.UTF_8);
+            java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\\\"build\\\"\\s*:\\s*(\\d+)").matcher(json);
+            int build = -1;
+            while (matcher.find()) build = Integer.parseInt(matcher.group(1));
+            if (build >= 0) return "https://api.papermc.io/v2/projects/paper/versions/" + version + "/builds/" + build + "/downloads/paper-" + version + "-" + build + ".jar";
+        } catch (IOException ignored) {
+        }
+        throw new IllegalArgumentException("No Paper URL for " + version);
+    }
+
+    private static Path findProjectDir() {
+        for (Path current = Path.of("").toAbsolutePath(); current != null; current = current.getParent()) {
+            if (Files.exists(current.resolve("gradlew")) || Files.exists(current.resolve("gradlew.bat"))) return current;
+        }
+        throw new IllegalStateException("Could not find project directory containing gradlew");
+    }
+
     private static Path findBuiltJar(Path projectDir) throws IOException {
         try (Stream<Path> jars = Files.walk(projectDir)) {
-            Optional<Path> jar = jars
-                    .filter(Files::isRegularFile)
+            return jars.filter(Files::isRegularFile)
                     .filter(path -> path.getFileName().toString().matches("oraxen-.*\\.jar"))
                     .filter(path -> path.toString().contains("build"))
-                    .max(Comparator.comparingLong(path -> path.toFile().lastModified()));
-            return jar.orElseThrow(() -> new IllegalStateException("Could not find built Oraxen jar"));
+                    .filter(versionLoadingTest::hasPluginDescriptor)
+                    .max(Comparator.comparingLong(path -> path.toFile().lastModified()))
+                    .orElseThrow(() -> new IllegalStateException("Could not find built Oraxen jar"));
+        }
+    }
+
+    private static boolean hasPluginDescriptor(Path jar) {
+        try (JarFile jarFile = new JarFile(jar.toFile())) {
+            return jarFile.getEntry("plugin.yml") != null || jarFile.getEntry("paper-plugin.yml") != null;
+        } catch (IOException ignored) {
+            return false;
         }
     }
 
@@ -148,147 +236,61 @@ public class versionLoadingTest {
         Files.copy(builtJar, pluginsDir.resolve(builtJar.getFileName()), StandardCopyOption.REPLACE_EXISTING);
     }
 
-    private static void runPaperAndAssertOraxenLoads(String version) throws Exception {
-        Path paperJar = ensurePaperJarExists(version);
-        System.out.println("Starting Paper " + version + " from " + paperJar);
-
-        ProcessBuilder builder = new ProcessBuilder(
-                "java", "-Xmx1G", "-jar", "Paper/" + version + ".jar", "--nogui", "--port", "25590"
-        );
-        builder.directory(serverDir.toFile());
-        builder.environment().put("JAVA_HOME", javaHomeFor(version));
-        builder.environment().put("PATH", javaHomeFor(version) + "bin;" + builder.environment().getOrDefault("PATH", ""));
-        builder.redirectErrorStream(true);
-
-        Process process = builder.start();
-        boolean enabledOraxen = false;
-        StringBuilder output = new StringBuilder();
-        Instant deadline = Instant.now().plus(serverTimeout);
-
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-            while (Instant.now().isBefore(deadline)) {
-                if (reader.ready()) {
-                    String line = reader.readLine();
-                    if (line == null) {
-                        break;
-                    }
-                    output.append(line).append(System.lineSeparator());
-
-                    String lower = line.toLowerCase();
-                    if (lower.contains("enabling oraxen") || lower.contains("oraxen") && lower.contains("enabled")) {
-                        enabledOraxen = true;
-                    }
-                    if (lower.contains("disabling oraxen")) {
-                        failWithServerOutput(version, "Oraxen was disabled during startup", output);
-                    }
-                    if (lower.contains("error occurred while enabling oraxen")) {
-                        failWithServerOutput(version, "Paper reported an error while enabling Oraxen", output);
-                    }
-
-                    if (enabledOraxen && line.contains("Done (")) {
-                        return;
-                    }
-                } else if (!process.isAlive()) {
-                    failWithServerOutput(version, "Paper exited with code " + process.exitValue() + " before Oraxen loaded", output);
-                } else {
-                    Thread.sleep(100);
-                }
-            }
-
-            failWithServerOutput(version, "Timed out after " + serverTimeout + " waiting for Oraxen to load", output);
-        } finally {
-            stopServer(process);
-        }
-    }
-
-    private static Path ensurePaperJarExists(String version) throws IOException {
-        Path paperJar = paperDir.resolve(version + ".jar");
-        if (Files.exists(paperJar)) {
-            System.out.println("Using existing Paper jar for " + version + " at " + paperJar + ".");
-            return paperJar;
-        }
-
-        String downloadUrl = paperDownloadUrls.get(version);
-        if (downloadUrl == null) {
-            throw new IllegalArgumentException("No Paper download URL configured for " + version + ".");
-        }
-
-        System.out.println("Downloading Paper " + version + " from " + downloadUrl + ".");
-        Files.createDirectories(paperDir);
-        Path temporaryJar = paperDir.resolve(version + ".jar.download.");
-        try (var inputStream = URI.create(downloadUrl).toURL().openStream()) {
-            Files.copy(inputStream, temporaryJar, StandardCopyOption.REPLACE_EXISTING);
-        }
-        Files.move(temporaryJar, paperJar, StandardCopyOption.REPLACE_EXISTING);
-        System.out.println("Downloaded Paper " + version + " to " + paperJar + ".");
-        return paperJar;
-    }
-
-    private static void failWithServerOutput(String version, String reason, StringBuilder output) {
-        Path latestLog = serverDir.resolve("logs").resolve("latest.log");
-        String message = "Paper " + version + " failed with reason \"" + reason + "\".\n\nSee server log at " + latestLog.toAbsolutePath() + ".";
-        System.err.println(message);
-        fail(message);
-    }
-
-    private static String javaHomeFor(String version) {
-        String minecraftVersion = version.contains("-") ? version.substring(0, version.indexOf('-')) : version;
-        return javaVersions.entrySet().stream()
-                .filter(entry -> versionMatches(entry.getKey(), minecraftVersion) || entry.getKey().equals(version))
+    private static String javaHome(String version) {
+        String exact = javaHomes.get(version);
+        if (exact != null) return exact;
+        return javaHomes.entrySet().stream()
+                .filter(entry -> entry.getKey().contains("-") && inRange(version, entry.getKey()))
                 .map(Map.Entry::getValue)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("No JAVA_HOME configured for " + version));
     }
 
-    private static boolean versionMatches(String key, String version) {
-        if (!key.contains("-")) {
-            return key.equals(version);
-        }
-        String[] range = key.split("-", 2);
-        return compareVersions(version, range[0]) >= 0 && compareVersions(version, range[1]) <= 0;
+    private static boolean inRange(String version, String range) {
+        String[] bounds = range.split("-", 2);
+        return compare(version, bounds[0]) >= 0 && compare(version, bounds[1]) <= 0;
     }
 
-    private static int compareVersions(String left, String right) {
-        int[] leftParts = versionParts(left);
-        int[] rightParts = versionParts(right);
+    private static int compare(String left, String right) {
+        int[] leftParts = parts(left), rightParts = parts(right);
         for (int i = 0; i < Math.max(leftParts.length, rightParts.length); i++) {
-            int leftPart = i < leftParts.length ? leftParts[i] : 0;
-            int rightPart = i < rightParts.length ? rightParts[i] : 0;
-            if (leftPart != rightPart) {
-                return Integer.compare(leftPart, rightPart);
-            }
+            int result = Integer.compare(i < leftParts.length ? leftParts[i] : 0, i < rightParts.length ? rightParts[i] : 0);
+            if (result != 0) return result;
         }
         return 0;
     }
 
-    private static int[] versionParts(String version) {
+    private static int[] parts(String version) {
         String[] parts = version.split("\\.");
         int[] numbers = new int[parts.length];
-        for (int i = 0; i < parts.length; i++) {
-            numbers[i] = Integer.parseInt(parts[i].replaceAll("\\D.*", ""));
-        }
+        for (int i = 0; i < parts.length; i++) numbers[i] = Integer.parseInt(parts[i].replaceAll("\\D.*", ""));
         return numbers;
     }
 
-    private static String readAllOutput(Process process) throws IOException {
+    private static String readAll(Process process) throws IOException {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
             StringBuilder output = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                output.append(line).append(System.lineSeparator());
-            }
+            for (String line; (line = reader.readLine()) != null; ) output.append(line).append(System.lineSeparator());
             return output.toString();
         }
     }
 
     private static void stopServer(Process process) throws IOException, InterruptedException {
-        if (!process.isAlive()) {
-            return;
-        }
+        if (!process.isAlive()) return;
         process.getOutputStream().write("stop\n".getBytes(StandardCharsets.UTF_8));
         process.getOutputStream().flush();
-        if (!process.waitFor(30, TimeUnit.SECONDS)) {
-            process.destroyForcibly();
+        if (!process.waitFor(30, TimeUnit.SECONDS)) process.destroyForcibly();
+    }
+
+    private static void failWithServerOutput(String version, String reason) {
+        fail("Paper " + version + " failed: " + reason + "\nSee server log at " + serverDir.resolve("logs/latest.log").toAbsolutePath());
+    }
+
+    private static void delete(Path path) {
+        try {
+            Files.deleteIfExists(path);
+        } catch (IOException exception) {
+            throw new RuntimeException("Failed to delete " + path, exception);
         }
     }
 }

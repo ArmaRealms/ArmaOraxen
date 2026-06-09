@@ -279,7 +279,9 @@ public class ItemBuilder {
             fireResistant = itemMeta.isFireResistant() ? true : null;
             hideToolTip = itemMeta.isHideTooltip() ? true : null;
             foodComponent = itemMeta.hasFood() ? itemMeta.getFood() : null;
-            toolComponent = itemMeta.hasTool() ? itemMeta.getTool() : null;
+            if (VersionUtil.atOrAbove("1.20.6")) {
+                toolComponent = itemMeta.hasTool() ? itemMeta.getTool() : null;
+            }
             enchantmentGlintOverride = itemMeta.hasEnchantmentGlintOverride() ? itemMeta.getEnchantmentGlintOverride()
                     : null;
             rarity = itemMeta.hasRarity() ? itemMeta.getRarity() : null;
@@ -926,7 +928,7 @@ public class ItemBuilder {
             itemMeta.setRarity(rarity);
         if (hasFoodComponent())
             itemMeta.setFood(foodComponent);
-        if (hasToolComponent())
+        if (hasToolComponent() && VersionUtil.atOrAbove("1.20.6"))
             itemMeta.setTool(toolComponent);
         if (fireResistant != null)
             itemMeta.setFireResistant(fireResistant);
