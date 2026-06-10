@@ -307,9 +307,14 @@ public class OraxenPlugin extends JavaPlugin {
     }
 
     public void setFontManager(final FontManager fontManager) {
-        this.fontManager.unregisterEvents();
+        FontManager previousFontManager = this.fontManager;
+        if (previousFontManager != null) {
+            previousFontManager.unregisterEvents();
+        }
         this.fontManager = fontManager;
-        fontManager.registerEvents();
+        if (fontManager != null) {
+            fontManager.registerEvents();
+        }
     }
 
     public HudManager getHudManager() {
@@ -317,9 +322,14 @@ public class OraxenPlugin extends JavaPlugin {
     }
 
     public void setHudManager(final HudManager hudManager) {
-        this.hudManager.unregisterEvents();
+        HudManager previousHudManager = this.hudManager;
+        if (previousHudManager != null) {
+            previousHudManager.unregisterEvents();
+        }
         this.hudManager = hudManager;
-        hudManager.registerEvents();
+        if (hudManager != null) {
+            hudManager.registerEvents();
+        }
     }
 
     public SoundManager getSoundManager() {

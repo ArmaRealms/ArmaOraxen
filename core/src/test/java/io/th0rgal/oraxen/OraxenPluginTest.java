@@ -1,5 +1,7 @@
 package io.th0rgal.oraxen;
 
+import io.th0rgal.oraxen.font.FontManager;
+import io.th0rgal.oraxen.hud.HudManager;
 import io.th0rgal.oraxen.pack.upload.UploadManager;
 import org.junit.jupiter.api.Test;
 
@@ -13,6 +15,62 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 class OraxenPluginTest {
+
+    @Test
+    void setFontManagerRegistersNewManagerWithoutPreviousManager() {
+        OraxenPlugin plugin = mock(OraxenPlugin.class, CALLS_REAL_METHODS);
+        FontManager manager = mock(FontManager.class);
+
+        plugin.setFontManager(manager);
+
+        verify(manager).registerEvents();
+        verify(manager, never()).unregisterEvents();
+        assertSame(manager, plugin.getFontManager());
+    }
+
+    @Test
+    void setFontManagerUnregistersPreviousManagerWhenReplacing() {
+        OraxenPlugin plugin = mock(OraxenPlugin.class, CALLS_REAL_METHODS);
+        FontManager previous = mock(FontManager.class);
+        FontManager replacement = mock(FontManager.class);
+
+        plugin.setFontManager(previous);
+        clearInvocations(previous);
+
+        plugin.setFontManager(replacement);
+
+        verify(previous).unregisterEvents();
+        verify(replacement).registerEvents();
+        assertSame(replacement, plugin.getFontManager());
+    }
+
+    @Test
+    void setHudManagerRegistersNewManagerWithoutPreviousManager() {
+        OraxenPlugin plugin = mock(OraxenPlugin.class, CALLS_REAL_METHODS);
+        HudManager manager = mock(HudManager.class);
+
+        plugin.setHudManager(manager);
+
+        verify(manager).registerEvents();
+        verify(manager, never()).unregisterEvents();
+        assertSame(manager, plugin.getHudManager());
+    }
+
+    @Test
+    void setHudManagerUnregistersPreviousManagerWhenReplacing() {
+        OraxenPlugin plugin = mock(OraxenPlugin.class, CALLS_REAL_METHODS);
+        HudManager previous = mock(HudManager.class);
+        HudManager replacement = mock(HudManager.class);
+
+        plugin.setHudManager(previous);
+        clearInvocations(previous);
+
+        plugin.setHudManager(replacement);
+
+        verify(previous).unregisterEvents();
+        verify(replacement).registerEvents();
+        assertSame(replacement, plugin.getHudManager());
+    }
 
     @Test
     void setUploadManagerUnregistersPreviousManagerWhenReplacing() {
