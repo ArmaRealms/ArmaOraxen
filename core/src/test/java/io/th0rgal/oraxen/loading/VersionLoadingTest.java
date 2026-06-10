@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @Execution(ExecutionMode.SAME_THREAD)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class versionLoadingTest {
+public class VersionLoadingTest {
 
     private static final Path serverDir = Path.of(System.getProperty("user.home"), "Oraxen", "Servers");
     private static final Path pluginsDir = serverDir.resolve("plugins");
@@ -160,7 +160,7 @@ public class versionLoadingTest {
                     .filter(path -> !path.equals(paperDir) && !path.startsWith(paperDir))
                     .filter(path -> !path.equals(foliaDir) && !path.startsWith(foliaDir))
                     .filter(path -> !path.equals(logsDir) && !path.startsWith(logsDir))
-                    .forEach(versionLoadingTest::delete);
+                    .forEach(VersionLoadingTest::delete);
         }
         Files.createDirectories(pluginsDir);
         Files.createDirectories(paperDir);
@@ -247,7 +247,7 @@ public class versionLoadingTest {
             return jars.filter(Files::isRegularFile)
                     .filter(path -> path.getFileName().toString().matches("oraxen-.*\\.jar"))
                     .filter(path -> path.toString().contains("build"))
-                    .filter(versionLoadingTest::hasPluginDescriptor)
+                    .filter(VersionLoadingTest::hasPluginDescriptor)
                     .max(Comparator.comparingLong(path -> path.toFile().lastModified()))
                     .orElseThrow(() -> new IllegalStateException("Could not find built Oraxen jar"));
         }
