@@ -192,6 +192,7 @@ public class OraxenPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        cleanupRuntimeResources();
         HandlerList.unregisterAll(this);
         FurnitureFactory.unregisterEvolution();
         MechanicsManager.unregisterTasks();
@@ -208,6 +209,22 @@ public class OraxenPlugin extends JavaPlugin {
         CompatibilitiesManager.disableCompatibilities();
         OraxenCommand.unregisterAll();
         Message.PLUGIN_UNLOADED.log();
+        closeAudience();
+    }
+
+    private void cleanupRuntimeResources() {
+        setUploadManager(null);
+        setMultiVersionUploadManager(null);
+        setHudManager(null);
+        if (resourcePack != null) {
+            resourcePack.shutdown();
+        }
+    }
+
+    private void closeAudience() {
+        if (audience == null) return;
+        audience.close();
+        audience = null;
     }
 
     public ResourcesManager getResourceManager() {
@@ -250,7 +267,7 @@ public class OraxenPlugin extends JavaPlugin {
     }
 
     public void setMultiVersionUploadManager(final io.th0rgal.oraxen.pack.upload.MultiVersionUploadManager multiVersionUploadManager) {
-        if (this.multiVersionUploadManager != null) {
+        if (this.multiVersionUploadManager != null && this.multiVersionUploadManager != multiVersionUploadManager) {
             this.multiVersionUploadManager.unregister();
         }
         this.multiVersionUploadManager = multiVersionUploadManager;
@@ -324,6 +341,7 @@ public class OraxenPlugin extends JavaPlugin {
     public void setHudManager(final HudManager hudManager) {
         HudManager previousHudManager = this.hudManager;
         if (previousHudManager != null) {
+            previousHudManager.unregisterTask();
             previousHudManager.unregisterEvents();
         }
         this.hudManager = hudManager;

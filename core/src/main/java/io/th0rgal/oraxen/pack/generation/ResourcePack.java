@@ -59,6 +59,8 @@ public class ResourcePack {
     /** Resolved multi-version flag (may differ from Settings if fallback occurred). */
     private boolean multiVersionResolved = false;
     private final AtomicBoolean generationInProgress = new AtomicBoolean(false);
+    private volatile boolean shutdownRequested = false;
+    private volatile ExecutorService activePackWorker;
 
     public ResourcePack() {
         // we use maps to avoid duplicate
@@ -67,6 +69,7 @@ public class ResourcePack {
     }
 
     public void generate() {
+        shutdownRequested = false;
         if (!generationInProgress.compareAndSet(false, true)) {
             Logs.logWarning("Resource-pack generation is already in progress, skipping duplicate request");
             return;
@@ -135,11 +138,14 @@ public class ResourcePack {
             thread.setDaemon(true);
             return thread;
         });
+        activePackWorker = packWorker;
 
         try {
             packWorker.submit(() -> {
                 try {
+                    if (shutdownRequested) return;
                     generateAsyncSafeItemAssets();
+                    if (shutdownRequested) return;
                     SchedulerUtil.runTask(() -> continueSinglePackGenerationOnMain(packWorker));
                 } catch (Exception exception) {
                     handleGenerationFailure(packWorker, "async item asset generation", exception);
@@ -153,6 +159,10 @@ public class ResourcePack {
     }
 
     private void continueSinglePackGenerationOnMain(ExecutorService packWorker) {
+        if (shutdownRequested) {
+            finishGeneration();
+            return;
+        }
         try {
             generateMiscAssets();
             applyPackModifiers();
@@ -168,7 +178,9 @@ public class ResourcePack {
         try {
             packWorker.submit(() -> {
                 try {
+                    if (shutdownRequested) return;
                     collectPackFilesAsyncSafe(output);
+                    if (shutdownRequested) return;
                     SchedulerUtil.runTask(() -> continuePostCollectionOnMain(packWorker, output));
                 } catch (Exception exception) {
                     handleGenerationFailure(packWorker, "async pack collection", exception);
@@ -180,6 +192,10 @@ public class ResourcePack {
     }
 
     private void continuePostCollectionOnMain(ExecutorService packWorker, List<VirtualFile> output) {
+        if (shutdownRequested) {
+            finishGeneration();
+            return;
+        }
         try {
             handleCustomArmor(output);
             applyArmorStandModelOverrides(output);
@@ -194,7 +210,9 @@ public class ResourcePack {
         try {
             packWorker.submit(() -> {
                 try {
+                    if (shutdownRequested) return;
                     postProcessOutputAsyncSafe(output);
+                    if (shutdownRequested) return;
                     SchedulerUtil.runTask(() -> finishSinglePackOutputOnMain(packWorker, output));
                 } catch (Exception exception) {
                     handleGenerationFailure(packWorker, "async pack post-processing", exception);
@@ -206,6 +224,10 @@ public class ResourcePack {
     }
 
     private void finishSinglePackOutputOnMain(ExecutorService packWorker, List<VirtualFile> output) {
+        if (shutdownRequested) {
+            finishGeneration();
+            return;
+        }
         try {
             soundGenerator.generateSound(output);
 
@@ -223,8 +245,11 @@ public class ResourcePack {
         try {
             packWorker.submit(() -> {
                 try {
+                    if (shutdownRequested) return;
                     filterGeneratedCoreShadersBelow1214(output, MinecraftVersion.getCurrentVersion());
+                    if (shutdownRequested) return;
                     ZipUtils.writeZipFile(pack, output);
+                    if (shutdownRequested) return;
                     SchedulerUtil.runTask(this::uploadGeneratedPackAndFinish);
                 } catch (Exception exception) {
                     handleGenerationFailure(packWorker, "async pack writing", exception);
@@ -239,7 +264,9 @@ public class ResourcePack {
 
     private void uploadGeneratedPackAndFinish() {
         try {
-            uploadGeneratedPack();
+            if (!shutdownRequested) {
+                uploadGeneratedPack();
+            }
         } finally {
             finishGeneration();
         }
@@ -258,6 +285,19 @@ public class ResourcePack {
 
     private void finishGeneration() {
         generationInProgress.set(false);
+        if (activePackWorker != null && activePackWorker.isShutdown()) {
+            activePackWorker = null;
+        }
+    }
+
+    public void shutdown() {
+        shutdownRequested = true;
+        ExecutorService packWorker = activePackWorker;
+        if (packWorker != null) {
+            packWorker.shutdownNow();
+            activePackWorker = null;
+        }
+        finishGeneration();
     }
 
     private void handleGenerationFailure(ExecutorService packWorker, String phase, Exception exception) {

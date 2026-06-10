@@ -2,6 +2,7 @@ package io.th0rgal.oraxen;
 
 import io.th0rgal.oraxen.font.FontManager;
 import io.th0rgal.oraxen.hud.HudManager;
+import io.th0rgal.oraxen.pack.upload.MultiVersionUploadManager;
 import io.th0rgal.oraxen.pack.upload.UploadManager;
 import org.junit.jupiter.api.Test;
 
@@ -67,9 +68,24 @@ class OraxenPluginTest {
 
         plugin.setHudManager(replacement);
 
+        verify(previous).unregisterTask();
         verify(previous).unregisterEvents();
         verify(replacement).registerEvents();
         assertSame(replacement, plugin.getHudManager());
+    }
+
+    @Test
+    void setHudManagerUnregistersTaskAndEventsWhenClearing() {
+        OraxenPlugin plugin = mock(OraxenPlugin.class, CALLS_REAL_METHODS);
+        HudManager previous = mock(HudManager.class);
+
+        plugin.setHudManager(previous);
+        clearInvocations(previous);
+        plugin.setHudManager(null);
+
+        verify(previous).unregisterTask();
+        verify(previous).unregisterEvents();
+        assertNull(plugin.getHudManager());
     }
 
     @Test
@@ -115,5 +131,46 @@ class OraxenPluginTest {
 
         verify(previous).unregister();
         assertNull(plugin.getUploadManager());
+    }
+
+    @Test
+    void setMultiVersionUploadManagerUnregistersPreviousManagerWhenReplacing() {
+        OraxenPlugin plugin = mock(OraxenPlugin.class, CALLS_REAL_METHODS);
+        MultiVersionUploadManager previous = mock(MultiVersionUploadManager.class);
+        MultiVersionUploadManager replacement = mock(MultiVersionUploadManager.class);
+
+        plugin.setMultiVersionUploadManager(previous);
+        clearInvocations(previous);
+        plugin.setMultiVersionUploadManager(replacement);
+
+        verify(previous).unregister();
+        verify(replacement, never()).unregister();
+        assertSame(replacement, plugin.getMultiVersionUploadManager());
+    }
+
+    @Test
+    void setMultiVersionUploadManagerDoesNotUnregisterSameManagerInstance() {
+        OraxenPlugin plugin = mock(OraxenPlugin.class, CALLS_REAL_METHODS);
+        MultiVersionUploadManager manager = mock(MultiVersionUploadManager.class);
+
+        plugin.setMultiVersionUploadManager(manager);
+        clearInvocations(manager);
+        plugin.setMultiVersionUploadManager(manager);
+
+        verify(manager, never()).unregister();
+        assertSame(manager, plugin.getMultiVersionUploadManager());
+    }
+
+    @Test
+    void setMultiVersionUploadManagerUnregistersPreviousManagerWhenClearing() {
+        OraxenPlugin plugin = mock(OraxenPlugin.class, CALLS_REAL_METHODS);
+        MultiVersionUploadManager previous = mock(MultiVersionUploadManager.class);
+
+        plugin.setMultiVersionUploadManager(previous);
+        clearInvocations(previous);
+        plugin.setMultiVersionUploadManager(null);
+
+        verify(previous).unregister();
+        assertNull(plugin.getMultiVersionUploadManager());
     }
 }
