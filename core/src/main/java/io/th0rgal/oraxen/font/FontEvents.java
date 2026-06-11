@@ -387,10 +387,12 @@ public class FontEvents implements Listener {
                 .toList()) {
             String characters = glyph.getCharacters();
             if (!serialized.contains(characters)) continue;
-            if (!glyph.hasPermission(player)) message = message.replaceText(
+            message = message.replaceText(
                     TextReplacementConfig.builder()
                             .matchLiteral(characters)
-                            .replacement(glyph.getGlyphComponent().font(randomKey))
+                            .replacement(glyph.hasPermission(player)
+                                    ? glyph.getGlyphComponent()
+                                    : glyph.getGlyphComponent().font(randomKey))
                             .build()
             );
         }

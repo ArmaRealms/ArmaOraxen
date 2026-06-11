@@ -1,6 +1,6 @@
 package io.th0rgal.oraxen.font;
 
-import io.th0rgal.oraxen.utils.VersionUtil;
+import io.th0rgal.oraxen.utils.logs.Logs;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import org.bukkit.configuration.ConfigurationSection;
@@ -17,6 +17,8 @@ import java.lang.reflect.Method;
  * @param shadowColor The shadow color in ARGB format, or null for no custom shadow
  */
 public record GlyphAppearance(@NotNull Key font, @Nullable Integer shadowColor) {
+
+    private static boolean warnedShadowColorUnavailable;
 
     /**
      * Default appearance with minecraft:default font and no shadow override.
@@ -107,8 +109,7 @@ public record GlyphAppearance(@NotNull Key font, @Nullable Integer shadowColor) 
     }
 
     /**
-     * Applies a 1.21.4+ text shadow color while keeping older Adventure versions
-     * compatible.
+     * Applies a text shadow color when the runtime Adventure API supports it.
      *
      * @param component   The component to modify
      * @param shadowColor The ARGB shadow color, or null
@@ -120,15 +121,6 @@ public record GlyphAppearance(@NotNull Key font, @Nullable Integer shadowColor) 
             return component;
 
         try {
-            // ShadowColor was added in 1.21.4. Some unit tests exercise this helper
-            // without a booted plugin instance, so version detection may be unavailable.
-            if (!VersionUtil.atOrAbove("1.21.4"))
-                return component;
-        } catch (Throwable ignored) {
-            // Fall through to API capability detection below.
-        }
-
-        try {
             ClassLoader cl = GlyphAppearance.class.getClassLoader();
             Class<?> shadowColorClass = Class.forName("net.kyori.adventure.text.format.ShadowColor", false, cl);
             Class<?> argbLikeClass = Class.forName("net.kyori.adventure.util.ARGBLike", false, cl);
@@ -138,8 +130,20 @@ public record GlyphAppearance(@NotNull Key font, @Nullable Integer shadowColor) 
             Method shadowMethod = Component.class.getMethod("shadowColor", argbLikeClass);
             return (Component) shadowMethod.invoke(component, shadowColorObj);
         } catch (Throwable ignored) {
+            warnShadowColorUnavailable();
             // Graceful degradation for older/incompatible Adventure versions
             return component;
+        }
+    }
+
+    private static void warnShadowColorUnavailable() {
+        if (warnedShadowColorUnavailable) return;
+        warnedShadowColorUnavailable = true;
+
+        try {
+            Logs.logWarning("A glyph is using appearance.shadow_color, but text shadow colors are not available on this server. This requires Minecraft/Adventure support for text shadow colors, so the configured shadow color will be ignored.");
+        } catch (Throwable ignored) {
+            // Logging can be unavailable in tests or early startup; ignore silently.
         }
     }
 }
