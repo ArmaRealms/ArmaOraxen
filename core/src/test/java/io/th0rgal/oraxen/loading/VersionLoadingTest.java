@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -61,9 +62,9 @@ public class VersionLoadingTest {
     );
     private static final List<String> foliaVersions = List.of("1.21.8", "1.21.11", "26.1.2");
 
-    private static final Map<String, String> javaHomes = Map.of(
-            "1.20.4-1.21.11", "C:\\Program Files\\Java\\jdk-21\\",
-            "26.1.2", "C:\\Program Files\\Java\\jdk-25\\"
+    private static final Map<String, Integer> javaVersions = Map.of(
+            "1.20.4-1.21.11", 21,
+            "26.1.2", 25
     );
 
     private static final Map<String, String> paperURLs = Map.ofEntries(
@@ -171,11 +172,11 @@ public class VersionLoadingTest {
     private static void runServer(String project, String name, String version, Path jarDir, Map<String, String> urls) throws Exception {
         ensureServerJar(project, version, jarDir, urls);
         Files.deleteIfExists(logsDir.resolve("latest.log"));
-        String javaHome = javaHome(version);
+        Path javaHome = javaHome(version);
         ProcessBuilder builder = new ProcessBuilder(javaExecutable(javaHome), "-Xmx1G", "-jar", name + "/" + version + ".jar", "--nogui", "--port", "25590");
         builder.directory(serverDir.toFile()).redirectErrorStream(true);
-        builder.environment().put("JAVA_HOME", javaHome);
-        builder.environment().put("PATH", javaHome + "bin;" + builder.environment().getOrDefault("PATH", ""));
+        builder.environment().put("JAVA_HOME", javaHome.toString());
+        builder.environment().put("PATH", javaHome.resolve("bin") + System.getProperty("path.separator") + builder.environment().getOrDefault("PATH", ""));
 
         Process process = builder.start();
         StringBuilder output = new StringBuilder();
@@ -193,7 +194,7 @@ public class VersionLoadingTest {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
             while (Instant.now().isBefore(deadline)) {
                 if (!reader.ready()) {
-                    if (!process.isAlive()) failWithServerOutput(name, version, name + " exited with code " + process.exitValue() + " before Oraxen loaded");
+                    if (!process.isAlive()) failWithServerOutput(name, version, name + " exited with code " + process.exitValue() + " before Oraxen loaded", output);
                     Thread.sleep(100);
                     continue;
                 }
@@ -202,12 +203,12 @@ public class VersionLoadingTest {
                 output.append(line).append(System.lineSeparator());
                 String lower = line.toLowerCase();
                 if (lower.contains("enabling oraxen") || lower.contains("oraxen") && lower.contains("enabled")) enabled = true;
-                if (lower.contains("disabling oraxen")) failWithServerOutput(name, version, "Oraxen was disabled during startup");
-                if (lower.contains("error occurred while enabling oraxen")) failWithServerOutput(name, version, name + " reported an error while enabling Oraxen");
+                if (lower.contains("disabling oraxen")) failWithServerOutput(name, version, "Oraxen was disabled during startup", output);
+                if (lower.contains("error occurred while enabling oraxen")) failWithServerOutput(name, version, name + " reported an error while enabling Oraxen", output);
                 if (enabled && line.contains("Done (")) return;
             }
         }
-        failWithServerOutput(name, version, "Timed out after " + serverTimeout + " waiting for Oraxen to load");
+        failWithServerOutput(name, version, "Timed out after " + serverTimeout + " waiting for Oraxen to load", output);
     }
 
     private static Path ensureServerJar(String project, String version, Path jarDir, Map<String, String> urls) throws IOException {
@@ -265,19 +266,124 @@ public class VersionLoadingTest {
         Files.copy(builtJar, pluginsDir.resolve(builtJar.getFileName()), StandardCopyOption.REPLACE_EXISTING);
     }
 
-    private static String javaExecutable(String javaHome) {
+    private static String javaExecutable(Path javaHome) {
         boolean windows = System.getProperty("os.name").toLowerCase().contains("win");
-        return Path.of(javaHome, "bin", windows ? "java.exe" : "java").toString();
+        return javaHome.resolve("bin").resolve(windows ? "java.exe" : "java").toString();
     }
 
-    private static String javaHome(String version) {
-        String exact = javaHomes.get(version);
+    private static Path javaHome(String version) {
+        int javaVersion = requiredJavaVersion(version);
+        return findJavaHome(javaVersion).orElseThrow(() -> new IllegalArgumentException(
+                "No Java " + javaVersion + " home found for " + version + ". Set JAVA_" + javaVersion + "_HOME or JDK_" + javaVersion + "_HOME."
+        ));
+    }
+
+    private static int requiredJavaVersion(String version) {
+        Integer exact = javaVersions.get(version);
         if (exact != null) return exact;
-        return javaHomes.entrySet().stream()
+        return javaVersions.entrySet().stream()
                 .filter(entry -> entry.getKey().contains("-") && inRange(version, entry.getKey()))
                 .map(Map.Entry::getValue)
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("No JAVA_HOME configured for " + version));
+                .orElseThrow(() -> new IllegalArgumentException("No Java version configured for " + version));
+    }
+
+    private static Optional<Path> findJavaHome(int javaVersion) {
+        List<String> envVars = List.of("JAVA_" + javaVersion + "_HOME", "JDK_" + javaVersion + "_HOME", "JAVA" + javaVersion + "_HOME", "JDK" + javaVersion + "_HOME");
+        for (String envVar : envVars) {
+            Optional<Path> candidate = validJavaHome(System.getenv(envVar), javaVersion);
+            if (candidate.isPresent()) return candidate;
+        }
+
+        Optional<Path> javaHome = validJavaHome(System.getenv("JAVA_HOME"), javaVersion);
+        if (javaHome.isPresent()) return javaHome;
+
+        if (isMac()) {
+            Optional<Path> macJavaHome = macJavaHome(javaVersion);
+            if (macJavaHome.isPresent()) return macJavaHome;
+        }
+
+        for (Path candidate : commonJavaHomes(javaVersion)) {
+            Optional<Path> valid = validJavaHome(candidate.toString(), javaVersion);
+            if (valid.isPresent()) return valid;
+        }
+
+        for (Path candidate : installedJavaHomes()) {
+            Optional<Path> valid = validJavaHome(candidate.toString(), javaVersion);
+            if (valid.isPresent()) return valid;
+        }
+
+        return Runtime.version().feature() == javaVersion ? Optional.of(Path.of(System.getProperty("java.home"))) : Optional.empty();
+    }
+
+    private static Optional<Path> macJavaHome(int javaVersion) {
+        try {
+            Process process = new ProcessBuilder("/usr/libexec/java_home", "-v", Integer.toString(javaVersion)).redirectErrorStream(true).start();
+            String output = readAll(process).trim();
+            if (process.waitFor(10, TimeUnit.SECONDS) && process.exitValue() == 0) return validJavaHome(output, javaVersion);
+        } catch (IOException | InterruptedException exception) {
+            if (exception instanceof InterruptedException) Thread.currentThread().interrupt();
+        }
+        return Optional.empty();
+    }
+
+    private static List<Path> commonJavaHomes(int javaVersion) {
+        boolean windows = System.getProperty("os.name").toLowerCase().contains("win");
+        if (windows) return List.of(
+                Path.of("C:\\Program Files\\Java\\jdk-" + javaVersion),
+                Path.of("C:\\Program Files\\Eclipse Adoptium\\jdk-" + javaVersion),
+                Path.of("C:\\Program Files\\Microsoft\\jdk-" + javaVersion)
+        );
+        return List.of(
+                Path.of("/usr/lib/jvm/java-" + javaVersion + "-openjdk"),
+                Path.of("/usr/lib/jvm/java-" + javaVersion + "-openjdk-amd64"),
+                Path.of("/usr/lib/jvm/jdk-" + javaVersion),
+                Path.of("/Library/Java/JavaVirtualMachines/temurin-" + javaVersion + ".jdk/Contents/Home"),
+                Path.of("/Library/Java/JavaVirtualMachines/microsoft-" + javaVersion + ".jdk/Contents/Home")
+        );
+    }
+
+    private static List<Path> installedJavaHomes() {
+        List<Path> homes = new ArrayList<>();
+        List<Path> roots = List.of(
+                Path.of("/usr/lib/jvm"),
+                Path.of("/Library/Java/JavaVirtualMachines"),
+                Path.of("C:\\Program Files\\Java"),
+                Path.of("C:\\Program Files\\Eclipse Adoptium"),
+                Path.of("C:\\Program Files\\Microsoft")
+        );
+        for (Path root : roots) {
+            if (!Files.isDirectory(root)) continue;
+            try (Stream<Path> paths = Files.list(root)) {
+                paths.forEach(path -> homes.add(path.toString().endsWith(".jdk") ? path.resolve("Contents/Home") : path));
+            } catch (IOException ignored) {
+            }
+        }
+        return homes;
+    }
+
+    private static Optional<Path> validJavaHome(String javaHome, int javaVersion) {
+        if (javaHome == null || javaHome.isBlank()) return Optional.empty();
+        Path home = Path.of(javaHome);
+        if (!Files.isRegularFile(Path.of(javaExecutable(home)))) return Optional.empty();
+        return javaFeatureVersion(home) == javaVersion ? Optional.of(home) : Optional.empty();
+    }
+
+    private static int javaFeatureVersion(Path javaHome) {
+        try {
+            Process process = new ProcessBuilder(javaExecutable(javaHome), "-version").redirectErrorStream(true).start();
+            String output = readAll(process);
+            if (!process.waitFor(10, TimeUnit.SECONDS) || process.exitValue() != 0) return -1;
+            java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("version \\\"(\\d+)").matcher(output);
+            return matcher.find() ? Integer.parseInt(matcher.group(1)) : -1;
+        } catch (IOException | InterruptedException exception) {
+            if (exception instanceof InterruptedException) Thread.currentThread().interrupt();
+            return -1;
+        }
+    }
+
+    private static boolean isMac() {
+        return System.getProperty("os.name").toLowerCase().contains("mac");
     }
 
     private static boolean inRange(String version, String range) {
@@ -316,8 +422,10 @@ public class VersionLoadingTest {
         if (!process.waitFor(30, TimeUnit.SECONDS)) process.destroyForcibly();
     }
 
-    private static void failWithServerOutput(String name, String version, String reason) {
-        fail(name + " " + version + " failed: " + reason + "\nSee server log at " + serverDir.resolve("logs/latest.log").toAbsolutePath());
+    private static void failWithServerOutput(String name, String version, String reason, StringBuilder output) {
+        fail(name + " " + version + " failed: " + reason
+                + "\nSee server log at " + serverDir.resolve("logs/latest.log").toAbsolutePath()
+                + (output.isEmpty() ? "" : "\nServer output:\n" + output));
     }
 
     private static void delete(Path path) {
