@@ -103,9 +103,9 @@ public class VersionUtil {
         }
 
         // Mojang switched the release version namespace after 1.21.11.
-        // Only bind this handler to the exact 26.1.2 release it was built against;
+        // 26.1, 26.1.1, and 26.1.2 share the same supported NMS structure;
         // future versions such as 26.2/26.2.1 should remain UNKNOWN until supported.
-        if (version.getMajor() == 26 && version.getMinor() == 1 && version.getBuild() == 2) {
+        if (version.getMajor() == 26 && version.getMinor() == 1 && version.getBuild() <= 2) {
             return NMSVersion.v26_1_2;
         }
 

@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Method;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Encapsulates the appearance configuration for glyphs.
@@ -18,7 +19,7 @@ import java.lang.reflect.Method;
  */
 public record GlyphAppearance(@NotNull Key font, @Nullable Integer shadowColor) {
 
-    private static volatile boolean warnedShadowColorUnavailable;
+    private static final AtomicBoolean warnedShadowColorUnavailable = new AtomicBoolean();
 
     /**
      * Default appearance with minecraft:default font and no shadow override.
@@ -137,8 +138,7 @@ public record GlyphAppearance(@NotNull Key font, @Nullable Integer shadowColor) 
     }
 
     private static void warnShadowColorUnavailable() {
-        if (warnedShadowColorUnavailable) return;
-        warnedShadowColorUnavailable = true;
+        if (!warnedShadowColorUnavailable.compareAndSet(false, true)) return;
 
         try {
             Logs.logWarning("A glyph is using appearance.shadow_color, but text shadow colors are not available on this server. This requires Minecraft/Adventure support for text shadow colors, so the configured shadow color will be ignored.");
