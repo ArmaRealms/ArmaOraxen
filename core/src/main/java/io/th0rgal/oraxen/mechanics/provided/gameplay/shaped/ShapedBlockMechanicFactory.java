@@ -52,6 +52,8 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
     private final List<String> toolTypes;
     private final boolean convertVanillaWaxed;
     private final boolean handleWorldGeneration;
+    private final boolean registerListeners;
+    private boolean enabled;
 
     @ConfigProperty(type = PropertyType.STRING, description = "Type of shaped block: STAIR, SLAB, DOOR, TRAPDOOR, GRATE, BULB")
     public static final String PROP_TYPE = "type";
@@ -72,20 +74,12 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
         toolTypes = section.getStringList("tool_types");
         convertVanillaWaxed = section.getBoolean("convert_vanilla_waxed", true);
         handleWorldGeneration = section.getBoolean("handle_world_generation", true);
+        this.registerListeners = registerListeners;
+        enabled = false;
 
         // Initialize variation tracking
         for (ShapedBlockType type : ShapedBlockType.values()) {
             usedVariations.put(type, new HashMap<>());
-        }
-
-        // Register pack modifier to generate blockstate files after all items are parsed
-        OraxenPlugin.get().getResourcePack().addModifiers(getMechanicID(), packFolder -> {
-            generateBlockstates();
-        });
-
-        if (registerListeners) {
-            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(),
-                new ShapedBlockMechanicListener(this));
         }
 
         if (Settings.DEBUG.toBool()) {
@@ -95,6 +89,10 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
 
     public static ShapedBlockMechanicFactory getInstance() {
         return instance;
+    }
+
+    public static boolean isEnabled() {
+        return instance != null && instance.enabled && MechanicsManager.isMechanicEnabled("block");
     }
 
     public static void clearInstance(ShapedBlockMechanicFactory factory) {
@@ -118,8 +116,22 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
         return handleWorldGeneration;
     }
 
+    private void enable() {
+        if (enabled) return;
+        enabled = true;
+
+        // Register pack modifier to generate blockstate files after all items are parsed
+        OraxenPlugin.get().getResourcePack().addModifiers(getMechanicID(), packFolder -> generateBlockstates());
+
+        if (registerListeners) {
+            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(),
+                new ShapedBlockMechanicListener(this));
+        }
+    }
+
     @Override
     public Mechanic parse(ConfigurationSection section) {
+        enable();
         ShapedBlockMechanic mechanic = new ShapedBlockMechanic(this, section);
 
         // Validate and register the variation

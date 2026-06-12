@@ -663,7 +663,7 @@ public class OraxenBlocks {
 
     @org.jetbrains.annotations.Nullable
     public static ShapedBlockMechanic getShapedMechanic(Block block) {
-        if (ShapedBlockType.fromMaterial(block.getType()) == null) return null;
+        if (!ShapedBlockMechanicFactory.isEnabled() || ShapedBlockType.fromMaterial(block.getType()) == null) return null;
         BlockMechanicFactory blockFactory = BlockMechanicFactory.getInstance();
         if (blockFactory == null) return null;
         ShapedBlockMechanicFactory shapedFactory = blockFactory.getShapedBlockFactory();
@@ -672,6 +672,7 @@ public class OraxenBlocks {
 
     @org.jetbrains.annotations.Nullable
     public static ShapedBlockMechanic getShapedMechanic(String itemID) {
+        if (!ShapedBlockMechanicFactory.isEnabled()) return null;
         BlockMechanicFactory blockFactory = BlockMechanicFactory.getInstance();
         if (blockFactory == null) return null;
         ShapedBlockMechanicFactory shapedFactory = blockFactory.getShapedBlockFactory();
