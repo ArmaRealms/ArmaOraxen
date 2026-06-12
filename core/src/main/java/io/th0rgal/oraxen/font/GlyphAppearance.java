@@ -18,7 +18,7 @@ import java.lang.reflect.Method;
  */
 public record GlyphAppearance(@NotNull Key font, @Nullable Integer shadowColor) {
 
-    private static boolean warnedShadowColorUnavailable;
+    private static volatile boolean warnedShadowColorUnavailable;
 
     /**
      * Default appearance with minecraft:default font and no shadow override.

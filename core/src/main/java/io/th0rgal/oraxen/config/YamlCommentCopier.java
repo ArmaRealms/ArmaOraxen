@@ -138,6 +138,10 @@ final class YamlCommentCopier {
                 continue;
             }
             if (currentChar == '\'' && !inDoubleQuotes) {
+                if (inSingleQuotes && index + 1 < line.length() && line.charAt(index + 1) == '\'') {
+                    index++;
+                    continue;
+                }
                 inSingleQuotes = !inSingleQuotes;
                 continue;
             }

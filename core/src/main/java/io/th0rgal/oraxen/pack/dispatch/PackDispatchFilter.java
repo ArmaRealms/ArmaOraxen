@@ -347,7 +347,7 @@ public final class PackDispatchFilter {
         for (Map.Entry<String, Integer> entry : PROTOCOL_BY_VERSION.entrySet()) {
             ClientVersion version = ClientVersion.parse(entry.getKey()).orElse(null);
             if (version == null) continue;
-            bestVersions.merge(entry.getValue(), version, (current, candidate) -> current.compareTo(candidate) <= 0 ? current : candidate);
+            bestVersions.merge(entry.getValue(), version, (current, candidate) -> current.compareTo(candidate) >= 0 ? current : candidate);
         }
 
         TreeMap<Integer, ClientVersion> versions = new TreeMap<>();
