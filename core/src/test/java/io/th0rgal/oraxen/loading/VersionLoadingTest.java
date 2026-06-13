@@ -140,10 +140,7 @@ public class VersionLoadingTest {
     private static void buildPluginIfNeeded(Path projectDir) throws Exception {
         if (builtPluginJar != null && Files.exists(builtPluginJar)) return;
 
-        boolean windows = System.getProperty("os.name").toLowerCase().contains("win");
-        ProcessBuilder builder = windows
-                ? new ProcessBuilder("cmd", "/c", ".\\gradlew", ":core:shadowJar", "-x", "test")
-                : new ProcessBuilder("./gradlew", ":core:shadowJar", "-x", "test");
+        ProcessBuilder builder = gradleWrapper(projectDir, "shadowJar", "-x", "test");
         builder.directory(projectDir.toFile()).redirectErrorStream(true);
         builder.environment().put("CI", "true");
         Process process = builder.start();
@@ -244,14 +241,36 @@ public class VersionLoadingTest {
     }
 
     private static Path findBuiltJar(Path projectDir) throws IOException {
-        try (Stream<Path> jars = Files.walk(projectDir)) {
-            return jars.filter(Files::isRegularFile)
-                    .filter(path -> path.getFileName().toString().matches("oraxen-.*\\.jar"))
-                    .filter(path -> path.toString().contains("build"))
-                    .filter(VersionLoadingTest::hasPluginDescriptor)
-                    .max(Comparator.comparingLong(path -> path.toFile().lastModified()))
-                    .orElseThrow(() -> new IllegalStateException("Could not find built Oraxen jar"));
+        List<Path> searchRoots = List.of(projectDir.resolve("build/libs"), projectDir.resolve("core/build/libs"));
+        for (Path searchRoot : searchRoots) {
+            if (!Files.isDirectory(searchRoot)) continue;
+            try (Stream<Path> jars = Files.list(searchRoot)) {
+                Optional<Path> builtJar = jars.filter(Files::isRegularFile)
+                        .filter(path -> path.getFileName().toString().matches("oraxen-.*\\.jar"))
+                        .filter(VersionLoadingTest::hasPluginDescriptor)
+                        .max(Comparator.comparingLong(path -> path.toFile().lastModified()));
+                if (builtJar.isPresent()) return builtJar.get();
+            }
         }
+        throw new IllegalStateException("Could not find built Oraxen jar in " + searchRoots);
+    }
+
+    private static ProcessBuilder gradleWrapper(Path projectDir, String... arguments) {
+        boolean windows = System.getProperty("os.name").toLowerCase().contains("win");
+        Path wrapper = projectDir.resolve(windows ? "gradlew.bat" : "gradlew");
+        List<String> command = new ArrayList<>();
+        if (windows) {
+            command.add("cmd");
+            command.add("/c");
+            command.add(wrapper.toString());
+        } else if (Files.isExecutable(wrapper)) {
+            command.add(wrapper.toString());
+        } else {
+            command.add("sh");
+            command.add(wrapper.toString());
+        }
+        command.addAll(List.of(arguments));
+        return new ProcessBuilder(command);
     }
 
     private static boolean hasPluginDescriptor(Path jar) {
