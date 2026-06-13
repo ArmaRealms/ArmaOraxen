@@ -106,8 +106,10 @@ public class FurnitureSoundListener implements Listener {
         if (!FurnitureFactory.isEnabled() || !FurnitureFactory.areCustomSoundsEnabled()) return;
         Entity entity = event.getEntity();
         if (!(entity instanceof LivingEntity)) return;
+        Location eventLoc = event.getLocation();
         Location entityLoc = entity.getLocation();
-        if (entityLoc == null || !isLoaded(entityLoc)) return;
+        if (eventLoc == null || entityLoc == null || eventLoc.getWorld() == null || entityLoc.getWorld() == null) return;
+        if (!eventLoc.getWorld().equals(entityLoc.getWorld()) || !isLoaded(eventLoc)) return;
 
         GameEvent gameEvent = event.getEvent();
         if (gameEvent == null) return;
@@ -137,7 +139,7 @@ public class FurnitureSoundListener implements Listener {
             pitch = (check) ? mechanic.getBlockSounds().getFallPitch() : VANILLA_FALL_PITCH;
         } else return;
 
-        BlockHelpers.playCustomBlockSound(entity.getLocation(), sound, SoundCategory.PLAYERS, volume, pitch);
+        BlockHelpers.playCustomBlockSound(entityLoc, sound, SoundCategory.PLAYERS, volume, pitch);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
