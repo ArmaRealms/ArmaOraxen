@@ -89,6 +89,11 @@ public class AtlasGenerator {
         for (Map.Entry<VirtualFile, TexturePath> entry : textureSubFolders.entrySet()) {
             TexturePath texturePath = entry.getValue();
 
+            // Legacy placeholder texture from older Oraxen versions. It is 1x1 and
+            // can crash Forge/newer clients when added to the block atlas with mipmaps.
+            if (texturePath.namespace.equals("minecraft") && texturePath.path.equals("required/null"))
+                continue;
+
             // If a texture is for a font, do not add it to atlas, unless an item uses it
             // Default example is required/exit_icon.png
             if (texturePath.in(fontTextures) && !texturePath.in(itemTextures))
