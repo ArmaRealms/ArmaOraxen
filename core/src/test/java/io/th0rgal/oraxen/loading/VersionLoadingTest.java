@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /*
 * Downloads a server jar, cleans up the server, builds and deploys Oraxen to the server, sets the Java Version and verifies Oraxen loads fine on the server.
-* Supports Paper 1.20.4-26.1.2 and Folia 1.21.8-26.1.2.
+* Supports Paper 1.20.1-26.1.2 and Folia 1.21.8-26.1.2.
 *
 * Run all versions via './gradlew :core:test --tests io.th0rgal.oraxen.loading.versionLoadingTest -PrunVersionLoadingTest=true'.
 * Run a specific version via './gradlew :core:test --tests "io.th0rgal.oraxen.loading.versionLoadingTest.<Version>" -PrunVersionLoadingTest=true'.
@@ -56,14 +56,14 @@ public class VersionLoadingTest {
     private static Path builtPluginJar;
 
     private static final List<String> paperVersions = List.of(
-            "1.20.4", "1.20.5", "1.20.6", "1.21",
+            "1.20.1", "1.20.4", "1.20.5", "1.20.6", "1.21",
             "1.21.3", "1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11",
             "26.1.2"
     );
     private static final List<String> foliaVersions = List.of("1.21.8", "1.21.11", "26.1.2");
 
     private static final Map<String, Integer> javaVersions = Map.of(
-            "1.20.4-1.21.11", 21,
+            "1.20.1-1.21.11", 21,
             "26.1.2", 25
     );
 
@@ -81,7 +81,8 @@ public class VersionLoadingTest {
             Map.entry("1.21", "https://fill-data.papermc.io/v1/objects/ab9bb1afc3cea6978a0c03ce8448aa654fe8a9c4dddf341e7cbda1b0edaa73f5/paper-1.21-130.jar"),
             Map.entry("1.20.6", "https://fill-data.papermc.io/v1/objects/4b011f5adb5f6c72007686a223174fce82f31aeb4b34faf4652abc840b47e640/paper-1.20.6-151.jar"),
             Map.entry("1.20.5", "https://fill-data.papermc.io/v1/objects/3cd7da2f8df92e082a501a39c674aab3c0343edd179b86f5baccaebfc9974132/paper-1.20.5-22.jar"),
-            Map.entry("1.20.4", "https://fill-data.papermc.io/v1/objects/cabed3ae77cf55deba7c7d8722bc9cfd5e991201c211665f9265616d9fe5c77b/paper-1.20.4-499.jar")
+            Map.entry("1.20.4", "https://fill-data.papermc.io/v1/objects/cabed3ae77cf55deba7c7d8722bc9cfd5e991201c211665f9265616d9fe5c77b/paper-1.20.4-499.jar"),
+            Map.entry("1.20.1", "https://fill-data.papermc.io/v1/objects/234a9b32098100c6fc116664d64e36ccdb58b5b649af0f80bcccb08b0255eaea/paper-1.20.1-196.jar")
     );
 
     private static final Map<String, String> foliaURLs = Map.ofEntries(
@@ -89,23 +90,24 @@ public class VersionLoadingTest {
             Map.entry("1.21.11", "https://fill-data.papermc.io/v1/objects/f52c408490a0225611e67907a3ca19f7e6da2c6bc899e715d5f46844e7103c39/folia-1.21.11-14.jar")
     );
 
-    @Test @Tag("version-loading") @Order(1) void Paper_1_20_4() throws Exception { testPaper("1.20.4"); }
-    @Test @Tag("version-loading") @Order(2) void Paper_1_20_5() throws Exception { testPaper("1.20.5"); }
-    @Test @Tag("version-loading") @Order(3) void Paper_1_20_6() throws Exception { testPaper("1.20.6"); }
-    @Test @Tag("version-loading") @Order(4) void Paper_1_21() throws Exception { testPaper("1.21"); }
-    @Test @Tag("version-loading") @Order(5) void Paper_1_21_3() throws Exception { testPaper("1.21.3"); }
-    @Test @Tag("version-loading") @Order(6) void Paper_1_21_4() throws Exception { testPaper("1.21.4"); }
-    @Test @Tag("version-loading") @Order(7) void Paper_1_21_5() throws Exception { testPaper("1.21.5"); }
-    @Test @Tag("version-loading") @Order(8) void Paper_1_21_6() throws Exception { testPaper("1.21.6"); }
-    @Test @Tag("version-loading") @Order(9) void Paper_1_21_7() throws Exception { testPaper("1.21.7"); }
-    @Test @Tag("version-loading") @Order(10) void Paper_1_21_8() throws Exception { testPaper("1.21.8"); }
-    @Test @Tag("version-loading") @Order(11) void Paper_1_21_9() throws Exception { testPaper("1.21.9"); }
-    @Test @Tag("version-loading") @Order(12) void Paper_1_21_10() throws Exception { testPaper("1.21.10"); }
-    @Test @Tag("version-loading") @Order(13) void Paper_1_21_11() throws Exception { testPaper("1.21.11"); }
-    @Test @Tag("version-loading") @Order(14) void Paper_26_1_2() throws Exception { testPaper("26.1.2"); }
-    @Test @Tag("version-loading") @Order(15) void Folia_1_21_8() throws Exception { testFolia("1.21.8"); }
-    @Test @Tag("version-loading") @Order(16) void Folia_1_21_11() throws Exception { testFolia("1.21.11"); }
-    @Test @Tag("version-loading") @Order(17) void Folia_26_1_2() throws Exception { testFolia("26.1.2"); }
+    @Test @Tag("version-loading") @Order(1) void Paper_1_20_1() throws Exception { testPaper("1.20.1"); }
+    @Test @Tag("version-loading") @Order(2) void Paper_1_20_4() throws Exception { testPaper("1.20.4"); }
+    @Test @Tag("version-loading") @Order(3) void Paper_1_20_5() throws Exception { testPaper("1.20.5"); }
+    @Test @Tag("version-loading") @Order(4) void Paper_1_20_6() throws Exception { testPaper("1.20.6"); }
+    @Test @Tag("version-loading") @Order(5) void Paper_1_21() throws Exception { testPaper("1.21"); }
+    @Test @Tag("version-loading") @Order(6) void Paper_1_21_3() throws Exception { testPaper("1.21.3"); }
+    @Test @Tag("version-loading") @Order(7) void Paper_1_21_4() throws Exception { testPaper("1.21.4"); }
+    @Test @Tag("version-loading") @Order(8) void Paper_1_21_5() throws Exception { testPaper("1.21.5"); }
+    @Test @Tag("version-loading") @Order(9) void Paper_1_21_6() throws Exception { testPaper("1.21.6"); }
+    @Test @Tag("version-loading") @Order(10) void Paper_1_21_7() throws Exception { testPaper("1.21.7"); }
+    @Test @Tag("version-loading") @Order(11) void Paper_1_21_8() throws Exception { testPaper("1.21.8"); }
+    @Test @Tag("version-loading") @Order(12) void Paper_1_21_9() throws Exception { testPaper("1.21.9"); }
+    @Test @Tag("version-loading") @Order(13) void Paper_1_21_10() throws Exception { testPaper("1.21.10"); }
+    @Test @Tag("version-loading") @Order(14) void Paper_1_21_11() throws Exception { testPaper("1.21.11"); }
+    @Test @Tag("version-loading") @Order(15) void Paper_26_1_2() throws Exception { testPaper("26.1.2"); }
+    @Test @Tag("version-loading") @Order(16) void Folia_1_21_8() throws Exception { testFolia("1.21.8"); }
+    @Test @Tag("version-loading") @Order(17) void Folia_1_21_11() throws Exception { testFolia("1.21.11"); }
+    @Test @Tag("version-loading") @Order(18) void Folia_26_1_2() throws Exception { testFolia("26.1.2"); }
 
     private static void testPaper(String version) throws Exception {
         assumeTrue(previousVersionFailure == null, "Skipping because a previous version failed: " + previousVersionFailure);

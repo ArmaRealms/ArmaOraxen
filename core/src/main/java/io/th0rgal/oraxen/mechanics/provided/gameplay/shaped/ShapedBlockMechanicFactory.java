@@ -11,6 +11,7 @@ import io.th0rgal.oraxen.mechanics.MechanicFactory;
 import io.th0rgal.oraxen.mechanics.MechanicInfo;
 import io.th0rgal.oraxen.mechanics.MechanicsManager;
 import io.th0rgal.oraxen.mechanics.PropertyType;
+import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -29,6 +30,7 @@ import java.util.Map;
 )
 public class ShapedBlockMechanicFactory extends MechanicFactory {
 
+    private static final String MINIMUM_VERSION = "1.20.4";
     private static ShapedBlockMechanicFactory instance;
 
     // Map of Material -> Mechanic for quick lookup
@@ -77,6 +79,13 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
         this.registerListeners = registerListeners;
         enabled = false;
 
+        if (!isSupportedServerVersion()) {
+            if (Settings.DEBUG.toBool()) {
+                Logs.logWarning("Shaped block mechanic is disabled on this server version. It requires Minecraft " + MINIMUM_VERSION + "+.");
+            }
+            return;
+        }
+
         // Initialize variation tracking
         for (ShapedBlockType type : ShapedBlockType.values()) {
             usedVariations.put(type, new HashMap<>());
@@ -95,8 +104,17 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
         return instance != null && instance.enabled && MechanicsManager.isMechanicEnabled("block");
     }
 
+    public static boolean isSupportedServerVersion() {
+        return VersionUtil.atOrAbove(MINIMUM_VERSION);
+    }
+
     public static void clearInstance(ShapedBlockMechanicFactory factory) {
         if (instance == factory) instance = null;
+    }
+
+    private String itemId(ConfigurationSection section) {
+        ConfigurationSection itemSection = section.getParent() != null ? section.getParent().getParent() : null;
+        return itemSection != null ? itemSection.getName() : section.getCurrentPath();
     }
 
     /**
@@ -131,6 +149,11 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
 
     @Override
     public Mechanic parse(ConfigurationSection section) {
+        if (!isSupportedServerVersion()) {
+            Logs.logWarning("Ignoring shaped block mechanic for " + itemId(section) + ": shaped blocks require Minecraft " + MINIMUM_VERSION + "+.");
+            return null;
+        }
+
         enable();
         ShapedBlockMechanic mechanic = new ShapedBlockMechanic(this, section);
 
