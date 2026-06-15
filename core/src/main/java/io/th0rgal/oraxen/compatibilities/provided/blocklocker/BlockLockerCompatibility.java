@@ -1,47 +1,47 @@
 package io.th0rgal.oraxen.compatibilities.provided.blocklocker;
 
-import io.th0rgal.oraxen.api.OraxenBlocks;
 import io.th0rgal.oraxen.api.OraxenFurniture;
+import io.th0rgal.oraxen.compatibilities.CompatibilitiesManager;
 import io.th0rgal.oraxen.compatibilities.CompatibilityProvider;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureMechanic;
-import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.NoteBlockMechanic;
-import io.th0rgal.oraxen.mechanics.provided.gameplay.stringblock.StringBlockMechanic;
 import nl.rutgerkok.blocklocker.BlockLockerAPIv2;
 import nl.rutgerkok.blocklocker.ProtectableBlocksSettings;
 import nl.rutgerkok.blocklocker.ProtectionType;
 import nl.rutgerkok.blocklocker.impl.BlockLockerPluginImpl;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 
 public class BlockLockerCompatibility extends CompatibilityProvider<BlockLockerPluginImpl> {
     public BlockLockerCompatibility() {
-        BlockLockerAPIv2.getPlugin().getChestSettings().getExtraProtectables().add(new ProtectableBlocksSettings() {
-
-            @Override
-            public boolean canProtect(Block block) {
-                BlockLockerMechanic blockLocker = null;
-                NoteBlockMechanic noteMechanic = OraxenBlocks.getNoteBlockMechanic(block);
-                if (noteMechanic != null) blockLocker = noteMechanic.getBlockLocker();
-                StringBlockMechanic stringMechanic = OraxenBlocks.getStringMechanic(block);
-                if (stringMechanic != null) blockLocker = stringMechanic.getBlockLocker();
-                FurnitureMechanic furnitureMechanic = OraxenFurniture.getFurnitureMechanic(block);
-                if (furnitureMechanic != null) blockLocker = furnitureMechanic.getBlockLocker();
-
-                return blockLocker != null && blockLocker.canProtect();
-            }
-
-            @Override
-            public boolean canProtect(ProtectionType type, Block block) {
-                BlockLockerMechanic blockLocker = null;
-                NoteBlockMechanic noteMechanic = OraxenBlocks.getNoteBlockMechanic(block);
-                if (noteMechanic != null) blockLocker = noteMechanic.getBlockLocker();
-                StringBlockMechanic stringMechanic = OraxenBlocks.getStringMechanic(block);
-                if (stringMechanic != null) blockLocker = stringMechanic.getBlockLocker();
-                FurnitureMechanic furnitureMechanic = OraxenFurniture.getFurnitureMechanic(block);
-                if (furnitureMechanic != null) blockLocker = furnitureMechanic.getBlockLocker();
-
-                return blockLocker != null && blockLocker.canProtect() && blockLocker.getProtectionType() == type;
-            }});
+        BlockLockerAPIv2.getPlugin().getChestSettings().getExtraProtectables()
+                .removeIf(BlockLockerProtection.class::isInstance);
+        BlockLockerAPIv2.getPlugin().getChestSettings().getExtraProtectables().add(new BlockLockerProtection());
     }
 
+    private static class BlockLockerProtection implements ProtectableBlocksSettings {
 
+        @Override
+        public boolean canProtect(Block block) {
+            BlockLockerMechanic blockLocker = getBlockLocker(block);
+            return blockLocker != null && blockLocker.canProtect();
+        }
+
+        @Override
+        public boolean canProtect(ProtectionType type, Block block) {
+            BlockLockerMechanic blockLocker = getBlockLocker(block);
+            return blockLocker != null && blockLocker.canProtect() && blockLocker.getProtectionType() == type;
+        }
+    }
+
+    public static boolean canInteract(Player player, Block block) {
+        if (!CompatibilitiesManager.isCompatibilityEnabled("BlockLocker") || getBlockLocker(block) == null)
+            return true;
+
+        return BlockLockerAPIv2.isAllowed(player, block, true);
+    }
+
+    private static BlockLockerMechanic getBlockLocker(Block block) {
+        FurnitureMechanic furnitureMechanic = OraxenFurniture.getFurnitureMechanic(block);
+        return furnitureMechanic != null ? furnitureMechanic.getBlockLocker() : null;
+    }
 }

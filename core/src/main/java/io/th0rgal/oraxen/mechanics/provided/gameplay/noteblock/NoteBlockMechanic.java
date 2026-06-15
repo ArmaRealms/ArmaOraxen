@@ -1,7 +1,6 @@
 package io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock;
 
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.compatibilities.provided.blocklocker.BlockLockerMechanic;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockBreaking;
@@ -47,8 +46,6 @@ public class NoteBlockMechanic extends Mechanic {
     private final List<ClickAction> clickActions;
     private final BlockEvents blockEvents;
 
-    private final BlockLockerMechanic blockLocker;
-
     @SuppressWarnings("unchecked")
     public NoteBlockMechanic(MechanicFactory mechanicFactory, ConfigurationSection section) {
         /*
@@ -88,9 +85,6 @@ public class NoteBlockMechanic extends Mechanic {
 
         ConfigurationSection blockSoundsSection = section.getConfigurationSection("block_sounds");
         blockSounds = blockSoundsSection != null ? new BlockSounds(blockSoundsSection) : null;
-
-        ConfigurationSection blockLockerSection = section.getConfigurationSection("blocklocker");
-        blockLocker = blockLockerSection != null ? new BlockLockerMechanic(blockLockerSection) : null;
     }
 
     public boolean canPlaceOn(org.bukkit.block.BlockFace face) { return placeable == null || placeable.canPlaceOn(face); }
@@ -229,10 +223,6 @@ public class NoteBlockMechanic extends Mechanic {
         if (isDirectional() && !getDirectional().isParentBlock()) {
             return immovable || directionalBlock.getParentMechanic().isImmovable();
         } else return immovable;
-    }
-
-    public BlockLockerMechanic getBlockLocker() {
-        return blockLocker;
     }
 
 }

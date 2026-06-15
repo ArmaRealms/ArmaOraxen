@@ -6,6 +6,7 @@ import io.th0rgal.oraxen.api.OraxenFurniture;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.api.events.furniture.OraxenFurnitureBreakEvent;
 import io.th0rgal.oraxen.api.events.furniture.OraxenFurnitureInteractEvent;
+import io.th0rgal.oraxen.compatibilities.provided.blocklocker.BlockLockerCompatibility;
 import io.th0rgal.oraxen.api.events.furniture.OraxenFurniturePlaceEvent;
 import io.th0rgal.oraxen.config.Message;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.limitedplacing.LimitedPlacing;
@@ -424,6 +425,8 @@ public class FurnitureListener implements Listener {
         FurnitureMechanic mechanic = OraxenFurniture.getFurnitureMechanic(baseEntity);
         if (mechanic == null)
             return;
+        if (!BlockLockerCompatibility.canInteract(player, baseEntity.getLocation().getBlock()))
+            return;
         // Swap baseEntity to the baseEntity if interacted with entity is Interaction
         // type
         Entity interaction = null;
@@ -452,6 +455,8 @@ public class FurnitureListener implements Listener {
         if (block == null || block.getType() != Material.BARRIER)
             return;
         if (!AntiGriefLib.canInteract(player, block.getLocation()))
+            return;
+        if (!BlockLockerCompatibility.canInteract(player, block))
             return;
 
         final FurnitureMechanic mechanic = OraxenFurniture.getFurnitureMechanic(block);

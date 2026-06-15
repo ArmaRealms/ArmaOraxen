@@ -1,6 +1,5 @@
 package io.th0rgal.oraxen.mechanics.provided.gameplay.stringblock;
 
-import io.th0rgal.oraxen.compatibilities.provided.blocklocker.BlockLockerMechanic;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockBreaking;
@@ -42,8 +41,6 @@ public class StringBlockMechanic extends Mechanic {
     private final List<String> randomPlaceBlock;
     private final SaplingMechanic saplingMechanic;
     private final boolean isTall;
-
-    private final BlockLockerMechanic blockLocker;
     private final List<ClickAction> clickActions;
     private final BlockEvents blockEvents;
 
@@ -89,9 +86,6 @@ public class StringBlockMechanic extends Mechanic {
 
         ConfigurationSection blockSoundsSection = section.getConfigurationSection("block_sounds");
         blockSounds = blockSoundsSection != null ? new BlockSounds(blockSoundsSection) : null;
-
-        ConfigurationSection blockLockerSection = section.getConfigurationSection("blocklocker");
-        blockLocker = blockLockerSection != null ? new BlockLockerMechanic(blockLockerSection) : null;
 
         clickActions = ClickAction.parseList(section);
         blockEvents = new BlockEvents(section, getItemID());
@@ -201,10 +195,6 @@ public class StringBlockMechanic extends Mechanic {
 
     public boolean isImmovable() {
         return immovable;
-    }
-
-    public BlockLockerMechanic getBlockLocker() {
-        return blockLocker;
     }
 
     public boolean isFalling() {
