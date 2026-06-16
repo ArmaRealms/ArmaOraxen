@@ -1,8 +1,11 @@
 package io.th0rgal.oraxen.recipes.listeners;
 
+import com.jeff_media.morepersistentdatatypes.DataType;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.mechanics.MechanicFactory;
+import io.th0rgal.oraxen.mechanics.MechanicsManager;
 import io.th0rgal.oraxen.mechanics.provided.misc.misc.MiscMechanic;
 import io.th0rgal.oraxen.mechanics.provided.misc.misc.MiscMechanicFactory;
 import io.th0rgal.oraxen.recipes.CustomRecipe;
@@ -24,9 +27,12 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.MerchantInventory;
 import org.bukkit.inventory.Recipe;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static io.th0rgal.oraxen.mechanics.provided.misc.backpack.BackpackMechanic.BACKPACK_KEY;
 
 public class RecipesEventsManager implements Listener {
 
@@ -90,9 +96,41 @@ public class RecipesEventsManager implements Listener {
             return;
         }
 
-        if (customRecipe == null || whitelistedCraftRecipes.stream().anyMatch(customRecipe::equals) || customRecipe.isValidDyeRecipe()) return;
+        if (customRecipe == null || whitelistedCraftRecipes.stream().anyMatch(customRecipe::equals) || customRecipe.isValidDyeRecipe()) {
+            persistBackpackContents(event);
+            return;
+        }
 
         event.getInventory().setResult(customRecipe.getResult());
+        persistBackpackContents(event);
+    }
+
+    private void persistBackpackContents(PrepareItemCraftEvent event) {
+        ItemStack result = event.getInventory().getResult();
+        if (!hasBackpackMechanic(result)) return;
+
+        for (ItemStack ingredient : event.getInventory().getMatrix()) {
+            if (!hasBackpackMechanic(ingredient) || !ingredient.hasItemMeta()) continue;
+            ItemMeta ingredientMeta = ingredient.getItemMeta();
+            if (ingredientMeta == null) continue;
+
+            ItemStack[] contents = ingredientMeta.getPersistentDataContainer().get(BACKPACK_KEY, DataType.ITEM_STACK_ARRAY);
+            if (contents == null) continue;
+
+            ItemStack persistedResult = result.clone();
+            ItemMeta resultMeta = persistedResult.getItemMeta();
+            if (resultMeta == null) return;
+            resultMeta.getPersistentDataContainer().set(BACKPACK_KEY, DataType.ITEM_STACK_ARRAY, contents);
+            persistedResult.setItemMeta(resultMeta);
+            event.getInventory().setResult(persistedResult);
+            return;
+        }
+    }
+
+    private boolean hasBackpackMechanic(ItemStack item) {
+        if (item == null || item.isEmpty()) return false;
+        MechanicFactory backpackFactory = MechanicsManager.getMechanicFactory("backpack");
+        return backpackFactory != null && backpackFactory.getMechanic(OraxenItems.getIdByItem(item)) != null;
     }
 
     private boolean matchesRegisteredOraxenIngredients(Recipe recipe, ItemStack[] matrix) {
