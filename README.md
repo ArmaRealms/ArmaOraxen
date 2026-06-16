@@ -215,6 +215,12 @@ sounds:
 
 * Colored text animations.
 
+## Building
+See https://oraxen.mizius.com/developers/compiling.
+
+## Contributing
+See https://oraxen.mizius.com/developers/contributing.
+
 ## License
 
 Read the full license in [`LICENSE.md`](LICENSE.md).
