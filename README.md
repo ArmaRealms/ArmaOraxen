@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <img src="docs/icon-512.png" alt="Oraxen Logo" width="64">
+  <img src="assets/logo.png" alt="Oraxen Logo" width="64">
   <br>
   Oraxen
   <br>
