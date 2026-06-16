@@ -9,8 +9,10 @@ import io.th0rgal.oraxen.recipes.CustomRecipe;
 import io.th0rgal.oraxen.utils.InventoryUtils;
 import io.th0rgal.oraxen.utils.VersionUtil;
 import org.bukkit.Bukkit;
+import org.bukkit.Keyed;
 import org.bukkit.NamespacedKey;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -32,6 +34,8 @@ public class RecipesEventsManager implements Listener {
     private Map<CustomRecipe, String> permissionsPerRecipe = new HashMap<>();
     private Set<CustomRecipe> whitelistedCraftRecipes = new HashSet<>();
     private ArrayList<CustomRecipe> whitelistedCraftRecipesOrdered = new ArrayList<>();
+    private Map<String, Map<Integer, String>> shapedOraxenIngredients = new HashMap<>();
+    private Map<String, List<String>> shapelessOraxenIngredients = new HashMap<>();
 
     public static RecipesEventsManager get() {
         if (instance == null) {
@@ -64,6 +68,10 @@ public class RecipesEventsManager implements Listener {
     public void onCrafted(PrepareItemCraftEvent event) {
         Recipe recipe = event.getRecipe();
         CustomRecipe customRecipe = CustomRecipe.fromRecipe(recipe);
+        if (!matchesRegisteredOraxenIngredients(recipe, event.getInventory().getMatrix())) {
+            event.getInventory().setResult(null);
+            return;
+        }
         Player player = InventoryUtils.playerFromView(event);
         if (!hasPermission(player, customRecipe)) event.getInventory().setResult(null);
 
@@ -87,6 +95,32 @@ public class RecipesEventsManager implements Listener {
         event.getInventory().setResult(customRecipe.getResult());
     }
 
+    private boolean matchesRegisteredOraxenIngredients(Recipe recipe, ItemStack[] matrix) {
+        if (!(recipe instanceof Keyed keyed) || !keyed.getKey().getNamespace().equals(OraxenPlugin.get().getName().toLowerCase(Locale.ROOT)))
+            return true;
+
+        String recipeName = keyed.getKey().getKey();
+        Map<Integer, String> shapedIngredients = shapedOraxenIngredients.get(recipeName);
+        if (shapedIngredients != null) {
+            for (Map.Entry<Integer, String> ingredient : shapedIngredients.entrySet()) {
+                if (!Objects.equals(OraxenItems.getIdByItem(matrix[ingredient.getKey()]), ingredient.getValue())) return false;
+            }
+            return true;
+        }
+
+        List<String> shapelessIngredients = shapelessOraxenIngredients.get(recipeName);
+        if (shapelessIngredients != null) {
+            List<String> remainingIngredients = new ArrayList<>(shapelessIngredients);
+            for (ItemStack itemStack : matrix) {
+                String itemId = OraxenItems.getIdByItem(itemStack);
+                if (itemId != null) remainingIngredients.remove(itemId);
+            }
+            return remainingIngredients.isEmpty();
+        }
+
+        return true;
+    }
+
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         if (!Settings.ADD_RECIPES_TO_BOOK.toBool()) return;
@@ -98,6 +132,8 @@ public class RecipesEventsManager implements Listener {
         permissionsPerRecipe = new HashMap<>();
         whitelistedCraftRecipes = new HashSet<>();
         whitelistedCraftRecipesOrdered = new ArrayList<>();
+        shapedOraxenIngredients = new HashMap<>();
+        shapelessOraxenIngredients = new HashMap<>();
     }
 
     public void addPermissionRecipe(CustomRecipe recipe, String permission) {
@@ -107,6 +143,38 @@ public class RecipesEventsManager implements Listener {
     public void whitelistRecipe(CustomRecipe recipe) {
         whitelistedCraftRecipes.add(recipe);
         whitelistedCraftRecipesOrdered.add(recipe);
+    }
+
+    public void registerShapedOraxenRecipe(String recipeName, List<String> shape, ConfigurationSection ingredientsSection) {
+        Map<Character, String> ingredientIds = new HashMap<>();
+        for (String ingredientLetter : ingredientsSection.getKeys(false)) {
+            ConfigurationSection ingredientSection = ingredientsSection.getConfigurationSection(ingredientLetter);
+            if (ingredientSection != null && ingredientSection.isString("oraxen_item"))
+                ingredientIds.put(ingredientLetter.charAt(0), ingredientSection.getString("oraxen_item"));
+        }
+        if (ingredientIds.isEmpty()) return;
+
+        Map<Integer, String> expectedIngredients = new HashMap<>();
+        for (int row = 0; row < Math.min(shape.size(), 3); row++) {
+            String rowShape = shape.get(row);
+            for (int column = 0; column < Math.min(rowShape.length(), 3); column++) {
+                String itemId = ingredientIds.get(rowShape.charAt(column));
+                if (itemId != null) expectedIngredients.put(row * 3 + column, itemId);
+            }
+        }
+        shapedOraxenIngredients.put(recipeName, expectedIngredients);
+    }
+
+    public void registerShapelessOraxenRecipe(String recipeName, ConfigurationSection ingredientsSection) {
+        List<String> expectedIngredients = new ArrayList<>();
+        for (String ingredientLetter : ingredientsSection.getKeys(false)) {
+            ConfigurationSection ingredientSection = ingredientsSection.getConfigurationSection(ingredientLetter);
+            if (ingredientSection != null && ingredientSection.isString("oraxen_item")) {
+                int amount = Math.max(1, ingredientSection.getInt("amount", 1));
+                for (int i = 0; i < amount; i++) expectedIngredients.add(ingredientSection.getString("oraxen_item"));
+            }
+        }
+        if (!expectedIngredients.isEmpty()) shapelessOraxenIngredients.put(recipeName, expectedIngredients);
     }
 
     public List<CustomRecipe> getPermittedRecipes(CommandSender sender) {
