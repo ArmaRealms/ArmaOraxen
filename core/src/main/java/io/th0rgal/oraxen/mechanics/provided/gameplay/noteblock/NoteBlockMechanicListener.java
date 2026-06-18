@@ -393,9 +393,9 @@ public class NoteBlockMechanicListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onPlacingShulkerAboveOraxenNoteBlock(final BlockPlaceEvent event) {
+    public void onPlacingUnsupportedBlockAboveOraxenNoteBlock(final BlockPlaceEvent event) {
         Block placed = event.getBlockPlaced();
-        if (!isShulkerBox(placed.getType())) return;
+        if (!isUnsupportedBlockAboveNoteBlock(placed.getType())) return;
         if (OraxenBlocks.getNoteBlockMechanic(placed.getRelative(BlockFace.DOWN)) == null) return;
 
         event.setCancelled(true);
@@ -527,8 +527,9 @@ public class NoteBlockMechanicListener implements Listener {
         if (VersionUtil.isPaperServer()) target.getWorld().sendGameEvent(player, GameEvent.BLOCK_PLACE, target.getLocation().toVector());
     }
 
-    private boolean isShulkerBox(Material material) {
-        return material == Material.SHULKER_BOX || material.name().endsWith("_SHULKER_BOX");
+    private boolean isUnsupportedBlockAboveNoteBlock(Material material) {
+        return material == Material.PISTON || material == Material.STICKY_PISTON
+                || material == Material.SHULKER_BOX || material.name().endsWith("_SHULKER_BOX");
     }
 
     // Used to determine what instrument to use when playing a note depending on below block
