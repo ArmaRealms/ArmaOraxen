@@ -2,18 +2,15 @@ package io.th0rgal.oraxen.nms;
 
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.utils.MinecraftVersion;
 import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.lang.reflect.InvocationTargetException;
 
 public class NMSHandlers {
 
-    private static final VersionUtil.NMSVersion[] SUPPORTED_VERSION = VersionUtil.NMSVersion.values();
     private static NMSHandler handler;
     private static String version;
 
@@ -25,7 +22,7 @@ public class NMSHandlers {
             setup();
             if (handler instanceof NMSHandler.EmptyNMSHandler && Settings.DEBUG.toBool()) {
                 Logs.logError("Failed to setup NMS handler for server version: " + Bukkit.getVersion());
-                Logs.logError("Supported versions: " + java.util.Arrays.toString(SUPPORTED_VERSION));
+                Logs.logError("Supported versions: " + VersionUtil.supportedVersions());
                 Logs.logError("Current server implements Paper: " + VersionUtil.isPaperServer());
                 Logs.logError("NMS features will be disabled or limited.");
             }
@@ -41,33 +38,29 @@ public class NMSHandlers {
         if (handler != null)
             return;
 
-        for (VersionUtil.NMSVersion selectedVersion : SUPPORTED_VERSION) {
-            if (!VersionUtil.NMSVersion.matchesServer(selectedVersion))
-                continue;
-
-            version = selectedVersion.name();
-            try {
-                handler = (NMSHandler) Class.forName("io.th0rgal.oraxen.nms." + version + ".NMSHandler")
-                        .getConstructor().newInstance();
-                if (Settings.DEBUG.toBool()) {
-                    Logs.logSuccess("Version " + version + " has been detected.");
-                    Logs.logInfo("Oraxen will use the NMSHandler for this version.");
-                }
-                Bukkit.getPluginManager().registerEvents(new NMSListeners(), OraxenPlugin.get());
-                Listener packDispatchListener = handler.packDispatchListener();
-                if (packDispatchListener != null) {
-                    Bukkit.getPluginManager().registerEvents(packDispatchListener, OraxenPlugin.get());
-                }
-                return;
-            } catch (ClassNotFoundException | InvocationTargetException | InstantiationException
-                    | IllegalAccessException | NoSuchMethodException e) {
-                Logs.logWarning("Oraxen does not support this version of Minecraft (" + version + ") yet.");
-                Logs.logWarning("NMS features will be disabled...");
-                if (Settings.DEBUG.toBool())
-                    e.printStackTrace();
-            }
+        version = VersionUtil.getNMSVersion(MinecraftVersion.getCurrentVersion()).name();
+        if (!VersionUtil.supportsSingleNmsHandler()) {
+            Logs.logWarning("Oraxen does not support this version of Minecraft (" + version + ") yet.");
+            Logs.logWarning("NMS features will be disabled...");
+            handler = new NMSHandler.EmptyNMSHandler();
+            return;
         }
-        if(handler == null) {
+
+        try {
+            handler = (NMSHandler) Class.forName("io.th0rgal.oraxen.nms.handler.NMSHandler")
+                    .getConstructor().newInstance();
+            if (Settings.DEBUG.toBool()) {
+                Logs.logSuccess("Version " + version + " has been detected.");
+                Logs.logInfo("Oraxen will use the guarded NMSHandler.");
+            }
+            Bukkit.getPluginManager().registerEvents(new NMSListeners(), OraxenPlugin.get());
+            Listener packDispatchListener = handler.packDispatchListener();
+            if (packDispatchListener != null) {
+                Bukkit.getPluginManager().registerEvents(packDispatchListener, OraxenPlugin.get());
+            }
+        } catch (ReflectiveOperationException e) {
+            Logs.logWarning("Failed to load guarded NMS handler; NMS features will be disabled...");
+            if (Settings.DEBUG.toBool()) e.printStackTrace();
             handler = new NMSHandler.EmptyNMSHandler();
         }
     }

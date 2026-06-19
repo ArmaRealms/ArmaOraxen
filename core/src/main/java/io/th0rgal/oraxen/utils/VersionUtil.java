@@ -119,6 +119,16 @@ public class VersionUtil {
         return MinecraftVersion.getCurrentVersion().equals(new MinecraftVersion(server));
     }
 
+    public static boolean supportsSingleNmsHandler() {
+        MinecraftVersion version = MinecraftVersion.getCurrentVersion();
+        NMSVersion nmsVersion = getNMSVersion(version);
+        return isPaperServer() && nmsVersion != NMSVersion.UNKNOWN;
+    }
+
+    public static String supportedVersions() {
+        return "Paper 1.20+ / 26.x through the guarded NMS handler";
+    }
+
     public static boolean atOrAbove(String versionString) {
         return new MinecraftVersion(versionString).atOrAbove();
     }

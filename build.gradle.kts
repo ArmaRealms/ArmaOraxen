@@ -14,33 +14,7 @@ plugins {
 }
 
 
-class NMSVersion(val nmsVersion: String, val serverVersion: String)
-
-infix fun String.toNms(that: String): NMSVersion = NMSVersion(this, that)
 val isCI = System.getenv("CI") != null
-val SUPPORTED_VERSIONS: List<NMSVersion> = listOfNotNull(
-    "v26_1_2" toNms "26.1.2.build.5-alpha",
-    "v1_20_R1" toNms "1.20.1-R0.1-SNAPSHOT",
-    "v1_20_R2" toNms "1.20.2-R0.1-SNAPSHOT",
-    "v1_20_R3" toNms "1.20.4-R0.1-SNAPSHOT",
-    "v1_20_R4" toNms "1.20.6-R0.1-SNAPSHOT",
-    "v1_21_R1" toNms "1.21.1-R0.1-SNAPSHOT",
-    "v1_21_R2" toNms "1.21.3-R0.1-SNAPSHOT",
-    "v1_21_R3" toNms "1.21.4-R0.1-SNAPSHOT",
-    "v1_21_R4" toNms "1.21.5-R0.1-SNAPSHOT",
-    "v1_21_R5" toNms "1.21.8-R0.1-SNAPSHOT", // also for 1.21.7
-    "v1_21_R6_old" toNms "1.21.10-R0.1-SNAPSHOT", // 1.21.9 and 1.21.10 (uses ResourceLocation)
-    "v1_21_R6" toNms "1.21.11-R0.1-SNAPSHOT", // 1.21.11 Paper (Mojang-mapped)
-    // Skip Spigot modules in CI - requires BuildTools to install Spigot artifacts to local Maven
-    if (!isCI) "v1_20_R4_spigot" toNms "1.20.6-R0.1-SNAPSHOT" else null,
-    if (!isCI) "v1_21_R1_spigot" toNms "1.21.1-R0.1-SNAPSHOT" else null,
-    if (!isCI) "v1_21_R2_spigot" toNms "1.21.3-R0.1-SNAPSHOT" else null,
-    if (!isCI) "v1_21_R3_spigot" toNms "1.21.4-R0.1-SNAPSHOT" else null,
-    if (!isCI) "v1_21_R4_spigot" toNms "1.21.5-R0.1-SNAPSHOT" else null,
-    if (!isCI) "v1_21_R5_spigot" toNms "1.21.8-R0.1-SNAPSHOT" else null,
-    if (!isCI) "v1_21_R6_old_spigot" toNms "1.21.10-R0.1-SNAPSHOT" else null,
-    if (!isCI) "v1_21_R6_spigot" toNms "1.21.11-R0.1-SNAPSHOT" else null
-)
 
 val compiled = (project.findProperty("oraxen_compiled")?.toString() ?: "true").toBoolean()
 val pluginPath = project.findProperty("oraxen_plugin_path")?.toString()
@@ -144,7 +118,7 @@ allprojects {
 
 dependencies {
     implementation(project(path = ":core"))
-    SUPPORTED_VERSIONS.forEach { implementation(project(path = ":${it.nmsVersion}", configuration = "reobf")) }
+    implementation(project(path = ":nms", configuration = "reobf"))
 }
 
 
@@ -199,7 +173,7 @@ tasks {
     }
 
     shadowJar {
-        SUPPORTED_VERSIONS.forEach { dependsOn(":${it.nmsVersion}:reobfJar") }
+        dependsOn(":nms:jar")
 
         archiveClassifier = null
         oraxenLibs.bundles.libraries.shade.get().forEach {
