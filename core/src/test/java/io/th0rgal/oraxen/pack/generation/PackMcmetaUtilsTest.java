@@ -105,7 +105,7 @@ class PackMcmetaUtilsTest {
         assertNotNull(highest);
         assertEquals(999, highest.getMaxFormatInclusive(),
             "Highest pack version should have max_inclusive 999");
-        assertEquals("26.1", highest.getMinecraftVersion());
+        assertEquals("26.2", highest.getMinecraftVersion());
     }
 
     @Test
@@ -175,11 +175,17 @@ class PackMcmetaUtilsTest {
         assertEquals(75, v12111.getMinFormatInclusive());
         assertEquals(83, v12111.getMaxFormatInclusive());
 
-        // 26.1: format 84, range [84, 999]
+        // 26.1: format 84, range [84, 87]
         PackVersion v261 = manager.getVersion("26.1");
         assertNotNull(v261);
         assertEquals(84, v261.getMinFormatInclusive());
-        assertEquals(999, v261.getMaxFormatInclusive());
+        assertEquals(87, v261.getMaxFormatInclusive());
+
+        // 26.2: format 88, range [88, 999]
+        PackVersion v262 = manager.getVersion("26.2");
+        assertNotNull(v262);
+        assertEquals(88, v262.getMinFormatInclusive());
+        assertEquals(999, v262.getMaxFormatInclusive());
     }
 
     @Test

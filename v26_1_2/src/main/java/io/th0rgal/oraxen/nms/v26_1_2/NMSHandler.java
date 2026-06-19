@@ -171,7 +171,7 @@ public class NMSHandler implements io.th0rgal.oraxen.nms.NMSHandler {
         }
 
         newNmsItem.set(type, CustomData.of(newTag));
-        return CraftItemStack.asBukkitCopy(newNmsItem);
+        return asBukkitCopy(newNmsItem);
     }
 
     @Override
@@ -349,7 +349,7 @@ public class NMSHandler implements io.th0rgal.oraxen.nms.NMSHandler {
                     e.printStackTrace();
             }
         }
-        return CraftItemStack.asBukkitCopy(nmsItem);
+        return asBukkitCopy(nmsItem);
     }
 
     private void convertConfigToNBT(ConfigurationSection config, net.minecraft.nbt.CompoundTag nbt) {
@@ -669,6 +669,16 @@ public class NMSHandler implements io.th0rgal.oraxen.nms.NMSHandler {
         }
     }
 
+    private ItemStack asBukkitCopy(net.minecraft.world.item.ItemStack nmsItem) {
+        if (VersionUtil.atOrAbove("26.2")) {
+            // Paper 26.2 made CraftItemStack#asBukkitCopy private. asCraftMirror is still
+            // public and returns a Bukkit ItemStack view, so mirror a copied NMS stack to
+            // preserve the previous copy semantics.
+            return CraftItemStack.asCraftMirror(nmsItem.copy());
+        }
+        return CraftItemStack.asBukkitCopy(nmsItem);
+    }
+
     @Override
     @Nullable
     public Object consumableComponent(final ItemStack itemStack) {
@@ -690,7 +700,7 @@ public class NMSHandler implements io.th0rgal.oraxen.nms.NMSHandler {
         try {
             net.minecraft.world.item.ItemStack nmsItem = CraftItemStack.asNMSCopy(itemStack);
             nmsItem.set(DataComponents.CONSUMABLE, (Consumable) consumable);
-            return CraftItemStack.asBukkitCopy(nmsItem);
+            return asBukkitCopy(nmsItem);
         } catch (Exception e) {
             e.printStackTrace();
         }

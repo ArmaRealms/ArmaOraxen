@@ -71,7 +71,7 @@ public class VersionUtil {
         spigotVariants.put(NMSVersion.v1_20_R4, NMSVersion.v1_20_R4_spigot);
 
         versionMap.put(NMSVersion.v26_1_2,
-                Map.of(27, new MinecraftVersion("26.1.2")));
+                Map.of(27, new MinecraftVersion("26.1.2"), 28, new MinecraftVersion("26.2")));
         versionMap.put(NMSVersion.v1_21_R6,
                 Map.of(26, new MinecraftVersion("1.21.11")));
         versionMap.put(NMSVersion.v1_21_R6_old,
@@ -103,9 +103,12 @@ public class VersionUtil {
         }
 
         // Mojang switched the release version namespace after 1.21.11.
-        // 26.1, 26.1.1, and 26.1.2 share the same supported NMS structure;
-        // future versions such as 26.2/26.2.1 should remain UNKNOWN until supported.
-        if (version.getMajor() == 26 && version.getMinor() == 1 && version.getBuild() <= 2) {
+        // 26.1.x and 26.2.x share the same supported NMS structure; use version
+        // guards inside the handler for behavior that changed between releases.
+        if (version.getMajor() == 26 && (version.getMinor() == 1 || version.getMinor() == 2)) {
+            return NMSVersion.v26_1_2;
+        }
+        if (version.getMajor() == 1 && version.getMinor() == 26 && (version.getBuild() == 1 || version.getBuild() == 2)) {
             return NMSVersion.v26_1_2;
         }
 
