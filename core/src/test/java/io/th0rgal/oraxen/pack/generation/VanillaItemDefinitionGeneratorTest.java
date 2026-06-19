@@ -12,8 +12,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import sun.misc.Unsafe;
-
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -127,36 +125,13 @@ class VanillaItemDefinitionGeneratorTest {
         assertEquals(kind, model.getAsJsonObject("model").get("kind").getAsString());
     }
 
-    private static VanillaItemDefinitionGenerator generator(Material material, List<ItemBuilder> items, boolean useSelect,
-            boolean includeBothModes) {
-        try {
-            VanillaItemDefinitionGenerator generator = (VanillaItemDefinitionGenerator) unsafe().allocateInstance(
-                    VanillaItemDefinitionGenerator.class);
-            setField(generator, "material", material);
-            setField(generator, "items", new ArrayList<>(items));
-
-            PredicatesGenerator predicatesGenerator = mock(PredicatesGenerator.class);
-            when(predicatesGenerator.getVanillaModelName(any(Material.class)))
-                    .thenReturn("item/" + material.name().toLowerCase(Locale.ROOT));
-            setField(generator, "predicatesHelper", predicatesGenerator);
-            setField(generator, "useSelect", useSelect);
-            setField(generator, "includeBothModes", includeBothModes);
-            return generator;
-        } catch (ReflectiveOperationException exception) {
-            throw new AssertionError(exception);
-        }
-    }
-
-    private static void setField(Object target, String name, Object value) throws ReflectiveOperationException {
-        Field field = VanillaItemDefinitionGenerator.class.getDeclaredField(name);
-        field.setAccessible(true);
-        field.set(target, value);
-    }
-
-    private static Unsafe unsafe() throws ReflectiveOperationException {
-        Field field = Unsafe.class.getDeclaredField("theUnsafe");
-        field.setAccessible(true);
-        return (Unsafe) field.get(null);
+    private static VanillaItemDefinitionGenerator generator(Material material, List<ItemBuilder> items,
+            boolean useSelect, boolean includeBothModes) {
+        PredicatesGenerator predicatesGenerator = mock(PredicatesGenerator.class);
+        when(predicatesGenerator.getVanillaModelName(any(Material.class)))
+                .thenReturn("item/" + material.name().toLowerCase(Locale.ROOT));
+        return new VanillaItemDefinitionGenerator(material, new ArrayList<>(items), predicatesGenerator, useSelect,
+                includeBothModes);
     }
 
     private static ItemBuilder customItem(String itemId, int customModelData, String modelName) {

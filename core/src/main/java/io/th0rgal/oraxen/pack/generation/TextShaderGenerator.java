@@ -324,55 +324,32 @@ class TextShaderGenerator {
         // 26.1.x moved to generated pipeline metadata and should not be overridden.
         boolean shouldWriteJson = !target.isAtLeast("26");
 
-        // Generate shaders (see-through uses a different vertex format on 1.21.6+)
-        String vshContent = getAnimationVertexShader(target, features, false);
-        String fshContent = getAnimationFragmentShader(target, false);
-        String jsonContent = shouldWriteJson ? getAnimationShaderJson(target, false) : null;
-
-        String vshSeeThrough = getAnimationVertexShader(target, features, true);
-        String fshSeeThrough = getAnimationFragmentShader(target, true);
-        String jsonSeeThrough = shouldWriteJson ? getAnimationShaderJson(target, true) : null;
-
-        String vshIntensity = getAnimationVertexShader(target, features, false);
-        String fshIntensity = getAnimationFragmentShader(target, false, true);
-        String jsonIntensity = shouldWriteJson ? getAnimationShaderJson(target, "rendertype_text_intensity", false) : null;
-
-        String vshIntensitySeeThrough = getAnimationVertexShader(target, features, true);
-        String fshIntensitySeeThrough = getAnimationFragmentShader(target, true, true);
-        String jsonIntensitySeeThrough = shouldWriteJson ? getAnimationShaderJson(target, "rendertype_text_intensity_see_through", true) : null;
-
-        // Write shaders for both rendertype_text and rendertype_text_see_through
-        writeGeneratedCoreShader(shaderPath, "rendertype_text.vsh", vshContent);
-        writeGeneratedCoreShader(shaderPath, "rendertype_text.fsh", fshContent);
-        if (jsonContent != null)
-            writeGeneratedCoreShader(shaderPath, "rendertype_text.json", jsonContent);
-        else
-            ResourcePack.deleteFileFromVirtualAndDisk(shaderPath, "rendertype_text.json");
-
-        writeGeneratedCoreShader(shaderPath, "rendertype_text_see_through.vsh", vshSeeThrough);
-        writeGeneratedCoreShader(shaderPath, "rendertype_text_see_through.fsh", fshSeeThrough);
-        if (jsonSeeThrough != null)
-            writeGeneratedCoreShader(shaderPath, "rendertype_text_see_through.json", jsonSeeThrough);
-        else
-            ResourcePack.deleteFileFromVirtualAndDisk(shaderPath, "rendertype_text_see_through.json");
-
-        writeGeneratedCoreShader(shaderPath, "rendertype_text_intensity.vsh", vshIntensity);
-        writeGeneratedCoreShader(shaderPath, "rendertype_text_intensity.fsh", fshIntensity);
-        if (jsonIntensity != null)
-            writeGeneratedCoreShader(shaderPath, "rendertype_text_intensity.json", jsonIntensity);
-        else
-            ResourcePack.deleteFileFromVirtualAndDisk(shaderPath, "rendertype_text_intensity.json");
-
-        writeGeneratedCoreShader(shaderPath, "rendertype_text_intensity_see_through.vsh", vshIntensitySeeThrough);
-        writeGeneratedCoreShader(shaderPath, "rendertype_text_intensity_see_through.fsh", fshIntensitySeeThrough);
-        if (jsonIntensitySeeThrough != null)
-            writeGeneratedCoreShader(shaderPath, "rendertype_text_intensity_see_through.json", jsonIntensitySeeThrough);
-        else
-            ResourcePack.deleteFileFromVirtualAndDisk(shaderPath, "rendertype_text_intensity_see_through.json");
+        writeLegacyTextShaderVariant(shaderPath, "rendertype_text", target, features, false, false, shouldWriteJson);
+        writeLegacyTextShaderVariant(shaderPath, "rendertype_text_see_through", target, features, true, false,
+                shouldWriteJson);
+        writeLegacyTextShaderVariant(shaderPath, "rendertype_text_intensity", target, features, false, true,
+                shouldWriteJson);
+        writeLegacyTextShaderVariant(shaderPath, "rendertype_text_intensity_see_through", target, features, true, true,
+                shouldWriteJson);
 
         if (Settings.DEBUG.toBool()) {
             Logs.logSuccess("Generated text shaders for " + target.displayName()
                     + " (shader " + getShaderVersion(target) + ")" + (pathPrefix.isEmpty() ? "" : " [overlay]"));
+        }
+    }
+
+    private void writeLegacyTextShaderVariant(String shaderPath, String shaderName, TextShaderTarget target,
+            TextShaderFeatures features, boolean seeThrough, boolean intensity, boolean shouldWriteJson) {
+        writeGeneratedCoreShader(shaderPath, shaderName + ".vsh",
+                getAnimationVertexShader(target, features, seeThrough));
+        writeGeneratedCoreShader(shaderPath, shaderName + ".fsh",
+                getAnimationFragmentShader(target, seeThrough, intensity));
+
+        if (shouldWriteJson) {
+            writeGeneratedCoreShader(shaderPath, shaderName + ".json",
+                    getAnimationShaderJson(target, shaderName, seeThrough));
+        } else {
+            ResourcePack.deleteFileFromVirtualAndDisk(shaderPath, shaderName + ".json");
         }
     }
 

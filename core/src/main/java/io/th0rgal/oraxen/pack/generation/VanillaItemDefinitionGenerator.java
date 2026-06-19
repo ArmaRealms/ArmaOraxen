@@ -77,12 +77,20 @@ public class VanillaItemDefinitionGenerator {
      */
     public VanillaItemDefinitionGenerator(@NotNull Material material, @NotNull List<ItemBuilder> items,
             boolean useSelect, boolean includeBothModes) {
+        this(material, items, new PredicatesGenerator(material, items), useSelect, includeBothModes);
+    }
+
+    VanillaItemDefinitionGenerator(@NotNull Material material, @NotNull List<ItemBuilder> items,
+            @NotNull PredicatesGenerator predicatesHelper, boolean useSelect, boolean includeBothModes) {
         this.material = material;
         this.items = new ArrayList<>(items);
-        this.predicatesHelper = new PredicatesGenerator(material, items);
+        this.predicatesHelper = predicatesHelper;
         this.useSelect = useSelect;
         this.includeBothModes = includeBothModes;
+        sortItemsForMode();
+    }
 
+    private void sortItemsForMode() {
         // Sort items based on mode:
         // - useSelect=true (MODEL_DATA_IDS): alphabetically by Oraxen item id
         // - useSelect=false (MODEL_DATA_FLOAT_LEGACY): by numeric CustomModelData value
