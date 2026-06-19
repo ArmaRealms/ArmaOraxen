@@ -124,7 +124,7 @@ public enum Message {
         String lang = OraxenPlugin.get().getConfigsManager().getLanguage().getString(path);
         if (lang == null || lang.isEmpty())
             return;
-        OraxenPlugin.get().getAudience().sender(sender).sendMessage(
+        AdventureUtils.sendMessage(sender,
                 AdventureUtils.MINI_MESSAGE.deserialize(lang, TagResolver.resolver(placeholders)));
     }
 

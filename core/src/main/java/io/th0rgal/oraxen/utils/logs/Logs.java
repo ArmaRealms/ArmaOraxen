@@ -1,6 +1,5 @@
 package io.th0rgal.oraxen.utils.logs;
 
-import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.config.Settings;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import net.kyori.adventure.text.Component;
@@ -18,7 +17,7 @@ public class Logs {
 
     public static void logInfo(String message, boolean newline) {
         Component info = AdventureUtils.MINI_MESSAGE.deserialize("<prefix><#529ced>" + message + "</#529ced>");
-        OraxenPlugin.get().getAudience().console().sendMessage(newline ? info.append(Component.newline()) : info);
+        AdventureUtils.sendMessage(Bukkit.getConsoleSender(), newline ? info.append(Component.newline()) : info);
     }
 
     public static void logSuccess(String message) {
@@ -27,7 +26,7 @@ public class Logs {
 
     public static void logSuccess(String message, boolean newline) {
         Component success = AdventureUtils.MINI_MESSAGE.deserialize("<prefix><#55ffa4>" + message + "</#55ffa4>");
-        OraxenPlugin.get().getAudience().console().sendMessage(newline ? success.append(Component.newline()) : success);
+        AdventureUtils.sendMessage(Bukkit.getConsoleSender(), newline ? success.append(Component.newline()) : success);
     }
 
     public static void logError(String message) {
@@ -36,7 +35,7 @@ public class Logs {
 
     public static void logError(String message, boolean newline) {
         Component error = AdventureUtils.MINI_MESSAGE.deserialize("<prefix><#e73f34>" + message + "</#e73f34>");
-        OraxenPlugin.get().getAudience().console().sendMessage(newline ? error.append(Component.newline()) : error);
+        AdventureUtils.sendMessage(Bukkit.getConsoleSender(), newline ? error.append(Component.newline()) : error);
     }
 
     public static void logWarning(String message) {
@@ -45,11 +44,11 @@ public class Logs {
 
     public static void logWarning(String message, boolean newline) {
         Component warning = AdventureUtils.MINI_MESSAGE.deserialize("<prefix><#f9f178>" + message + "</#f9f178>");
-        OraxenPlugin.get().getAudience().console().sendMessage(newline ? warning.append(Component.newline()) : warning);
+        AdventureUtils.sendMessage(Bukkit.getConsoleSender(), newline ? warning.append(Component.newline()) : warning);
     }
 
     public static void newline() {
-        OraxenPlugin.get().getAudience().console().sendMessage(Component.empty());
+        AdventureUtils.sendMessage(Bukkit.getConsoleSender(), Component.empty());
     }
 
     public static void debug(Object object) {
@@ -81,7 +80,7 @@ public class Logs {
     public static void debug(Component component) {
         if (Settings.DEBUG.toBool()) {
             Component msg = component != null ? component : Component.text("null");
-            OraxenPlugin.get().getAudience().console().sendMessage(msg);
+            AdventureUtils.sendMessage(Bukkit.getConsoleSender(), msg);
         }
     }
 

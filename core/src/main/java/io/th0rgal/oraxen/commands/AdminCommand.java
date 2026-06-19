@@ -1,7 +1,6 @@
 package io.th0rgal.oraxen.commands;
 
 import io.th0rgal.oraxen.commands.arguments.*;
-import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenBlocks;
 import io.th0rgal.oraxen.api.OraxenFurniture;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureMechanic;
@@ -29,7 +28,7 @@ public class AdminCommand {
                 .executesPlayer((player, args) -> {
                     String id = (String) args.get("block");
                     if (!OraxenBlocks.isOraxenBlock(id)) {
-                        OraxenPlugin.get().getAudience().player(player).sendMessage(AdventureUtils.MINI_MESSAGE.deserialize("<prefix> <red>Unknown block <white>" + id + "<red>."));
+                        AdventureUtils.sendMessage(player, AdventureUtils.MINI_MESSAGE.deserialize("<prefix> <red>Unknown block <white>" + id + "<red>."));
                     } else {
                         Location loc = (Location) args.getOptional("location").orElse(player.getLocation());
                         String type = (String) args.get("type");
@@ -62,7 +61,7 @@ public class AdminCommand {
                     assert type != null;
                     String id = (String) args.getOrDefault("furniture", "");
                     if (!OraxenFurniture.isFurniture(id))
-                        OraxenPlugin.get().getAudience().player(player).sendMessage(AdventureUtils.MINI_MESSAGE.deserialize("<prefix> <red>Unknown furniture <white>" + id + "<red>."));
+                        AdventureUtils.sendMessage(player, AdventureUtils.MINI_MESSAGE.deserialize("<prefix> <red>Unknown furniture <white>" + id + "<red>."));
                     else {
                         Location loc = (Location) args.getOptional("location").orElse(player.getLocation());
                         int radius = (int) args.getOptional("radius").orElse(0);

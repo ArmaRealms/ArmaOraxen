@@ -1,5 +1,6 @@
 package io.th0rgal.oraxen.utils;
 
+import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.config.Message;
 import io.th0rgal.oraxen.font.GlyphTag;
 import io.th0rgal.oraxen.font.ShiftTag;
@@ -12,6 +13,7 @@ import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.translation.GlobalTranslator;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,6 +47,23 @@ public class AdventureUtils {
     public static final GsonComponentSerializer GSON_SERIALIZER = GsonComponentSerializer.gson();
 
     public static final PlainTextComponentSerializer PLAIN_TEXT = PlainTextComponentSerializer.plainText();
+
+    public static void sendMessage(CommandSender sender, Component component) {
+        if (sender == null || component == null) return;
+
+        // adventure-platform-bukkit currently does not deliver messages on Paper 26.2.
+        // Use Bukkit's legacy sender path there so Oraxen logs and command feedback remain visible.
+        if (VersionUtil.atOrAbove("26.2")) {
+            sender.sendMessage(LEGACY_SERIALIZER.serialize(component));
+            return;
+        }
+
+        try {
+            OraxenPlugin.get().getAudience().sender(sender).sendMessage(component);
+        } catch (Throwable ignored) {
+            sender.sendMessage(LEGACY_SERIALIZER.serialize(component));
+        }
+    }
 
     /**
      * @param message The string to parse

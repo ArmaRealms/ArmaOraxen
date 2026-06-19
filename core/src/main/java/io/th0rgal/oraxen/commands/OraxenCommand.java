@@ -320,7 +320,7 @@ public class OraxenCommand {
                 return true;
             }
             if (!result.executed()) {
-                OraxenPlugin.get().getAudience().sender(sender).sendMessage(AdventureUtils.MINI_MESSAGE.deserialize("<prefix> <red>Wrong usage. Use ")
+                AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE.deserialize("<prefix> <red>Wrong usage. Use ")
                         .append(Component.text("/" + commandLabel + " " + command.usage(), NamedTextColor.RED))
                         .append(AdventureUtils.MINI_MESSAGE.deserialize("<red>.")));
             }
