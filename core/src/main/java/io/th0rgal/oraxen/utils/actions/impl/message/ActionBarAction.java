@@ -1,6 +1,6 @@
 package io.th0rgal.oraxen.utils.actions.impl.message;
 
-import io.th0rgal.oraxen.OraxenPlugin;
+import io.th0rgal.oraxen.utils.AdventureUtils;
 import me.gabytm.util.actions.actions.Action;
 import me.gabytm.util.actions.actions.ActionMeta;
 import me.gabytm.util.actions.actions.Context;
@@ -20,7 +20,7 @@ public class ActionBarAction extends Action<Player> {
     @Override
     public void run(@NotNull Player player, @NotNull Context<Player> context) {
         final Component message = LegacyComponentSerializer.legacySection().deserialize(getMeta().getParsedData(player, context));
-        OraxenPlugin.get().getAudience().player(player).sendActionBar(message);
+        AdventureUtils.sendActionBar(player, message);
     }
 
 }

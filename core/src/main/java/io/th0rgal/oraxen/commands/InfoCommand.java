@@ -14,7 +14,6 @@ import io.th0rgal.oraxen.mechanics.provided.gameplay.shaped.ShapedBlockMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.stringblock.StringBlockMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.stringblock.StringBlockMechanicFactory;
 import io.th0rgal.oraxen.utils.AdventureUtils;
-import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
@@ -59,78 +58,77 @@ public class InfoCommand {
 
     private void handleInfo(CommandSender commandSender, InfoType type, String argument) {
         if (argument == null) return;
-        Audience audience = OraxenPlugin.get().getAudience().sender(commandSender);
         if (argument.equalsIgnoreCase("all")) {
-            sendAllInfo(audience, type);
+            sendAllInfo(commandSender, type);
             return;
         }
-        sendInfo(audience, type, argument);
+        sendInfo(commandSender, type, argument);
     }
 
-    private void sendAllInfo(Audience audience, InfoType type) {
+    private void sendAllInfo(CommandSender sender, InfoType type) {
         switch (type) {
             case ITEM -> {
                 for (Map.Entry<String, ItemBuilder> entry : OraxenItems.getEntries()) {
-                    sendItemInfo(audience, entry.getValue(), entry.getKey());
+                    sendItemInfo(sender, entry.getValue(), entry.getKey());
                 }
             }
             case GLYPH -> OraxenPlugin.get().getFontManager().getGlyphs()
-                    .forEach(glyph -> sendGlyphInfo(audience, glyph, glyph.getName()));
+                    .forEach(glyph -> sendGlyphInfo(sender, glyph, glyph.getName()));
             case BLOCK -> {
                 for (Map.Entry<String, ItemBuilder> entry : OraxenItems.getEntries()) {
                     if (!OraxenBlocks.isOraxenBlock(entry.getKey())) continue;
-                    sendBlockInfo(audience, entry.getKey());
+                    sendBlockInfo(sender, entry.getKey());
                 }
             }
         }
     }
 
-    private void sendInfo(Audience audience, InfoType type, String argument) {
+    private void sendInfo(CommandSender sender, InfoType type, String argument) {
         switch (type) {
             case ITEM -> {
                 ItemBuilder itemBuilder = OraxenItems.getItemById(argument);
-                if (itemBuilder == null) sendNotFound(audience, type, argument);
-                else sendItemInfo(audience, itemBuilder, argument);
+                if (itemBuilder == null) sendNotFound(sender, type, argument);
+                else sendItemInfo(sender, itemBuilder, argument);
             }
             case GLYPH -> {
                 Glyph glyph = OraxenPlugin.get().getFontManager().getGlyphFromID(argument);
-                if (glyph == null) sendNotFound(audience, type, argument);
-                else sendGlyphInfo(audience, glyph, argument);
+                if (glyph == null) sendNotFound(sender, type, argument);
+                else sendGlyphInfo(sender, glyph, argument);
             }
             case BLOCK -> {
-                if (!OraxenBlocks.isOraxenBlock(argument)) sendNotFound(audience, type, argument);
-                else sendBlockInfo(audience, argument);
+                if (!OraxenBlocks.isOraxenBlock(argument)) sendNotFound(sender, type, argument);
+                else sendBlockInfo(sender, argument);
             }
         }
     }
 
-    private void sendNotFound(Audience audience, InfoType type, String argument) {
-        audience.sendMessage(AdventureUtils.MINI_MESSAGE.deserialize("<prefix><red>No " + type.commandName() + " found with " + type.lookupName() + " <white>")
+    private void sendNotFound(CommandSender sender, InfoType type, String argument) {
+        AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE.deserialize("<prefix><red>No " + type.commandName() + " found with " + type.lookupName() + " <white>")
                 .append(Component.text(argument, NamedTextColor.WHITE))
                 .append(AdventureUtils.MINI_MESSAGE.deserialize("<red>.")));
     }
 
-    private void sendItemInfo(Audience sender, ItemBuilder builder, String itemId) {
+    private void sendItemInfo(CommandSender sender, ItemBuilder builder, String itemId) {
         ItemStack item = builder.build();
         ItemMeta meta = item.getItemMeta();
 
-        sender.sendMessage(AdventureUtils.MINI_MESSAGE.deserialize("<gray>ItemID ⏵ <white>" + itemId));
-        sender.sendMessage(AdventureUtils.MINI_MESSAGE.deserialize("<gray>Material ⏵ <white>" + item.getType()));
+        AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE.deserialize("<gray>ItemID ⏵ <white>" + itemId));
+        AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE.deserialize("<gray>Material ⏵ <white>" + item.getType()));
 
         // Basic meta info
         if (meta != null) {
-            sender.sendMessage(AdventureUtils.MINI_MESSAGE.deserialize(""));
-            sender.sendMessage(AdventureUtils.MINI_MESSAGE.deserialize("<gray>Item Meta"));
+            AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE.deserialize(""));
+            AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE.deserialize("<gray>Item Meta"));
             if (meta.hasCustomModelData()) {
-                sender.sendMessage(AdventureUtils.MINI_MESSAGE
+                AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE
                         .deserialize("<gray>CustomModelData ⏵ <white>" + meta.getCustomModelData()));
             }
             if (meta.hasItemModel()) {
-                sender.sendMessage(AdventureUtils.MINI_MESSAGE
+                AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE
                         .deserialize("<gray>ItemModel ⏵ <white>" + meta.getItemModel()));
             }
             if (meta.hasDisplayName()) {
-                sender.sendMessage(AdventureUtils.MINI_MESSAGE
+                AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE
                         .deserialize("<gray>DisplayName ⏵ <white>" + meta.getDisplayName()));
             }
         }
@@ -138,19 +136,19 @@ public class InfoCommand {
         // OraxenMeta info
         OraxenMeta oraxenMeta = builder.getOraxenMeta();
         if (oraxenMeta != null) {
-            sender.sendMessage(AdventureUtils.MINI_MESSAGE.deserialize(""));
-            sender.sendMessage(AdventureUtils.MINI_MESSAGE.deserialize("<gray>Oraxen Meta"));
-            sender.sendMessage(AdventureUtils.MINI_MESSAGE
+            AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE.deserialize(""));
+            AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE.deserialize("<gray>Oraxen Meta"));
+            AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE
                     .deserialize("<gray>ModelName ⏵ <white>" + oraxenMeta.getModelName()));
             if (oraxenMeta.hasPackInfos()) {
-                sender.sendMessage(AdventureUtils.MINI_MESSAGE
+                AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE
                         .deserialize("<gray>ModelPath ⏵ <white>" + oraxenMeta.getGeneratedModelPath()));
             }
         }
     }
 
-    private void sendGlyphInfo(Audience audience, Glyph glyph, String glyphId) {
-        audience.sendMessage(
+    private void sendGlyphInfo(CommandSender sender, Glyph glyph, String glyphId) {
+        AdventureUtils.sendMessage(sender, 
                 Component.empty()
                         .append(Component.newline())
                         .append(AdventureUtils.MINI_MESSAGE.deserialize("<gray>GlyphID ⏵ <white>"))
@@ -166,30 +164,30 @@ public class InfoCommand {
         );
     }
 
-    private void sendBlockInfo(Audience sender, String itemId) {
-        sender.sendMessage(AdventureUtils.MINI_MESSAGE.deserialize("<gray>ItemID ⏵ <white>" + itemId));
+    private void sendBlockInfo(CommandSender sender, String itemId) {
+        AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE.deserialize("<gray>ItemID ⏵ <white>" + itemId));
         if (OraxenBlocks.isOraxenNoteBlock(itemId)) {
             NoteBlockMechanic mechanic = (NoteBlockMechanic) NoteBlockMechanicFactory.getInstance().getMechanic(itemId);
             if (mechanic == null) return;
             NoteBlock data = NoteBlockMechanicFactory.createNoteBlockData(mechanic.getCustomVariation());
-            sender.sendMessage(AdventureUtils.MINI_MESSAGE.deserialize("<gray>Instrument ⏵ <white>" + data.getInstrument()));
-            sender.sendMessage(AdventureUtils.MINI_MESSAGE.deserialize("<gray>Note ⏵ <white>" + data.getNote().getId()));
-            sender.sendMessage(AdventureUtils.MINI_MESSAGE.deserialize("<gray>Powered ⏵ <white>" + data.isPowered()));
+            AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE.deserialize("<gray>Instrument ⏵ <white>" + data.getInstrument()));
+            AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE.deserialize("<gray>Note ⏵ <white>" + data.getNote().getId()));
+            AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE.deserialize("<gray>Powered ⏵ <white>" + data.isPowered()));
         } else if (OraxenBlocks.isOraxenStringBlock(itemId)) {
             StringBlockMechanic mechanic = (StringBlockMechanic) StringBlockMechanicFactory.getInstance().getMechanic(itemId);
             if (mechanic == null) return;
             Tripwire data = (Tripwire) StringBlockMechanicFactory.createTripwireData(mechanic.getCustomVariation());
-            sender.sendMessage(AdventureUtils.MINI_MESSAGE.deserialize("<gray>Facing ⏵ <white>" + data.getFaces()));
-            sender.sendMessage(AdventureUtils.MINI_MESSAGE.deserialize("<gray>Powered ⏵ <white>" + data.isPowered()));
-            sender.sendMessage(AdventureUtils.MINI_MESSAGE.deserialize("<gray>Disarmed ⏵ <white>" + data.isDisarmed()));
+            AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE.deserialize("<gray>Facing ⏵ <white>" + data.getFaces()));
+            AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE.deserialize("<gray>Powered ⏵ <white>" + data.isPowered()));
+            AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE.deserialize("<gray>Disarmed ⏵ <white>" + data.isDisarmed()));
         } else {
             ShapedBlockMechanic mechanic = OraxenBlocks.getShapedMechanic(itemId);
             if (mechanic != null) {
                 BlockData data = mechanic.getPlacedMaterial().createBlockData();
-                sender.sendMessage(AdventureUtils.MINI_MESSAGE.deserialize("<gray>Type ⏵ <white>" + mechanic.getBlockType()));
-                sender.sendMessage(AdventureUtils.MINI_MESSAGE.deserialize("<gray>Variation ⏵ <white>" + mechanic.getCustomVariation()));
-                sender.sendMessage(AdventureUtils.MINI_MESSAGE.deserialize("<gray>Material ⏵ <white>" + mechanic.getPlacedMaterial()));
-                sender.sendMessage(AdventureUtils.MINI_MESSAGE.deserialize("<gray>BlockData ⏵ <white>" + data.getAsString()));
+                AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE.deserialize("<gray>Type ⏵ <white>" + mechanic.getBlockType()));
+                AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE.deserialize("<gray>Variation ⏵ <white>" + mechanic.getCustomVariation()));
+                AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE.deserialize("<gray>Material ⏵ <white>" + mechanic.getPlacedMaterial()));
+                AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE.deserialize("<gray>BlockData ⏵ <white>" + data.getAsString()));
             }
         }
     }

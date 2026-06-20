@@ -1,7 +1,7 @@
 package io.th0rgal.oraxen.utils.actions.impl.other;
 
 import com.google.common.primitives.Floats;
-import io.th0rgal.oraxen.OraxenPlugin;
+import io.th0rgal.oraxen.utils.AdventureUtils;
 import me.gabytm.util.actions.actions.Action;
 import me.gabytm.util.actions.actions.ActionMeta;
 import me.gabytm.util.actions.actions.Context;
@@ -30,7 +30,7 @@ public class SoundAction extends Action<Player> {
         final String parsed = getMeta().getParsedData(player, context);
 
         try {
-            OraxenPlugin.get().getAudience().player(player).playSound(Sound.sound(Key.key(parsed), source, volume, pitch));
+            AdventureUtils.playSound(player, Sound.sound(Key.key(parsed), source, volume, pitch));
         } catch (InvalidKeyException e) {
             e.printStackTrace();
         }

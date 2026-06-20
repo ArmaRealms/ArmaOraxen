@@ -150,7 +150,7 @@ public class FontEvents implements Listener {
 
         // Open fake book and deny opening of original book to avoid needing to format the original book
         event.setUseItemInHand(Event.Result.DENY);
-        OraxenPlugin.get().getAudience().player(player).openBook(book);
+        AdventureUtils.openBook(player, book);
     }
 
     @EventHandler(ignoreCancelled = true)

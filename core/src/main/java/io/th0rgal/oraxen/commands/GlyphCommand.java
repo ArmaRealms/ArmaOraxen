@@ -64,7 +64,7 @@ public class GlyphCommand {
                     }
 
                     Book book = Book.book(Component.text("Glyph Book"), Component.text("Oraxen"), pages);
-                    OraxenPlugin.get().getAudience().player(player).openBook(book);
+                    AdventureUtils.openBook(player, book);
                 });
     }
 }
