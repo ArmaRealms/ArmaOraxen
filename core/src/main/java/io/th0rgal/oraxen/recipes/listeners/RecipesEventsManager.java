@@ -40,7 +40,7 @@ public class RecipesEventsManager implements Listener {
     private Map<CustomRecipe, String> permissionsPerRecipe = new HashMap<>();
     private Set<CustomRecipe> whitelistedCraftRecipes = new HashSet<>();
     private ArrayList<CustomRecipe> whitelistedCraftRecipesOrdered = new ArrayList<>();
-    private Map<String, Map<Integer, String>> shapedOraxenIngredients = new HashMap<>();
+    private Map<String, ShapedOraxenRecipe> shapedOraxenIngredients = new HashMap<>();
     private Map<String, List<String>> shapelessOraxenIngredients = new HashMap<>();
 
     public static RecipesEventsManager get() {
@@ -138,13 +138,8 @@ public class RecipesEventsManager implements Listener {
             return true;
 
         String recipeName = keyed.getKey().getKey();
-        Map<Integer, String> shapedIngredients = shapedOraxenIngredients.get(recipeName);
-        if (shapedIngredients != null) {
-            for (Map.Entry<Integer, String> ingredient : shapedIngredients.entrySet()) {
-                if (!Objects.equals(OraxenItems.getIdByItem(matrix[ingredient.getKey()]), ingredient.getValue())) return false;
-            }
-            return true;
-        }
+        ShapedOraxenRecipe shapedRecipe = shapedOraxenIngredients.get(recipeName);
+        if (shapedRecipe != null) return shapedRecipe.matches(matrix);
 
         List<String> shapelessIngredients = shapelessOraxenIngredients.get(recipeName);
         if (shapelessIngredients != null) {
@@ -157,6 +152,38 @@ public class RecipesEventsManager implements Listener {
         }
 
         return true;
+    }
+
+    private record ShapedOraxenRecipe(int width, int height, Map<Integer, String> ingredients) {
+
+        private boolean matches(ItemStack[] matrix) {
+            int matrixWidth = switch (matrix.length) {
+                case 4 -> 2;
+                case 9 -> 3;
+                default -> (int) Math.sqrt(matrix.length);
+            };
+            if (matrixWidth <= 0 || matrix.length % matrixWidth != 0) return false;
+
+            int matrixHeight = matrix.length / matrixWidth;
+            if (width > matrixWidth || height > matrixHeight) return false;
+
+            for (int rowOffset = 0; rowOffset <= matrixHeight - height; rowOffset++) {
+                for (int columnOffset = 0; columnOffset <= matrixWidth - width; columnOffset++) {
+                    if (matches(matrix, matrixWidth, rowOffset, columnOffset)) return true;
+                }
+            }
+            return false;
+        }
+
+        private boolean matches(ItemStack[] matrix, int matrixWidth, int rowOffset, int columnOffset) {
+            for (Map.Entry<Integer, String> ingredient : ingredients.entrySet()) {
+                int row = ingredient.getKey() / width;
+                int column = ingredient.getKey() % width;
+                int matrixIndex = (row + rowOffset) * matrixWidth + column + columnOffset;
+                if (!Objects.equals(OraxenItems.getIdByItem(matrix[matrixIndex]), ingredient.getValue())) return false;
+            }
+            return true;
+        }
     }
 
     @EventHandler
@@ -192,15 +219,33 @@ public class RecipesEventsManager implements Listener {
         }
         if (ingredientIds.isEmpty()) return;
 
-        Map<Integer, String> expectedIngredients = new HashMap<>();
+        int minRow = Integer.MAX_VALUE;
+        int minColumn = Integer.MAX_VALUE;
+        int maxRow = -1;
+        int maxColumn = -1;
         for (int row = 0; row < Math.min(shape.size(), 3); row++) {
             String rowShape = shape.get(row);
             for (int column = 0; column < Math.min(rowShape.length(), 3); column++) {
-                String itemId = ingredientIds.get(rowShape.charAt(column));
-                if (itemId != null) expectedIngredients.put(row * 3 + column, itemId);
+                if (!ingredientIds.containsKey(rowShape.charAt(column))) continue;
+                minRow = Math.min(minRow, row);
+                minColumn = Math.min(minColumn, column);
+                maxRow = Math.max(maxRow, row);
+                maxColumn = Math.max(maxColumn, column);
             }
         }
-        shapedOraxenIngredients.put(recipeName, expectedIngredients);
+        if (maxRow == -1) return;
+
+        int width = maxColumn - minColumn + 1;
+        int height = maxRow - minRow + 1;
+        Map<Integer, String> expectedIngredients = new HashMap<>();
+        for (int row = minRow; row <= maxRow; row++) {
+            String rowShape = shape.get(row);
+            for (int column = minColumn; column <= maxColumn && column < rowShape.length(); column++) {
+                String itemId = ingredientIds.get(rowShape.charAt(column));
+                if (itemId != null) expectedIngredients.put((row - minRow) * width + column - minColumn, itemId);
+            }
+        }
+        shapedOraxenIngredients.put(recipeName, new ShapedOraxenRecipe(width, height, expectedIngredients));
     }
 
     public void registerShapelessOraxenRecipe(String recipeName, ConfigurationSection ingredientsSection) {
