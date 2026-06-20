@@ -322,7 +322,7 @@ public class NMSHandler implements io.th0rgal.oraxen.nms.NMSHandler {
             }
         } catch (Exception e) {
             Logs.logWarning("Failed to set component " + componentKey);
-            if (io.th0rgal.oraxen.config.Settings.DEBUG.toBool())
+            if (io.th0rgal.oraxen.configs.Settings.DEBUG.toBool())
                 e.printStackTrace();
             return false;
         }
@@ -345,7 +345,7 @@ public class NMSHandler implements io.th0rgal.oraxen.nms.NMSHandler {
                 nmsItem.set(componentType, entry.getValue());
             } catch (Exception e) {
                 Logs.logWarning("Failed to apply component '" + entry.getKey() + "'");
-                if (io.th0rgal.oraxen.config.Settings.DEBUG.toBool())
+                if (io.th0rgal.oraxen.configs.Settings.DEBUG.toBool())
                     e.printStackTrace();
             }
         }

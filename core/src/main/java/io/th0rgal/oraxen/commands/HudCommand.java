@@ -3,7 +3,7 @@ package io.th0rgal.oraxen.commands;
 import io.th0rgal.oraxen.commands.arguments.ArgumentSuggestions;
 import io.th0rgal.oraxen.commands.arguments.TextArgument;
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.Message;
+import io.th0rgal.oraxen.configs.Message;
 import io.th0rgal.oraxen.hud.Hud;
 import io.th0rgal.oraxen.hud.HudManager;
 import io.th0rgal.oraxen.utils.AdventureUtils;

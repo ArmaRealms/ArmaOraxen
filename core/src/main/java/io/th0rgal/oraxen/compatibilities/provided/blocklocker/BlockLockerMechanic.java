@@ -1,6 +1,6 @@
 package io.th0rgal.oraxen.compatibilities.provided.blocklocker;
 
-import io.th0rgal.oraxen.config.Message;
+import io.th0rgal.oraxen.configs.Message;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import nl.rutgerkok.blocklocker.ProtectionType;
 import org.bukkit.configuration.ConfigurationSection;

@@ -2,7 +2,7 @@ package io.th0rgal.oraxen.commands;
 
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.commands.arguments.OraxenArgument;
-import io.th0rgal.oraxen.config.Message;
+import io.th0rgal.oraxen.configs.Message;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;

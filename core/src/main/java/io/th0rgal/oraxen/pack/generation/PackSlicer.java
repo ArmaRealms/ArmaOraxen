@@ -1,7 +1,7 @@
 package io.th0rgal.oraxen.pack.generation;
 
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.pack.generation.slicer.Box;
 import io.th0rgal.oraxen.pack.generation.slicer.InputFile;
 import io.th0rgal.oraxen.pack.generation.slicer.OutputFile;

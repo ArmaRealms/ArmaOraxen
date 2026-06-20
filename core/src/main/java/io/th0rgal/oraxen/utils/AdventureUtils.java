@@ -1,10 +1,10 @@
 package io.th0rgal.oraxen.utils;
 
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.Message;
-import io.th0rgal.oraxen.font.GlyphTag;
-import io.th0rgal.oraxen.font.ShiftTag;
-import io.th0rgal.oraxen.font.TextEffectTag;
+import io.th0rgal.oraxen.configs.Message;
+import io.th0rgal.oraxen.glyphs.GlyphTag;
+import io.th0rgal.oraxen.glyphs.ShiftTag;
+import io.th0rgal.oraxen.glyphs.TextEffectTag;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.Tag;

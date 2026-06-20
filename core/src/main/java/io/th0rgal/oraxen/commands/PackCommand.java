@@ -5,8 +5,8 @@ import io.th0rgal.oraxen.commands.arguments.BooleanArgument;
 import io.th0rgal.oraxen.commands.arguments.EntitySelectorArgument;
 import io.th0rgal.oraxen.commands.arguments.TextArgument;
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.Message;
-import io.th0rgal.oraxen.config.ResourcesManager;
+import io.th0rgal.oraxen.configs.Message;
+import io.th0rgal.oraxen.configs.ResourcesManager;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import org.bukkit.entity.Player;
 

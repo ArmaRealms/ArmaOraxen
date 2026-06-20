@@ -1,7 +1,7 @@
 package io.th0rgal.oraxen.mechanics.provided.misc.commands;
 
 import io.th0rgal.oraxen.api.OraxenItems;
-import io.th0rgal.oraxen.config.Message;
+import io.th0rgal.oraxen.configs.Message;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.timers.Timer;
 import org.bukkit.entity.Player;

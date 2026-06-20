@@ -3,7 +3,7 @@ package io.th0rgal.oraxen.utils;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.compatibilities.CompatibilitiesManager;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.mechanics.MechanicsManager;
 import org.bstats.bukkit.Metrics;
 import org.bstats.charts.AdvancedPie;

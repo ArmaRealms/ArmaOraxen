@@ -4,10 +4,10 @@ import gs.mclo.java.APIResponse;
 import gs.mclo.java.Log;
 import gs.mclo.java.MclogsAPI;
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.utils.LU;
 import io.th0rgal.oraxen.utils.logs.Logs;
-import io.th0rgal.oraxen.config.Message;
+import io.th0rgal.oraxen.configs.Message;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 
 import javax.net.ssl.HttpsURLConnection;

@@ -25,7 +25,7 @@ public class IrisCompatibility extends CompatibilityProvider<Iris> {
             }
         } catch (Exception e) {
             Logs.logWarning("Failed to register Oraxen data provider with Iris: " + e.getMessage());
-            if (io.th0rgal.oraxen.config.Settings.DEBUG.toBool()) {
+            if (io.th0rgal.oraxen.configs.Settings.DEBUG.toBool()) {
                 e.printStackTrace();
             }
         }
@@ -64,7 +64,7 @@ public class IrisCompatibility extends CompatibilityProvider<Iris> {
                 }
             } catch (Exception e) {
                 Logs.logWarning("Failed to unregister Oraxen data provider from Iris: " + e.getMessage());
-                if (io.th0rgal.oraxen.config.Settings.DEBUG.toBool()) {
+                if (io.th0rgal.oraxen.configs.Settings.DEBUG.toBool()) {
                     e.printStackTrace();
                 }
             } finally {

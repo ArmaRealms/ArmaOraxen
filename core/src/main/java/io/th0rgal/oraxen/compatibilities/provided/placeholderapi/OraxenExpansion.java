@@ -1,7 +1,7 @@
 package io.th0rgal.oraxen.compatibilities.provided.placeholderapi;
 
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.font.Glyph;
+import io.th0rgal.oraxen.glyphs.Glyph;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;

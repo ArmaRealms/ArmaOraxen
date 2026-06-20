@@ -1,7 +1,7 @@
 package io.th0rgal.oraxen.commands;
 
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.Message;
+import io.th0rgal.oraxen.configs.Message;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 
 public class VersionCommand {

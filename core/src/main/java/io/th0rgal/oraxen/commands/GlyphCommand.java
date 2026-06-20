@@ -1,9 +1,9 @@
 package io.th0rgal.oraxen.commands;
 
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.Message;
-import io.th0rgal.oraxen.config.Settings;
-import io.th0rgal.oraxen.font.Glyph;
+import io.th0rgal.oraxen.configs.Message;
+import io.th0rgal.oraxen.configs.Settings;
+import io.th0rgal.oraxen.glyphs.Glyph;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import net.kyori.adventure.inventory.Book;
 import net.kyori.adventure.text.Component;

@@ -2,7 +2,7 @@ package io.th0rgal.oraxen.compatibilities.provided.bossshoppro;
 
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.compatibilities.CompatibilityProvider;
-import io.th0rgal.oraxen.config.Message;
+import io.th0rgal.oraxen.configs.Message;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import org.black_ixx.bossshop.BossShop;
 import org.black_ixx.bossshop.events.BSCreatedShopItemEvent;

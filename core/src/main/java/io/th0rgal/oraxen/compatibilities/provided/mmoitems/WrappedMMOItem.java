@@ -1,6 +1,6 @@
 package io.th0rgal.oraxen.compatibilities.provided.mmoitems;
 
-import io.th0rgal.oraxen.config.Message;
+import io.th0rgal.oraxen.configs.Message;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.PluginUtils;
 import net.Indyuce.mmoitems.MMOItems;

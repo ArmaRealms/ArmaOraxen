@@ -2,8 +2,8 @@ package io.th0rgal.oraxen.commands;
 
 import io.th0rgal.oraxen.commands.arguments.StringArgument;
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.ConfigsManager;
-import io.th0rgal.oraxen.config.Message;
+import io.th0rgal.oraxen.configs.ConfigsManager;
+import io.th0rgal.oraxen.configs.Message;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.bukkit.configuration.file.YamlConfiguration;

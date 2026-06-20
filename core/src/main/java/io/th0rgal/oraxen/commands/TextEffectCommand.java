@@ -4,7 +4,7 @@ import io.th0rgal.oraxen.commands.arguments.ArgumentSuggestions;
 import io.th0rgal.oraxen.commands.arguments.GreedyStringArgument;
 import io.th0rgal.oraxen.commands.arguments.StringArgument;
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.font.TextEffect;
+import io.th0rgal.oraxen.glyphs.TextEffect;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 

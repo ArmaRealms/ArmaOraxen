@@ -2,10 +2,10 @@ package io.th0rgal.oraxen.pack.generation;
 
 import com.google.gson.*;
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.AppearanceMode;
-import io.th0rgal.oraxen.config.MigrationBackups;
-import io.th0rgal.oraxen.config.Settings;
-import io.th0rgal.oraxen.sound.SoundConfigMigration;
+import io.th0rgal.oraxen.configs.AppearanceMode;
+import io.th0rgal.oraxen.configs.MigrationBackups;
+import io.th0rgal.oraxen.configs.Settings;
+import io.th0rgal.oraxen.sounds.SoundConfigMigration;
 import io.th0rgal.oraxen.utils.OraxenYaml;
 import io.th0rgal.oraxen.utils.Utils;
 import io.th0rgal.oraxen.utils.VersionUtil;
