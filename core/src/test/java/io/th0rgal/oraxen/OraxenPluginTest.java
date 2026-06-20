@@ -1,6 +1,6 @@
 package io.th0rgal.oraxen;
 
-import io.th0rgal.oraxen.font.FontManager;
+import io.th0rgal.oraxen.fonts.FontManager;
 import io.th0rgal.oraxen.hud.HudManager;
 import io.th0rgal.oraxen.pack.upload.MultiVersionUploadManager;
 import io.th0rgal.oraxen.pack.upload.UploadManager;

@@ -1,4 +1,4 @@
-package io.th0rgal.oraxen.font;
+package io.th0rgal.oraxen.glyphs;
 
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;

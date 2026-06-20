@@ -1,4 +1,4 @@
-package io.th0rgal.oraxen.config;
+package io.th0rgal.oraxen.configs;
 
 import io.th0rgal.oraxen.utils.OraxenYaml;
 import org.bukkit.configuration.file.YamlConfiguration;

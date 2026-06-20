@@ -1,4 +1,4 @@
-package io.th0rgal.oraxen.sound;
+package io.th0rgal.oraxen.sounds;
 
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;

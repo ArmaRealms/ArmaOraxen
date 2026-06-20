@@ -1,4 +1,4 @@
-package io.th0rgal.oraxen.font;
+package io.th0rgal.oraxen.glyphs;
 
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;

@@ -1,4 +1,4 @@
-package io.th0rgal.oraxen.sound;
+package io.th0rgal.oraxen.sounds;
 
 import net.kyori.adventure.key.Key;
 import org.bukkit.configuration.file.YamlConfiguration;
