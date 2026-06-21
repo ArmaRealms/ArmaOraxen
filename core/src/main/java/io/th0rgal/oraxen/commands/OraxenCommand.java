@@ -35,6 +35,7 @@ public class OraxenCommand {
     private final List<String> aliases = new ArrayList<>();
     private final List<OraxenCommand> subcommands = new ArrayList<>();
     private final List<OraxenArgument<?>> arguments = new ArrayList<>();
+    private OraxenCommand parent;
     private String permission;
     private CommandExecutor executor;
     private PlayerCommandExecutor playerExecutor;
@@ -54,12 +55,16 @@ public class OraxenCommand {
     }
 
     public OraxenCommand withSubcommand(OraxenCommand command) {
+        command.parent = this;
         subcommands.add(command);
         return this;
     }
 
     public OraxenCommand withSubcommands(OraxenCommand... commands) {
-        subcommands.addAll(Arrays.asList(commands));
+        for (OraxenCommand command : commands) {
+            command.parent = this;
+            subcommands.add(command);
+        }
         return this;
     }
 
@@ -121,19 +126,23 @@ public class OraxenCommand {
             List<OraxenCommand> matchingChildren = subcommands.stream().filter(command -> command.matches(input.getFirst())).toList();
             boolean hadChildPermissionFailure = false;
             String missingPermission = null;
+            OraxenCommand syntaxCommand = null;
             for (OraxenCommand child : matchingChildren) {
                 RouteResult result = child.execute(sender, input.subList(1, input.size()));
                 if (result.executed()) return result;
                 if (result.noPermission()) {
                     hadChildPermissionFailure = true;
                     missingPermission = result.permission();
+                } else if (result.syntaxCommand() != null) {
+                    syntaxCommand = result.syntaxCommand();
                 }
             }
             if (hadChildPermissionFailure) return RouteResult.noPermission(missingPermission);
+            if (syntaxCommand != null) return RouteResult.syntax(syntaxCommand);
         }
 
         ParsedArguments parsed = parseArguments(sender, input);
-        if (!parsed.success() || parsed.consumed() != input.size()) return RouteResult.syntax();
+        if (!parsed.success() || parsed.consumed() != input.size()) return RouteResult.syntax(this);
         return runExecutor(sender, parsed.arguments());
     }
 
@@ -156,7 +165,7 @@ public class OraxenCommand {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return RouteResult.syntax();
+        return RouteResult.syntax(this);
     }
 
     private ParsedArguments parseArguments(CommandSender sender, List<String> input) {
@@ -289,17 +298,17 @@ public class OraxenCommand {
     private record PermissionResult(boolean allowed, String permission) {
     }
 
-    private record RouteResult(boolean executed, boolean noPermission, String permission) {
+    private record RouteResult(boolean executed, boolean noPermission, String permission, OraxenCommand syntaxCommand) {
         private static RouteResult success() {
-            return new RouteResult(true, false, null);
+            return new RouteResult(true, false, null, null);
         }
 
-        private static RouteResult syntax() {
-            return new RouteResult(false, false, null);
+        private static RouteResult syntax(OraxenCommand command) {
+            return new RouteResult(false, false, null, command);
         }
 
         private static RouteResult noPermission(String permission) {
-            return new RouteResult(false, true, permission);
+            return new RouteResult(false, true, permission, null);
         }
     }
 
@@ -320,8 +329,10 @@ public class OraxenCommand {
                 return true;
             }
             if (!result.executed()) {
+                String usage = result.syntaxCommand().fullUsage();
+                String commandUsage = "/" + commandLabel + (usage.isBlank() ? "" : " " + usage);
                 AdventureUtils.sendMessage(sender, AdventureUtils.MINI_MESSAGE.deserialize("<prefix> <red>Wrong usage. Use ")
-                        .append(Component.text("/" + commandLabel + " " + command.usage(), NamedTextColor.RED))
+                        .append(Component.text(commandUsage, NamedTextColor.RED))
                         .append(AdventureUtils.MINI_MESSAGE.deserialize("<red>.")));
             }
             return true;
@@ -331,6 +342,16 @@ public class OraxenCommand {
         public @NotNull List<String> tabComplete(@NotNull CommandSender sender, @NotNull String alias, @NotNull String[] args) {
             return command.tabComplete(sender, Arrays.asList(args));
         }
+    }
+
+    private String fullUsage() {
+        List<String> parts = new ArrayList<>();
+        for (OraxenCommand command = this; command.parent != null; command = command.parent) {
+            parts.addFirst(command.name);
+        }
+        String usage = usage();
+        if (!usage.isBlank()) parts.add(usage);
+        return String.join(" ", parts);
     }
 
     private String usage() {
