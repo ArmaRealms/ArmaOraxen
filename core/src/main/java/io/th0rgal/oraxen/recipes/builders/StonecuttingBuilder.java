@@ -12,7 +12,7 @@ public class StonecuttingBuilder extends RecipeBuilder {
 
     @Override
     Inventory createInventory(Player player, String inventoryTitle) {
-        return Bukkit.createInventory(player, InventoryType.WORKBENCH, "<glyph:recipe_stonecutter>");
+        return Bukkit.createInventory(player, InventoryType.STONECUTTER, inventoryTitle);
     }
 
     public StonecuttingBuilder(Player player) {

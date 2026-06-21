@@ -176,7 +176,7 @@ public class RecipesCommand {
                 .executes((sender, args) -> {
                     if (sender instanceof Player player) {
                         final RecipeBuilder recipe = RecipeBuilder.get(player.getUniqueId());
-                        (recipe != null ? recipe : new StonecuttingBuilder(player)).open();
+                        (recipe instanceof StonecuttingBuilder ? recipe : new StonecuttingBuilder(player)).open();
                     } else
                         Message.NOT_PLAYER.send(sender);
                 });
