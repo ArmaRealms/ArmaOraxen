@@ -369,7 +369,7 @@ public final class CustomPaintingRegistry {
                 return RegistryRegisterMethod.of(registryClass.getMethod("register", registryClass, resourceLocationClass, Object.class));
             } catch (NoSuchMethodException ignored) {
                 try {
-                    return RegistryRegisterMethod.of(idMapClass.getMethod("register", idMapClass, resourceLocationClass, Object.class));
+                    return RegistryRegisterMethod.of(registryClass.getMethod("register", idMapClass, resourceLocationClass, Object.class));
                 } catch (NoSuchMethodException ignoredAgain) {
                     return RegistryRegisterMethod.of(idMapClass.getMethod("register", resourceLocationClass, Object.class));
                 }
