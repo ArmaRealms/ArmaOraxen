@@ -7,6 +7,7 @@ import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.items.ItemUpdater;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import io.th0rgal.oraxen.utils.ItemUtils;
 import io.th0rgal.oraxen.utils.SchedulerUtil;
 import io.th0rgal.oraxen.utils.VersionUtil;
@@ -130,21 +131,22 @@ public class CustomPaintingListener implements Listener {
         if (art == null) return false;
 
         Location location = target.getLocation();
-        Painting painting = location.getWorld().spawn(location, Painting.class, spawned -> {
-            spawned.setFacingDirection(face, true);
-            spawned.setArt(art, true);
-        });
+        if (!AntiGriefLib.canBuild(player, location)) return false;
+
+        Painting painting = location.getWorld().createEntity(location, Painting.class);
         if (painting == null) return false;
 
         boolean placed = false;
         try {
             if (!painting.setFacingDirection(face, true)) return false;
             if (!painting.setArt(art, true)) return false;
-            if (!painting.isValid()) return false;
 
             HangingPlaceEvent placeEvent = new HangingPlaceEvent(painting, player, clickedBlock, face, hand, item);
             OraxenPlugin.get().getServer().getPluginManager().callEvent(placeEvent);
             if (placeEvent.isCancelled()) return false;
+
+            location.getWorld().addEntity(painting);
+            if (!painting.isValid()) return false;
 
             consumeItem(player, hand);
             placed = true;
