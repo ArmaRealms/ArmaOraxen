@@ -40,8 +40,8 @@ public class NMSHandlers {
 
         version = VersionUtil.getNMSVersion(MinecraftVersion.getCurrentVersion()).name();
         if (!VersionUtil.supportsSingleNmsHandler()) {
-            Logs.logWarning("Oraxen does not support this version of Minecraft (" + version + ") yet.");
-            Logs.logWarning("NMS features will be disabled...");
+            Logs.logWarning("Oraxen does not have a Paper-compatible NMS handler for this server version (" + version + ").");
+            Logs.logWarning("NMS features will be disabled or limited...");
             handler = new NMSHandler.EmptyNMSHandler();
             return;
         }

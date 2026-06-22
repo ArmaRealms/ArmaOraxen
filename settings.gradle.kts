@@ -1,7 +1,5 @@
 rootProject.name = "oraxen"
 
-val isCI = System.getenv("CI") != null
-
 pluginManagement {
     repositories {
         gradlePluginPortal()
@@ -29,7 +27,7 @@ dependencyResolutionManagement {
     }
 }
 
-// Core plus a single NMS module. Version-specific behavior is guarded at runtime.
+// Core plus a single Paper/Paper-fork NMS module. Version-specific behavior is guarded at runtime.
 include(
     "core",
     "nms"

@@ -1,74 +1,42 @@
 package io.th0rgal.oraxen.utils;
 
 import io.th0rgal.oraxen.utils.logs.Logs;
+import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
 public class VersionUtil {
     private static final Map<NMSVersion, Map<Integer, MinecraftVersion>> versionMap = new HashMap<>();
-    private static final Map<NMSVersion, NMSVersion> spigotVariants = new EnumMap<>(NMSVersion.class);
-    private static final boolean IS_PAPER;
-    private static final boolean IS_FOLIA;
+    private static final boolean isPaper;
+    private static final boolean isFolia;
 
     public enum NMSVersion {
-        // Paper 1.20.5+ uses Mojang mappings at runtime, Spigot uses Spigot mappings
-        v26_1_2,               // Paper 26.1.2 (Mojang-mapped)
-        v1_21_R6,              // Paper 1.21.11 (Mojang-mapped)
-        v1_21_R6_spigot,       // Spigot 1.21.11 (Spigot-mapped)
-        v1_21_R6_old,          // Paper 1.21.9-1.21.10 (Mojang-mapped)
-        v1_21_R6_old_spigot,   // Spigot 1.21.9-1.21.10 (Spigot-mapped)
-        v1_21_R5,              // Paper 1.21.7-1.21.8 (Mojang-mapped)
-        v1_21_R5_spigot,       // Spigot 1.21.7-1.21.8 (Spigot-mapped)
-        v1_21_R4,              // Paper 1.21.5 (Mojang-mapped)
-        v1_21_R4_spigot,       // Spigot 1.21.5 (Spigot-mapped)
-        v1_21_R3,              // Paper 1.21.4 (Mojang-mapped)
-        v1_21_R3_spigot,       // Spigot 1.21.4 (Spigot-mapped)
-        v1_21_R2,              // Paper 1.21.2-1.21.3 (Mojang-mapped)
-        v1_21_R2_spigot,       // Spigot 1.21.2-1.21.3 (Spigot-mapped)
-        v1_21_R1,              // Paper 1.21-1.21.1 (Mojang-mapped)
-        v1_21_R1_spigot,       // Spigot 1.21-1.21.1 (Spigot-mapped)
-        v1_20_R4,              // Paper 1.20.5-1.20.6 (Mojang-mapped)
-        v1_20_R4_spigot,       // Spigot 1.20.5-1.20.6 (Spigot-mapped)
-        v1_20_R3,              // 1.20.3-1.20.4 (reobf still works for both)
-        v1_20_R2,              // 1.20.2
-        v1_20_R1,              // 1.20-1.20.1
+        // Paper/Paper-fork versions using Mojang mappings at runtime
+        v26_1_2,               // Paper 26.1.2+
+        v1_21_R6,              // Paper 1.21.11
+        v1_21_R6_old,          // Paper 1.21.9-1.21.10
+        v1_21_R5,              // Paper 1.21.7-1.21.8
+        v1_21_R4,              // Paper 1.21.5
+        v1_21_R3,              // Paper 1.21.4
+        v1_21_R2,              // Paper 1.21.2-1.21.3
+        v1_21_R1,              // Paper 1.21-1.21.1
+        v1_20_R4,              // Paper 1.20.5-1.20.6
+        v1_20_R3,              // Paper 1.20.3-1.20.4
+        v1_20_R2,              // Paper 1.20.2
+        v1_20_R1,              // Paper 1.20-1.20.1
         UNKNOWN;
 
         public static boolean matchesServer(NMSVersion version) {
             if (version == UNKNOWN) return false;
             NMSVersion serverVersion = getNMSVersion(MinecraftVersion.getCurrentVersion());
-
-            // 26.x currently only has a Paper (Mojang-mapped) handler module.
-            // Prevent loading it on Spigot-mapped runtimes.
-            if (!isPaperServer() && serverVersion == v26_1_2) {
-                return false;
-            }
-
-            // For 1.20.5+ (v1_20_R4 and later), choose between Paper and Spigot variants
-            NMSVersion spigotVariant = spigotVariants.get(serverVersion);
-            if (spigotVariant != null) {
-                return isPaperServer() ? version == serverVersion : version == spigotVariant;
-            }
-
-            // For older versions (1.20.4 and below), reobf works for both
-            return serverVersion.equals(version);
+            return isPaperServer() && serverVersion.equals(version);
         }
     }
 
     static {
-        IS_PAPER = hasClass("com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent");
-        IS_FOLIA = hasClass("io.papermc.paper.threadedregions.RegionizedServer");
-
-        // Map Paper versions to their Spigot variants (for 1.20.5+)
-        spigotVariants.put(NMSVersion.v1_21_R6, NMSVersion.v1_21_R6_spigot);
-        spigotVariants.put(NMSVersion.v1_21_R6_old, NMSVersion.v1_21_R6_old_spigot);
-        spigotVariants.put(NMSVersion.v1_21_R5, NMSVersion.v1_21_R5_spigot);
-        spigotVariants.put(NMSVersion.v1_21_R4, NMSVersion.v1_21_R4_spigot);
-        spigotVariants.put(NMSVersion.v1_21_R3, NMSVersion.v1_21_R3_spigot);
-        spigotVariants.put(NMSVersion.v1_21_R2, NMSVersion.v1_21_R2_spigot);
-        spigotVariants.put(NMSVersion.v1_21_R1, NMSVersion.v1_21_R1_spigot);
-        spigotVariants.put(NMSVersion.v1_20_R4, NMSVersion.v1_20_R4_spigot);
+        isPaper = hasClass("com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent");
+        isFolia = hasClass("io.papermc.paper.threadedregions.RegionizedServer");
 
         versionMap.put(NMSVersion.v26_1_2,
                 Map.of(27, new MinecraftVersion("26.1.2"), 28, new MinecraftVersion("26.2")));
@@ -126,7 +94,7 @@ public class VersionUtil {
     }
 
     public static String supportedVersions() {
-        return "Paper 1.20+ / 26.x through the guarded NMS handler";
+        return "Paper and Paper forks 1.20+ / 26.x through the guarded NMS handler";
     }
 
     public static boolean atOrAbove(String versionString) {
@@ -138,11 +106,30 @@ public class VersionUtil {
      * @throws IllegalArgumentException if server is null
      */
     public static boolean isPaperServer() {
-        return IS_PAPER;
+        return isPaper;
+    }
+
+    /**
+     * Checks whether the current server implementation is supported by Oraxen.
+     * Paper forks (Purpur, DivineMC, etc.) expose Paper classes and are supported.
+     * Unknown hybrid runtimes such as Arclight are not rejected by name; they may continue
+     * with limited NMS support if they do not expose Paper's runtime API.
+     */
+    public static boolean isSupportedServer() {
+        if (isPaper) return true;
+
+        String serverName = Bukkit.getName().toLowerCase(Locale.ROOT);
+        if (serverName.contains("spigot") || serverName.contains("craftbukkit")) {
+            Logs.logWarning("Oraxen no longer supports Spigot/CraftBukkit.");
+            Logs.logWarning("Please use Paper, Folia, or a Paper-compatible fork.");
+            return false;
+        }
+
+        return true;
     }
 
     public static boolean isFoliaServer() {
-        return IS_FOLIA;
+        return isFolia;
     }
 
     public static boolean isSupportedVersion(@NotNull NMSVersion serverVersion,

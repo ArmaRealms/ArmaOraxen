@@ -98,6 +98,11 @@ public class OraxenPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        if (!VersionUtil.isSupportedServer()) {
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        }
+
         audience = BukkitAudiences.create(this);
         clickActionManager = new ClickActionManager(this);
         supportsDisplayEntities = VersionUtil.atOrAbove("1.19.4");
@@ -192,6 +197,13 @@ public class OraxenPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (configsManager == null) {
+            HandlerList.unregisterAll(this);
+            OraxenCommand.unregisterAll();
+            closeAudience();
+            return;
+        }
+
         cleanupRuntimeResources();
         HandlerList.unregisterAll(this);
         FurnitureFactory.unregisterEvolution();

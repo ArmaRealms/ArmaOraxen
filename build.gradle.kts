@@ -1,8 +1,6 @@
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.util.*
-import kotlin.io.path.Path
-import kotlin.io.path.listDirectoryEntries
 
 plugins {
     id("java")
@@ -14,13 +12,10 @@ plugins {
 }
 
 
-val isCI = System.getenv("CI") != null
-
 val compiled = (project.findProperty("oraxen_compiled")?.toString() ?: "true").toBoolean()
 val pluginPath = project.findProperty("oraxen_plugin_path")?.toString()
 val devPluginPath = project.findProperty("oraxen_dev_plugin_path")?.toString()
 val foliaPluginPath = project.findProperty("oraxen_folia_plugin_path")?.toString()
-val spigotPluginPath = project.findProperty("oraxen_spigot_plugin_path")?.toString()
 val pluginVersion: String by project
 val runServerVersion = findProperty("mcVersion") as String? ?: "26.1.2"
 val runServerMajorVersion = Regex("""^\D*(?:1\.)?(\d+)""")
@@ -256,29 +251,6 @@ bukkit {
     libraries = oraxenLibs.bundles.libraries.bukkit.get().map { it.toString() }
 }
 
-
-if (spigotPluginPath != null) {
-    tasks {
-        val defaultPath = findByName("reobfJar") ?: findByName("shadowJar") ?: findByName("jar")
-        // Define the main copy task
-        val copyJarTask = register<Copy>("copyJar") {
-            this.doNotTrackState("Overwrites the plugin jar to allow for easier reloading")
-            dependsOn(shadowJar, jar)
-            from(defaultPath)
-            into(spigotPluginPath)
-            doLast {
-                println("Copied to plugin directory $spigotPluginPath")
-                Path(spigotPluginPath).listDirectoryEntries()
-                    .filter { it.fileName.toString().matches("oraxen-.*.jar".toRegex()) }
-                    .filterNot { it.fileName.toString().endsWith("$pluginVersion.jar") }
-                    .forEach { delete(it) }
-            }
-        }
-
-        // Make the build task depend on all individual copy tasks
-        named<DefaultTask>("build").get().dependsOn(copyJarTask)
-    }
-}
 
 // Headless pack generation task
 // Usage: ./gradlew generatePack -PmcVersion=1.21.4 [-PserverType=paper] [-PoutputDir=./build/pack] [-PconfigDir=./my-configs]
