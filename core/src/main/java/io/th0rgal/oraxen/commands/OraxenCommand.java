@@ -195,7 +195,7 @@ public class OraxenCommand {
         if (!input.isEmpty()) {
             String token = input.getFirst();
             List<OraxenCommand> matchingChildren = subcommands.stream().filter(command -> command.matches(token)).toList();
-            if (!matchingChildren.isEmpty() && input.size() > 1) {
+            if (!matchingChildren.isEmpty()) {
                 return matchingChildren.stream()
                         .map(command -> command.tabComplete(sender, input.subList(1, input.size())))
                         .flatMap(Collection::stream)
