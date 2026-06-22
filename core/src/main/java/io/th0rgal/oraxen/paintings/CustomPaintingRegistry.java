@@ -419,6 +419,8 @@ public final class CustomPaintingRegistry {
                 return resourceLocationClass.getMethod("parse", String.class).invoke(null, id);
             } catch (NoSuchMethodException ignored) {
                 int sep = id.indexOf(':');
+                if (sep <= 0 || sep == id.length() - 1)
+                    throw new ReflectiveOperationException("Invalid resource location: " + id);
                 return resourceLocationClass.getMethod("fromNamespaceAndPath", String.class, String.class)
                         .invoke(null, id.substring(0, sep), id.substring(sep + 1));
             }
