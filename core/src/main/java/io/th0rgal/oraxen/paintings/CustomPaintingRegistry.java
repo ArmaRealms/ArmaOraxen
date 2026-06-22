@@ -341,23 +341,22 @@ public final class CustomPaintingRegistry {
 
         private record RegistryRegisterMethod(Method method, boolean staticMethod, boolean passesRegistry) {
 
-            private static RegistryRegisterMethod of(Method method) {
+            private static RegistryRegisterMethod of(Method method) throws NoSuchMethodException {
                 boolean staticMethod = Modifier.isStatic(method.getModifiers());
-                return new RegistryRegisterMethod(method, staticMethod, method.getParameterCount() == 3);
+                boolean passesRegistry = method.getParameterCount() == 3;
+                if (passesRegistry && !staticMethod)
+                    throw new NoSuchMethodException(method + " must be static when it accepts a registry argument");
+                return new RegistryRegisterMethod(method, staticMethod, passesRegistry);
             }
 
             private void invoke(Object registry, Object location, Object variant) throws ReflectiveOperationException {
-                if (staticMethod) {
-                    if (passesRegistry) {
-                        method.invoke(null, registry, location, variant);
-                    } else {
-                        method.invoke(null, location, variant);
-                    }
+                if (passesRegistry) {
+                    method.invoke(null, registry, location, variant);
                     return;
                 }
 
-                if (passesRegistry) {
-                    method.invoke(registry, registry, location, variant);
+                if (staticMethod) {
+                    method.invoke(null, location, variant);
                 } else {
                     method.invoke(registry, location, variant);
                 }
