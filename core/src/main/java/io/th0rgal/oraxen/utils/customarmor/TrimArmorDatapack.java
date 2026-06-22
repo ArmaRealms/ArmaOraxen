@@ -208,64 +208,87 @@ public class TrimArmorDatapack extends OraxenDatapack {
             String itemID = OraxenItems.getIdByItem(itemBuilder);
             ItemStack itemStack = itemBuilder.build();
             String armorPrefix = StringUtils.substringBeforeLast(itemID, "_");
-            boolean changed = false;
 
-            if (skippedArmorType.contains(armorPrefix))
-                continue;
-            if (itemStack == null || !Tag.ITEMS_TRIMMABLE_ARMOR.isTagged(itemBuilder.getType()))
-                continue;
-            if (!itemStack.hasItemMeta() || !(itemStack.getItemMeta() instanceof ArmorMeta))
-                continue;
-            if (!itemStack.getType().name().toUpperCase()
-                    .startsWith(Settings.CUSTOM_ARMOR_TRIMS_MATERIAL.toString().toUpperCase()))
+            if (skippedArmorType.contains(armorPrefix) || !isCustomTrimArmor(itemBuilder, itemStack))
                 continue;
 
-            if (!itemBuilder.getItemFlags().contains(ItemFlag.HIDE_ARMOR_TRIM)) {
-                Logs.logWarning("Item " + itemID + " does not have the HIDE_ARMOR_TRIM flag set.");
-
-                if (Settings.CUSTOM_ARMOR_TRIMS_ASSIGN.toBool()) {
-                    itemBuilder.addItemFlags(ItemFlag.HIDE_ARMOR_TRIM);
-                    changed = true;
-                    if (Settings.DEBUG.toBool())
-                        Logs.logInfo("Assigned HIDE_ARMOR_TRIM flag to " + itemID, true);
-                } else
-                    Logs.logWarning("Custom Armors are recommended to have the HIDE_ARMOR_TRIM flag set.", true);
-            }
-            if (!itemBuilder.hasTrimPattern() && CustomArmorType.getSetting() == CustomArmorType.TRIMS) {
-
-                TrimPattern trimPattern = null;
-                try {
-                    if (VersionUtil.isPaperServer()) {
-                        trimPattern = Registry.TRIM_PATTERN.get(NamespacedKey.fromString("oraxen:" + armorPrefix));
-                    }
-                } catch (NoSuchMethodError e) {
-                    Logs.logWarning("Registry.TRIM_PATTERN.get is not available in your server version.");
-                    Logs.logWarning("Custom armor with trim patterns requires PaperMC or compatible fork.");
-                    skippedArmorType.add(armorPrefix);
-                    continue;
-                }
-
-                if (trimPattern == null) {
-                    Logs.logError("Could not get trim-pattern for " + itemID + ": oraxen:" + armorPrefix);
-                    Logs.logWarning("Ensure that the DataPack is enabled `/datapack list` and restart your server");
-                    skippedArmorType.add(armorPrefix);
-                } else if (!Settings.CUSTOM_ARMOR_TRIMS_ASSIGN.toBool()) {
-                    Logs.logWarning("Item " + itemID + " does not have a trim pattern set.");
-                    Logs.logWarning("Oraxen has been configured to use Trims for custom-armor due to "
-                            + Settings.CUSTOM_ARMOR_TYPE.getPath() + " setting");
-                    Logs.logWarning("Custom Armor will not work unless a trim pattern is set.", true);
-                    skippedArmorType.add(armorPrefix);
-                } else {
-                    itemBuilder.setTrimPattern(trimPattern.key());
-                    changed = true;
-                    Logs.logWarning("Item " + itemID + " does not have a trim pattern set.");
-                    Logs.logInfo("Assigned trim pattern " + trimPattern.key().asString() + " to " + itemID, true);
-                }
-            }
+            boolean changed = ensureHideArmorTrimFlag(itemID, itemBuilder);
+            changed |= ensureTrimPattern(itemID, armorPrefix, itemBuilder, skippedArmorType);
 
             if (changed)
                 itemBuilder.save();
         }
+    }
+
+    private boolean isCustomTrimArmor(ItemBuilder itemBuilder, ItemStack itemStack) {
+        if (itemStack == null || !Tag.ITEMS_TRIMMABLE_ARMOR.isTagged(itemBuilder.getType()))
+            return false;
+        if (!itemStack.hasItemMeta() || !(itemStack.getItemMeta() instanceof ArmorMeta))
+            return false;
+        return itemStack.getType().name().toUpperCase()
+                .startsWith(Settings.CUSTOM_ARMOR_TRIMS_MATERIAL.toString().toUpperCase());
+    }
+
+    private boolean ensureHideArmorTrimFlag(String itemID, ItemBuilder itemBuilder) {
+        if (itemBuilder.getItemFlags().contains(ItemFlag.HIDE_ARMOR_TRIM))
+            return false;
+
+        Logs.logWarning("Item " + itemID + " does not have the HIDE_ARMOR_TRIM flag set.");
+        if (!Settings.CUSTOM_ARMOR_TRIMS_ASSIGN.toBool()) {
+            Logs.logWarning("Custom Armors are recommended to have the HIDE_ARMOR_TRIM flag set.", true);
+            return false;
+        }
+
+        itemBuilder.addItemFlags(ItemFlag.HIDE_ARMOR_TRIM);
+        if (Settings.DEBUG.toBool())
+            Logs.logInfo("Assigned HIDE_ARMOR_TRIM flag to " + itemID, true);
+        return true;
+    }
+
+    private boolean ensureTrimPattern(String itemID, String armorPrefix, ItemBuilder itemBuilder, List<String> skippedArmorType) {
+        if (itemBuilder.hasTrimPattern() || CustomArmorType.getSetting() != CustomArmorType.TRIMS)
+            return false;
+
+        TrimPattern trimPattern = getTrimPattern(armorPrefix, skippedArmorType);
+        if (skippedArmorType.contains(armorPrefix))
+            return false;
+        if (trimPattern == null) {
+            Logs.logError("Could not get trim-pattern for " + itemID + ": oraxen:" + armorPrefix);
+            Logs.logWarning("Ensure that the DataPack is enabled `/datapack list` and restart your server");
+            skippedArmorType.add(armorPrefix);
+            return false;
+        }
+
+        if (!Settings.CUSTOM_ARMOR_TRIMS_ASSIGN.toBool()) {
+            warnMissingTrimPattern(itemID, armorPrefix, skippedArmorType);
+            return false;
+        }
+
+        itemBuilder.setTrimPattern(trimPattern.key());
+        Logs.logWarning("Item " + itemID + " does not have a trim pattern set.");
+        Logs.logInfo("Assigned trim pattern " + trimPattern.key().asString() + " to " + itemID, true);
+        return true;
+    }
+
+    private TrimPattern getTrimPattern(String armorPrefix, List<String> skippedArmorType) {
+        try {
+            return VersionUtil.isPaperServer()
+                    ? Registry.TRIM_PATTERN.get(NamespacedKey.fromString("oraxen:" + armorPrefix))
+                    : null;
+        } catch (NoSuchMethodError e) {
+            Logs.logWarning("Registry.TRIM_PATTERN.get is not available in your server version.");
+            Logs.logWarning("Custom armor with trim patterns requires PaperMC or compatible fork.");
+            skippedArmorType.add(armorPrefix);
+            return null;
+        }
+    }
+
+    private void warnMissingTrimPattern(String itemID, String armorPrefix, List<String> skippedArmorType) {
+        Logs.logWarning("Item " + itemID + " does not have a trim pattern set.");
+        Logs.logWarning("Oraxen has been configured to use Trims for custom-armor due to "
+                + Settings.CUSTOM_ARMOR_TYPE.getPath() + " setting");
+        Logs.logWarning("Custom Armor will not work unless a trim pattern is set.", true);
+        skippedArmorType.add(armorPrefix);
     }
 
     private void trimSourcesObject() {

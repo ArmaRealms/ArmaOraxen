@@ -837,62 +837,81 @@ public class ConfigsManager {
 
     public Map<String, ItemBuilder> parseItemConfig(File itemFile, ItemBuilder errorItem) {
         YamlConfiguration config = OraxenYaml.loadConfiguration(itemFile);
-        Map<String, ItemParser> parseMap = new LinkedHashMap<>();
+        Map<String, ItemParser> parseMap = parseItemParsers(config);
+        ParsedItemConfig parsedItemConfig = buildParsedItems(parseMap, errorItem);
 
+        if (parsedItemConfig.configUpdated())
+            saveUpdatedItemConfig(itemFile, config, parsedItemConfig.blockConfigMigrated());
+
+        return parsedItemConfig.items();
+    }
+
+    private Map<String, ItemParser> parseItemParsers(YamlConfiguration config) {
+        Map<String, ItemParser> parseMap = new LinkedHashMap<>();
         for (String itemKey : config.getKeys(false)) {
             ConfigurationSection itemSection = config.getConfigurationSection(itemKey);
             if (itemSection == null || ItemTemplate.isTemplate(itemKey))
                 continue;
             parseMap.put(itemKey, new ItemParser(itemSection));
         }
-        boolean configUpdated = false;
-        boolean blockConfigMigrated = false;
+        return parseMap;
+    }
+
+    private ParsedItemConfig buildParsedItems(Map<String, ItemParser> parseMap, ItemBuilder errorItem) {
         // because we must have parse all the items before building them to be able to
         // use available models
         Map<String, ItemBuilder> map = new LinkedHashMap<>();
+        boolean configUpdated = false;
+        boolean blockConfigMigrated = false;
+
         for (Map.Entry<String, ItemParser> entry : parseMap.entrySet()) {
             ItemParser itemParser = entry.getValue();
-            try {
-                map.put(entry.getKey(), itemParser.buildItem());
-            } catch (Exception e) {
-                map.put(entry.getKey(), errorItem);
-                Logs.logError("ERROR BUILDING ITEM \"" + entry.getKey() + "\"");
-                if (Settings.DEBUG.toBool()) {
-                    Logs.debug(e);
-                } else {
-                    Logs.logWarning(e.getMessage());
-                }
-            }
-            if (itemParser.isConfigUpdated())
-                configUpdated = true;
-            if (itemParser.isBlockConfigMigrated())
-                blockConfigMigrated = true;
+            map.put(entry.getKey(), buildItem(entry.getKey(), itemParser, errorItem));
+            configUpdated |= itemParser.isConfigUpdated();
+            blockConfigMigrated |= itemParser.isBlockConfigMigrated();
         }
 
-        if (configUpdated) {
-            if (blockConfigMigrated)
-                MigrationBackups.moveToMigrated(plugin.getDataFolder(), itemFile);
+        return new ParsedItemConfig(map, configUpdated, blockConfigMigrated);
+    }
 
-            String content = config.saveToString();
-            if (VersionUtil.atOrAbove("1.20.5"))
-                content = content.replace("displayname: ", "itemname: ");
-            else
-                content = content.replace("itemname: ", "displayname: ");
-
-            try {
-                FileUtils.writeStringToFile(itemFile, content, StandardCharsets.UTF_8);
-            } catch (Exception e) {
+    private ItemBuilder buildItem(String itemKey, ItemParser itemParser, ItemBuilder errorItem) {
+        try {
+            return itemParser.buildItem();
+        } catch (Exception e) {
+            Logs.logError("ERROR BUILDING ITEM \"" + itemKey + "\"");
+            if (Settings.DEBUG.toBool()) {
                 Logs.debug(e);
-                try {
-                    config.save(itemFile);
-                } catch (Exception e1) {
-                    if (Settings.DEBUG.toBool())
-                        e1.printStackTrace();
-                }
+            } else {
+                Logs.logWarning(e.getMessage());
+            }
+            return errorItem;
+        }
+    }
+
+    private void saveUpdatedItemConfig(File itemFile, YamlConfiguration config, boolean blockConfigMigrated) {
+        if (blockConfigMigrated)
+            MigrationBackups.moveToMigrated(plugin.getDataFolder(), itemFile);
+
+        String content = config.saveToString();
+        if (VersionUtil.atOrAbove("1.20.5"))
+            content = content.replace("displayname: ", "itemname: ");
+        else
+            content = content.replace("itemname: ", "displayname: ");
+
+        try {
+            FileUtils.writeStringToFile(itemFile, content, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            Logs.debug(e);
+            try {
+                config.save(itemFile);
+            } catch (Exception e1) {
+                if (Settings.DEBUG.toBool())
+                    e1.printStackTrace();
             }
         }
+    }
 
-        return map;
+    private record ParsedItemConfig(Map<String, ItemBuilder> items, boolean configUpdated, boolean blockConfigMigrated) {
     }
 
     private List<File> getItemFiles() {
