@@ -96,6 +96,7 @@ public class ReloadCommand {
 
     public static void reloadPaintings(@Nullable CommandSender sender) {
         sendReloadMessage(sender, PAINTINGS_RELOAD);
+        OraxenPlugin.get().reloadConfigs();
         OraxenPlugin.get().reloadCustomPaintings();
     }
 
