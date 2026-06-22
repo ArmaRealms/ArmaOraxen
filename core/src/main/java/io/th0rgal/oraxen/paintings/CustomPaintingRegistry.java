@@ -80,18 +80,16 @@ public final class CustomPaintingRegistry {
                     Object variant = ref.paintingVariant(painting);
 
                     if (ref.containsKey(registry, location)) {
-                        if (ref.replaceVariant(registry, resourceKey, variant, variantId)) {
-                            INJECTED_SIGNATURES.put(variantId, signature);
-                            updated++;
-                        }
+                        ref.replaceVariant(registry, resourceKey, variant, variantId);
+                        INJECTED_SIGNATURES.put(variantId, signature);
+                        updated++;
                         continue;
                     }
 
                     ref.register(registry, location, variant);
-                    if (ref.replaceVariant(registry, resourceKey, variant, variantId)) {
-                        INJECTED_SIGNATURES.put(variantId, signature);
-                        injected++;
-                    }
+                    ref.replaceVariant(registry, resourceKey, variant, variantId);
+                    INJECTED_SIGNATURES.put(variantId, signature);
+                    injected++;
                 }
             } finally {
                 ref.setFrozen(registry, true);
@@ -543,39 +541,33 @@ public final class CustomPaintingRegistry {
         }
 
         @SuppressWarnings("unchecked")
-        private boolean replaceVariant(Object registry, Object resourceKey, Object newVariant, String variantId) {
+        private void replaceVariant(Object registry, Object resourceKey, Object newVariant, String variantId) throws ReflectiveOperationException {
+            Optional<?> holderOptional = findHolder(registry, resourceKey);
+            if (holderOptional.isEmpty()) {
+                throw new IllegalStateException("Missing holder for custom painting variant '" + variantId + "'");
+            }
+
+            Object holder = holderOptional.get();
+            Object oldVariant = null;
+            int id = -1;
+
             try {
-                Optional<?> holderOptional = findHolder(registry, resourceKey);
-                if (holderOptional.isEmpty()) return false;
+                oldVariant = value(holder);
+                id = (int) registryGetIdMethod.invoke(registry, oldVariant);
+            } catch (ReflectiveOperationException | RuntimeException ignored) {
+                // Holder may exist without a bound value immediately after registration.
+            }
 
-                Object holder = holderOptional.get();
-                Object oldVariant = null;
-                int id = -1;
+            bindValueMethod.invoke(holder, newVariant);
 
-                try {
-                    oldVariant = value(holder);
-                    id = (int) registryGetIdMethod.invoke(registry, oldVariant);
-                } catch (ReflectiveOperationException | RuntimeException ignored) {
-                    // Holder may exist without a bound value immediately after registration.
-                }
+            Map<Object, Object> byValue = (Map<Object, Object>) byValueField.get(registry);
+            if (oldVariant != null) byValue.remove(oldVariant);
+            byValue.put(newVariant, holder);
 
-                bindValueMethod.invoke(holder, newVariant);
-
-                Map<Object, Object> byValue = (Map<Object, Object>) byValueField.get(registry);
-                if (oldVariant != null) byValue.remove(oldVariant);
-                byValue.put(newVariant, holder);
-
-                Object toIdObject = toIdField.get(registry);
-                if (id >= 0 && oldVariant != null) {
-                    toIdRemoveIntMethod.invoke(toIdObject, oldVariant);
-                    toIdPutMethod.invoke(toIdObject, newVariant, id);
-                }
-
-                return true;
-            } catch (ReflectiveOperationException | RuntimeException exception) {
-                Logs.logWarning("Failed to bind custom painting variant '" + variantId + "': " + exception.getMessage());
-                Logs.debug(exception);
-                return false;
+            Object toIdObject = toIdField.get(registry);
+            if (id >= 0 && oldVariant != null) {
+                toIdRemoveIntMethod.invoke(toIdObject, oldVariant);
+                toIdPutMethod.invoke(toIdObject, newVariant, id);
             }
         }
 
