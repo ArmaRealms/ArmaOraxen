@@ -37,7 +37,16 @@ public class BlockLockerCompatibility extends CompatibilityProvider<BlockLockerP
     }
 
     public static boolean canInteract(Player player, Block block) {
-        BlockLockerMechanic blockLocker = getBlockLocker(block);
+        return canInteract(player, block, getBlockLocker(block));
+    }
+
+    public static boolean canInteract(Player player, Block block, FurnitureMechanic furnitureMechanic) {
+        BlockLockerMechanic blockLocker = furnitureMechanic != null ? furnitureMechanic.getBlockLocker() : null;
+        if (blockLocker == null) blockLocker = getBlockLocker(block);
+        return canInteract(player, block, blockLocker);
+    }
+
+    private static boolean canInteract(Player player, Block block, BlockLockerMechanic blockLocker) {
         if (!CompatibilitiesManager.isCompatibilityEnabled("BlockLocker") || blockLocker == null || !blockLocker.canProtect())
             return true;
 

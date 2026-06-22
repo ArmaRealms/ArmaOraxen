@@ -425,7 +425,7 @@ public class FurnitureListener implements Listener {
         FurnitureMechanic mechanic = OraxenFurniture.getFurnitureMechanic(baseEntity);
         if (mechanic == null)
             return;
-        if (!BlockLockerCompatibility.canInteract(player, baseEntity.getLocation().getBlock()))
+        if (!BlockLockerCompatibility.canInteract(player, baseEntity.getLocation().getBlock(), mechanic))
             return;
         // Swap baseEntity to the baseEntity if interacted with entity is Interaction
         // type
