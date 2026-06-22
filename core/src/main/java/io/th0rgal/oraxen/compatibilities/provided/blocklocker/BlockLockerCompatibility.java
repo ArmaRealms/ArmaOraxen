@@ -42,7 +42,7 @@ public class BlockLockerCompatibility extends CompatibilityProvider<BlockLockerP
 
     public static boolean canInteract(Player player, Block block, FurnitureMechanic furnitureMechanic) {
         BlockLockerMechanic blockLocker = furnitureMechanic != null ? furnitureMechanic.getBlockLocker() : null;
-        if (blockLocker == null) blockLocker = getBlockLocker(block);
+        if (blockLocker == null) blockLocker = getBlockLocker(block, false);
         return canInteract(player, block, blockLocker);
     }
 
@@ -54,12 +54,19 @@ public class BlockLockerCompatibility extends CompatibilityProvider<BlockLockerP
     }
 
     private static BlockLockerMechanic getBlockLocker(Block block) {
+        return getBlockLocker(block, true);
+    }
+
+    private static BlockLockerMechanic getBlockLocker(Block block, boolean includeFurniture) {
         NoteBlockMechanic noteBlockMechanic = OraxenBlocks.getNoteBlockMechanic(block);
-        if (noteBlockMechanic != null) return noteBlockMechanic.getBlockLocker();
+        BlockLockerMechanic blockLocker = noteBlockMechanic != null ? noteBlockMechanic.getBlockLocker() : null;
+        if (blockLocker != null) return blockLocker;
 
         StringBlockMechanic stringBlockMechanic = OraxenBlocks.getStringMechanic(block);
-        if (stringBlockMechanic != null) return stringBlockMechanic.getBlockLocker();
+        blockLocker = stringBlockMechanic != null ? stringBlockMechanic.getBlockLocker() : null;
+        if (blockLocker != null) return blockLocker;
 
+        if (!includeFurniture) return null;
         FurnitureMechanic furnitureMechanic = OraxenFurniture.getFurnitureMechanic(block);
         return furnitureMechanic != null ? furnitureMechanic.getBlockLocker() : null;
     }

@@ -341,8 +341,10 @@ public final class CustomPaintingRegistry {
 
         private record RegistryRegisterMethod(Method method, boolean staticMethod, boolean passesRegistry) {
 
-            private static RegistryRegisterMethod of(Method method) {
+            private static RegistryRegisterMethod of(Method method) throws NoSuchMethodException {
                 boolean staticMethod = Modifier.isStatic(method.getModifiers());
+                if (staticMethod && method.getParameterCount() != 3)
+                    throw new NoSuchMethodException(method + " does not accept a registry argument");
                 return new RegistryRegisterMethod(method, staticMethod, method.getParameterCount() == 3);
             }
 
