@@ -40,17 +40,17 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class CustomPaintingListener implements Listener {
 
     private static final NamespacedKey PLACED_PAINTING_ITEM = new NamespacedKey(OraxenPlugin.get(), "placed_painting_item");
     private static final NamespacedKey PLACED_PAINTING_ITEM_ID = new NamespacedKey(OraxenPlugin.get(), "placed_painting_item_id");
     private static final double DROP_MATCH_RADIUS_SQUARED = 4.0D;
-    private static final List<PendingPaintingDrop> PENDING_PAINTING_DROPS = new ArrayList<>();
+    private static final List<PendingPaintingDrop> PENDING_PAINTING_DROPS = new CopyOnWriteArrayList<>();
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onPaintingInteract(PlayerInteractEvent event) {
@@ -134,6 +134,7 @@ public class CustomPaintingListener implements Listener {
             spawned.setFacingDirection(face, true);
             spawned.setArt(art, true);
         });
+        if (painting == null) return false;
 
         boolean placed = false;
         try {
@@ -145,12 +146,11 @@ public class CustomPaintingListener implements Listener {
             OraxenPlugin.get().getServer().getPluginManager().callEvent(placeEvent);
             if (placeEvent.isCancelled()) return false;
 
-            storePaintingItem(painting, item);
             consumeItem(player, hand);
             placed = true;
             return true;
         } finally {
-            if (!placed) painting.remove();
+            if (!placed && painting != null) painting.remove();
         }
     }
 
