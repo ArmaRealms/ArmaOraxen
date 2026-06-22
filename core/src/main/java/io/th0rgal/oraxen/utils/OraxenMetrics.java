@@ -97,7 +97,7 @@ public class OraxenMetrics {
     }
 
     /**
-     * Detects the server type (Paper, Folia, Spigot).
+     * Detects the server type (Paper, Folia, or another supported hybrid/fork).
      */
     private static String detectServerType() {
         if (VersionUtil.isFoliaServer()) {
@@ -106,7 +106,7 @@ public class OraxenMetrics {
         if (VersionUtil.isPaperServer()) {
             return "Paper";
         }
-        return "Spigot";
+        return "Other";
     }
 
     /**

@@ -49,7 +49,7 @@ public class FontEvents implements Listener {
     private final FontManager manager;
     @Nullable PaperChatHandler paperChatHandler;
     @Nullable LegacyPaperChatHandler legacyPaperChatHandler;
-    @Nullable SpigotChatHandler spigotChatHandler;
+    @Nullable LegacyBukkitChatHandler legacyBukkitChatHandler;
 
     enum ChatHandler {
         LEGACY,
@@ -82,7 +82,7 @@ public class FontEvents implements Listener {
                 paperChatHandler = new PaperChatHandler();
             legacyPaperChatHandler = new LegacyPaperChatHandler();
         }
-        spigotChatHandler = new SpigotChatHandler();
+        legacyBukkitChatHandler = new LegacyBukkitChatHandler();
     }
 
     public void registerChatHandlers() {
@@ -90,8 +90,8 @@ public class FontEvents implements Listener {
             Bukkit.getPluginManager().registerEvents(paperChatHandler, OraxenPlugin.get());
         if (legacyPaperChatHandler != null)
             Bukkit.getPluginManager().registerEvents(legacyPaperChatHandler, OraxenPlugin.get());
-        if (spigotChatHandler != null)
-            Bukkit.getPluginManager().registerEvents(spigotChatHandler, OraxenPlugin.get());
+        if (legacyBukkitChatHandler != null)
+            Bukkit.getPluginManager().registerEvents(legacyBukkitChatHandler, OraxenPlugin.get());
     }
 
     public void unregisterChatHandlers() {
@@ -99,8 +99,8 @@ public class FontEvents implements Listener {
             HandlerList.unregisterAll(paperChatHandler);
         if (legacyPaperChatHandler != null)
             HandlerList.unregisterAll(legacyPaperChatHandler);
-        if (spigotChatHandler != null)
-            HandlerList.unregisterAll(spigotChatHandler);
+        if (legacyBukkitChatHandler != null)
+            HandlerList.unregisterAll(legacyBukkitChatHandler);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -297,7 +297,7 @@ public class FontEvents implements Listener {
         manager.clearGlyphTabCompletions(event.getPlayer());
     }
 
-    public class SpigotChatHandler implements Listener {
+    public class LegacyBukkitChatHandler implements Listener {
         @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
         public void onPlayerChat(AsyncPlayerChatEvent event) {
             if (!Settings.FORMAT_CHAT.toBool() || !ChatHandler.isLegacy() || manager.useNmsGlyphs()) return;
