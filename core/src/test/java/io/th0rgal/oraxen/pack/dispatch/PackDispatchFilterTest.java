@@ -33,6 +33,8 @@ class PackDispatchFilterTest {
     void supportsCanonicalAndRuntimeVersionAliases() {
         assertFalse(PackDispatchFilter.canSendPack(775, "26.1.2", List.of("= 1.26.1.2")));
         assertFalse(PackDispatchFilter.canSendPack(775, "1.26.1", List.of("= 26.1")));
+        assertFalse(PackDispatchFilter.canSendPack(776, "26.2", List.of("= 26.2.0")));
+        assertFalse(PackDispatchFilter.canSendPack(776, "1.26.2", List.of("= 1.26.2.0")));
     }
 
     @Test

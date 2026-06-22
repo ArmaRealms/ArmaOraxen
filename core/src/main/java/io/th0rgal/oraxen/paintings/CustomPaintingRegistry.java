@@ -218,6 +218,7 @@ public final class CustomPaintingRegistry {
         private static volatile Ref instance;
 
         private final Class<?> craftServerClass;
+        private final Class<?> idMapClass;
         private final Class<?> registryClass;
         private final Class<?> mappedRegistryClass;
         private final Class<?> registryAccessClass;
@@ -249,6 +250,7 @@ public final class CustomPaintingRegistry {
 
         private Ref() throws ReflectiveOperationException {
             craftServerClass = Class.forName("org.bukkit.craftbukkit.CraftServer");
+            idMapClass = Class.forName("net.minecraft.core.IdMap");
             registryClass = Class.forName("net.minecraft.core.Registry");
             mappedRegistryClass = Class.forName("net.minecraft.core.MappedRegistry");
             registryAccessClass = Class.forName("net.minecraft.core.RegistryAccess");
@@ -273,7 +275,7 @@ public final class CustomPaintingRegistry {
             registryAccessMethod = getServerMethod.getReturnType().getMethod("registryAccess");
             lookupOrThrowMethod = registryAccessClass.getMethod("lookupOrThrow", resourceKeyClass);
             resourceKeyCreateMethod = resourceKeyClass.getMethod("create", resourceKeyClass, resourceLocationClass);
-            registryRegisterMethod = registryClass.getMethod("register", registryClass, resourceLocationClass, Object.class);
+            registryRegisterMethod = registryRegisterMethod();
             containsKeyMethod = registryClass.getMethod("containsKey", resourceLocationClass);
             registryGetResourceKeyMethod = registryClass.getMethod("get", resourceKeyClass);
             registryGetTagMethod = registryClass.getMethod("get", tagKeyClass);
@@ -322,6 +324,14 @@ public final class CustomPaintingRegistry {
                 return owner.getMethod(name, parameterTypes);
             } catch (NoSuchMethodException ignored) {
                 return null;
+            }
+        }
+
+        private Method registryRegisterMethod() throws NoSuchMethodException {
+            try {
+                return registryClass.getMethod("register", registryClass, resourceLocationClass, Object.class);
+            } catch (NoSuchMethodException ignored) {
+                return idMapClass.getMethod("register", idMapClass, resourceLocationClass, Object.class);
             }
         }
 

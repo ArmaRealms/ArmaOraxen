@@ -1,9 +1,12 @@
 package io.th0rgal.oraxen.compatibilities.provided.blocklocker;
 
+import io.th0rgal.oraxen.api.OraxenBlocks;
 import io.th0rgal.oraxen.api.OraxenFurniture;
 import io.th0rgal.oraxen.compatibilities.CompatibilitiesManager;
 import io.th0rgal.oraxen.compatibilities.CompatibilityProvider;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureMechanic;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.NoteBlockMechanic;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.stringblock.StringBlockMechanic;
 import nl.rutgerkok.blocklocker.BlockLockerAPIv2;
 import nl.rutgerkok.blocklocker.ProtectableBlocksSettings;
 import nl.rutgerkok.blocklocker.ProtectionType;
@@ -41,6 +44,12 @@ public class BlockLockerCompatibility extends CompatibilityProvider<BlockLockerP
     }
 
     private static BlockLockerMechanic getBlockLocker(Block block) {
+        NoteBlockMechanic noteBlockMechanic = OraxenBlocks.getNoteBlockMechanic(block);
+        if (noteBlockMechanic != null) return noteBlockMechanic.getBlockLocker();
+
+        StringBlockMechanic stringBlockMechanic = OraxenBlocks.getStringMechanic(block);
+        if (stringBlockMechanic != null) return stringBlockMechanic.getBlockLocker();
+
         FurnitureMechanic furnitureMechanic = OraxenFurniture.getFurnitureMechanic(block);
         return furnitureMechanic != null ? furnitureMechanic.getBlockLocker() : null;
     }
