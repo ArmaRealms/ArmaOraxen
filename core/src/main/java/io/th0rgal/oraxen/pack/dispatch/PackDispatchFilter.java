@@ -348,12 +348,22 @@ public final class PackDispatchFilter {
         for (Map.Entry<String, Integer> entry : PROTOCOL_BY_VERSION.entrySet()) {
             ClientVersion version = ClientVersion.parse(entry.getKey()).orElse(null);
             if (version == null) continue;
-            bestVersions.merge(entry.getValue(), version, (current, candidate) -> current.compareTo(candidate) >= 0 ? current : candidate);
+            bestVersions.merge(entry.getValue(), version, PackDispatchFilter::preferredCanonicalVersion);
         }
 
         TreeMap<Integer, ClientVersion> versions = new TreeMap<>();
         versions.putAll(bestVersions);
         return versions;
+    }
+
+    private static ClientVersion preferredCanonicalVersion(ClientVersion current, ClientVersion candidate) {
+        int comparison = current.compareTo(candidate);
+        if (comparison != 0) return comparison > 0 ? current : candidate;
+
+        int lengthComparison = Integer.compare(current.parts().size(), candidate.parts().size());
+        if (lengthComparison != 0) return lengthComparison < 0 ? current : candidate;
+
+        return current.key().compareTo(candidate.key()) <= 0 ? current : candidate;
     }
 
     private enum Operator {
