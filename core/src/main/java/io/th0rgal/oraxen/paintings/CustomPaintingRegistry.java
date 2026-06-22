@@ -47,10 +47,7 @@ public final class CustomPaintingRegistry {
             }
             return;
         }
-        if (paintings.isEmpty()) {
-            updatePlaceableRegistryTag(List.of(), List.of());
-            return;
-        }
+        List<String> managedVariantIds = paintings.stream().map(painting -> painting.variantKey().asString()).toList();
 
         try {
             Ref ref = Ref.get();
@@ -63,9 +60,11 @@ public final class CustomPaintingRegistry {
             int injected = 0;
             int updated = 0;
             int unchanged = 0;
+            int removed = 0;
 
             ref.setFrozen(registry, false);
             try {
+                removed = ref.removeUnconfiguredVariants(registry, managedVariantIds);
                 for (CustomPainting painting : paintings) {
                     String variantId = painting.variantKey().asString();
                     String signature = signature(painting);
@@ -99,14 +98,15 @@ public final class CustomPaintingRegistry {
             }
 
             int tagChanges = updatePlaceableRegistryTag(
-                    paintings.stream().map(painting -> painting.variantKey().asString()).toList(),
+                    managedVariantIds,
                     paintings.stream().filter(CustomPainting::includeInRandom)
                             .map(painting -> painting.variantKey().asString()).toList()
             );
 
-            if (injected > 0 || updated > 0 || tagChanges > 0) {
+            if (injected > 0 || updated > 0 || removed > 0 || tagChanges > 0) {
                 Logs.logInfo("Hot reloaded " + injected + " new custom painting(s), " + updated
-                        + " updated, " + unchanged + " unchanged, " + tagChanges + " random-placement change(s).");
+                        + " updated, " + removed + " removed, " + unchanged + " unchanged, "
+                        + tagChanges + " random-placement change(s).");
             } else {
                 Logs.logInfo("Custom paintings already hot reloaded (" + unchanged + " unchanged).");
             }
@@ -230,7 +230,11 @@ public final class CustomPaintingRegistry {
         private final Object paintingVariantRegistryKey;
         private final Object placeableTagKey;
         private final Field frozenField;
+        private final Field byKeyField;
+        private final Field byLocationField;
         private final Field byValueField;
+        private final Field byIdField;
+        private final Field registrationInfosField;
         private final Field toIdField;
         private final Method getServerMethod;
         private final Method registryAccessMethod;
@@ -247,6 +251,8 @@ public final class CustomPaintingRegistry {
         private final Method registryGetTagsMethod;
         private final Method unwrapKeyMethod;
         private final Method resourceKeyLocationMethod;
+        private final Method toIdRemoveIntMethod;
+        private final Method toIdPutMethod;
 
         private Ref() throws ReflectiveOperationException {
             craftServerClass = Class.forName("org.bukkit.craftbukkit.CraftServer");
@@ -266,8 +272,12 @@ public final class CustomPaintingRegistry {
 
             frozenField = mappedRegistryClass.getDeclaredField("frozen");
             frozenField.setAccessible(true);
+            byKeyField = mappedRegistryField("byKey");
+            byLocationField = mappedRegistryField("byLocation");
             byValueField = mappedRegistryClass.getDeclaredField("byValue");
             byValueField.setAccessible(true);
+            byIdField = mappedRegistryField("byId");
+            registrationInfosField = mappedRegistryField("registrationInfos");
             toIdField = mappedRegistryClass.getDeclaredField("toId");
             toIdField.setAccessible(true);
 
@@ -287,6 +297,10 @@ public final class CustomPaintingRegistry {
             registryGetTagsMethod = optionalMethod(registryClass, "getTags");
             unwrapKeyMethod = Class.forName("net.minecraft.core.Holder").getMethod("unwrapKey");
             resourceKeyLocationMethod = resourceKeyLocationMethod();
+
+            Class<?> toIdClass = toIdField.getType();
+            toIdRemoveIntMethod = toIdClass.getMethod("removeInt", Object.class);
+            toIdPutMethod = toIdClass.getMethod("put", Object.class, int.class);
         }
 
         private static Ref get() throws ReflectiveOperationException {
@@ -340,6 +354,16 @@ public final class CustomPaintingRegistry {
                 return resourceKeyClass.getMethod("location");
             } catch (NoSuchMethodException ignored) {
                 return resourceKeyClass.getMethod("identifier");
+            }
+        }
+
+        private Field mappedRegistryField(String name) {
+            try {
+                Field field = mappedRegistryClass.getDeclaredField(name);
+                field.setAccessible(true);
+                return field;
+            } catch (NoSuchFieldException ignored) {
+                return null;
             }
         }
 
@@ -442,6 +466,54 @@ public final class CustomPaintingRegistry {
         }
 
         @SuppressWarnings("unchecked")
+        private int removeUnconfiguredVariants(Object registry, Collection<String> configuredVariantIds) throws ReflectiveOperationException {
+            Set<String> configuredIds = new HashSet<>(configuredVariantIds);
+            Set<String> staleIds = new LinkedHashSet<>(INJECTED_SIGNATURES.keySet());
+            staleIds.addAll(KNOWN_MANAGED_VARIANT_IDS);
+            staleIds.removeAll(configuredIds);
+
+            int removed = 0;
+            for (String variantId : staleIds) {
+                Object location = resourceLocation(variantId);
+                Object resourceKey = resourceKey(location);
+                Optional<?> holderOptional = findHolder(registry, resourceKey);
+
+                if (holderOptional.isPresent()) {
+                    Object holder = holderOptional.get();
+                    Object variant = null;
+                    int id = -1;
+
+                    try {
+                        variant = value(holder);
+                        id = (int) registryGetIdMethod.invoke(registry, variant);
+                    } catch (ReflectiveOperationException | RuntimeException ignored) {
+                        // Missing IDs or values still need their key/location maps cleaned below.
+                    }
+
+                    if (byKeyField != null) ((Map<Object, Object>) byKeyField.get(registry)).remove(resourceKey);
+                    if (byLocationField != null) ((Map<Object, Object>) byLocationField.get(registry)).remove(location);
+                    if (registrationInfosField != null) ((Map<Object, Object>) registrationInfosField.get(registry)).remove(resourceKey);
+
+                    if (variant != null) {
+                        ((Map<Object, Object>) byValueField.get(registry)).remove(variant);
+                        toIdRemoveIntMethod.invoke(toIdField.get(registry), variant);
+                    }
+
+                    if (id >= 0 && byIdField != null) {
+                        Object byId = byIdField.get(registry);
+                        byId.getClass().getMethod("set", int.class, Object.class).invoke(byId, id, null);
+                    }
+
+                    removed++;
+                }
+
+                INJECTED_SIGNATURES.remove(variantId);
+            }
+
+            return removed;
+        }
+
+        @SuppressWarnings("unchecked")
         private boolean replaceVariant(Object registry, Object resourceKey, Object newVariant, String variantId) {
             try {
                 Optional<?> holderOptional = findHolder(registry, resourceKey);
@@ -465,11 +537,9 @@ public final class CustomPaintingRegistry {
                 byValue.put(newVariant, holder);
 
                 Object toIdObject = toIdField.get(registry);
-                Method removeInt = toIdObject.getClass().getMethod("removeInt", Object.class);
-                Method put = toIdObject.getClass().getMethod("put", Object.class, int.class);
                 if (id >= 0 && oldVariant != null) {
-                    removeInt.invoke(toIdObject, oldVariant);
-                    put.invoke(toIdObject, newVariant, id);
+                    toIdRemoveIntMethod.invoke(toIdObject, oldVariant);
+                    toIdPutMethod.invoke(toIdObject, newVariant, id);
                 }
 
                 return true;
