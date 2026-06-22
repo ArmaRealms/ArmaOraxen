@@ -47,8 +47,6 @@ public enum Settings {
     CHAT_HANDLER("Chat.chat_handler"),
 
     // Config Tools
-    CONFIGS_VERSION("configs_version"),
-    UPDATE_CONFIGS("ConfigsTools.enable_configs_updater"),
     DISABLE_AUTOMATIC_MODEL_DATA("ConfigsTools.disable_automatic_model_data"),
     DISABLE_AUTOMATIC_GLYPH_CODE("ConfigsTools.disable_automatic_glyph_code"),
     SKIPPED_MODEL_DATA_NUMBERS("ConfigsTools.skipped_model_data_numbers"),
@@ -70,7 +68,6 @@ public enum Settings {
 
     // Custom Blocks
     BLOCK_CORRECTION("CustomBlocks.block_correction"),
-    LEGACY_NOTEBLOCKS("CustomBlocks.use_legacy_noteblocks"),
 
     // ItemUpdater
     UPDATE_ITEMS("ItemUpdater.update_items"),
@@ -195,7 +192,7 @@ public enum Settings {
         try {
             if (save) settingFile.save(OraxenPlugin.get().getDataFolder().toPath().resolve("settings.yml").toFile());
         } catch (Exception e) {
-            Logs.logError("Failed to apply changes to settings.yml");
+            Logs.logError("Failed to apply changes to settings.yml.");
         }
     }
 

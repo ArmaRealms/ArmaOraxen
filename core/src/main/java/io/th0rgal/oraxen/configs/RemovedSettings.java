@@ -24,7 +24,12 @@ public enum RemovedSettings {
     NMS_BLOCK_CORRECTION("Plugin.experimental.nms.block_correction"),
     SPIGOT_CHAT_FORMATTING("Plugin.experimental.spigot_chat_formatting"),
     ORAXEN_INV_TYPE("oraxen_inventory.main_menu_type"),
-    GESTURES_ENABLED("Gestures.enabled")
+    GESTURES_ENABLED("Gestures.enabled"),
+    CONFIGS_VERSION("configs_version"),
+    ENABLE_CONFIGS_UPDATER("ConfigsTools.enable_configs_updater"),
+    LEGACY_NOTEBLOCKS("CustomBlocks.use_legacy_noteblocks"),
+    NMS_GLYPHS_EXPERIMENTAL("Plugin.experimental.nms.glyphs"),
+    NMS_GLYPHS("Glyphs.nms_glyphs")
 
     ;
 

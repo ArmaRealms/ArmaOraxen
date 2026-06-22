@@ -1,7 +1,6 @@
 package io.th0rgal.oraxen.configs;
 
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.utils.Utils;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -47,13 +46,21 @@ public class SettingsUpdater {
                 Logs.logWarning("Found outdated setting " + key + ". This will be removed.");
             }
             settings.set(key, null);
-            ConfigurationSection parent = settings.getConfigurationSection(Utils.getStringBeforeLastInSplit(key, "\\."));
-            if (parent != null && parent.getKeys(false).isEmpty()) {
-                settings.set(parent.getCurrentPath(), null);
+
+            String parentPath = key;
+            while ((parentPath = getParentPath(parentPath)) != null) {
+                ConfigurationSection parent = settings.getConfigurationSection(parentPath);
+                if (parent == null || !parent.getKeys(false).isEmpty()) break;
+                settings.set(parentPath, null);
             }
 
         }
         return settings;
+    }
+
+    private String getParentPath(String path) {
+        int lastDot = path.lastIndexOf('.');
+        return lastDot > 0 ? path.substring(0, lastDot) : null;
     }
 
 }

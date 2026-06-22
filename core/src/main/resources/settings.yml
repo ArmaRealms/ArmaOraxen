@@ -33,7 +33,6 @@ ConfigsTools:
   skipped_model_data_numbers: []
   disable_automatic_model_data: false
   disable_automatic_glyph_code: false
-  enable_configs_updater: true
   error_item:
     material: PODZOL
     excludeFromInventory: false # set to true if you don't want to display it inside inventory
@@ -79,7 +78,6 @@ CustomArmor:
 
 CustomBlocks:
   block_correction: NMS # Valid types are NMS and LEGACY
-  use_legacy_noteblocks: true # Setting relevant for future changes, for now leave this to true
 
 ItemUpdater:
   # Update the items in player inventory to the latest in config when player joins
