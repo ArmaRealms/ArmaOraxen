@@ -17,7 +17,7 @@ import org.bukkit.entity.Player;
 public class BlockLockerCompatibility extends CompatibilityProvider<BlockLockerPluginImpl> {
     public BlockLockerCompatibility() {
         BlockLockerAPIv2.getPlugin().getChestSettings().getExtraProtectables()
-                .removeIf(BlockLockerProtection.class::isInstance);
+                .removeIf(protectable -> protectable.getClass().getName().equals(BlockLockerProtection.class.getName()));
         BlockLockerAPIv2.getPlugin().getChestSettings().getExtraProtectables().add(new BlockLockerProtection());
     }
 
@@ -37,7 +37,8 @@ public class BlockLockerCompatibility extends CompatibilityProvider<BlockLockerP
     }
 
     public static boolean canInteract(Player player, Block block) {
-        if (!CompatibilitiesManager.isCompatibilityEnabled("BlockLocker") || getBlockLocker(block) == null)
+        BlockLockerMechanic blockLocker = getBlockLocker(block);
+        if (!CompatibilitiesManager.isCompatibilityEnabled("BlockLocker") || blockLocker == null || !blockLocker.canProtect())
             return true;
 
         return BlockLockerAPIv2.isAllowed(player, block, true);
