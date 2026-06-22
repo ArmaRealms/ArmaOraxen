@@ -240,7 +240,7 @@ public final class CustomPaintingRegistry {
         private final Method registryAccessMethod;
         private final Method lookupOrThrowMethod;
         private final Method resourceKeyCreateMethod;
-        private final Method registryRegisterMethod;
+        private final RegistryRegisterMethod registryRegisterMethod;
         private final Method containsKeyMethod;
         private final Method registryGetResourceKeyMethod;
         private final Method registryGetTagMethod;
@@ -341,11 +341,40 @@ public final class CustomPaintingRegistry {
             }
         }
 
-        private Method registryRegisterMethod() throws NoSuchMethodException {
+        private record RegistryRegisterMethod(Method method, boolean staticMethod, boolean passesRegistry) {
+
+            private static RegistryRegisterMethod of(Method method) {
+                boolean staticMethod = Modifier.isStatic(method.getModifiers());
+                return new RegistryRegisterMethod(method, staticMethod, method.getParameterCount() == 3);
+            }
+
+            private void invoke(Object registry, Object location, Object variant) throws ReflectiveOperationException {
+                if (staticMethod) {
+                    if (passesRegistry) {
+                        method.invoke(null, registry, location, variant);
+                    } else {
+                        method.invoke(null, location, variant);
+                    }
+                    return;
+                }
+
+                if (passesRegistry) {
+                    method.invoke(registry, registry, location, variant);
+                } else {
+                    method.invoke(registry, location, variant);
+                }
+            }
+        }
+
+        private RegistryRegisterMethod registryRegisterMethod() throws NoSuchMethodException {
             try {
-                return registryClass.getMethod("register", registryClass, resourceLocationClass, Object.class);
+                return RegistryRegisterMethod.of(registryClass.getMethod("register", registryClass, resourceLocationClass, Object.class));
             } catch (NoSuchMethodException ignored) {
-                return idMapClass.getMethod("register", idMapClass, resourceLocationClass, Object.class);
+                try {
+                    return RegistryRegisterMethod.of(idMapClass.getMethod("register", idMapClass, resourceLocationClass, Object.class));
+                } catch (NoSuchMethodException ignoredAgain) {
+                    return RegistryRegisterMethod.of(idMapClass.getMethod("register", resourceLocationClass, Object.class));
+                }
             }
         }
 
@@ -462,7 +491,7 @@ public final class CustomPaintingRegistry {
         }
 
         private void register(Object registry, Object location, Object variant) throws ReflectiveOperationException {
-            registryRegisterMethod.invoke(null, registry, location, variant);
+            registryRegisterMethod.invoke(registry, location, variant);
         }
 
         @SuppressWarnings("unchecked")
