@@ -1,9 +1,12 @@
 package io.th0rgal.oraxen.utils;
 
-import io.th0rgal.oraxen.config.Message;
-import io.th0rgal.oraxen.font.GlyphTag;
-import io.th0rgal.oraxen.font.ShiftTag;
-import io.th0rgal.oraxen.font.TextEffectTag;
+import io.th0rgal.oraxen.OraxenPlugin;
+import io.th0rgal.oraxen.configs.Message;
+import io.th0rgal.oraxen.glyphs.GlyphTag;
+import io.th0rgal.oraxen.glyphs.ShiftTag;
+import io.th0rgal.oraxen.glyphs.TextEffectTag;
+import net.kyori.adventure.inventory.Book;
+import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.Tag;
@@ -11,7 +14,9 @@ import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import net.kyori.adventure.title.Title;
 import net.kyori.adventure.translation.GlobalTranslator;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,6 +50,98 @@ public class AdventureUtils {
     public static final GsonComponentSerializer GSON_SERIALIZER = GsonComponentSerializer.gson();
 
     public static final PlainTextComponentSerializer PLAIN_TEXT = PlainTextComponentSerializer.plainText();
+
+    public static void sendMessage(CommandSender sender, Component component) {
+        if (sender == null || component == null) return;
+
+        // adventure-platform-bukkit currently does not deliver messages on Paper 26.2.
+        // Use Bukkit's legacy sender path there so Oraxen logs and command feedback remain visible.
+        if (VersionUtil.atOrAbove("26.2")) {
+            sender.sendMessage(LEGACY_SERIALIZER.serialize(component));
+            return;
+        }
+
+        try {
+            OraxenPlugin.get().getAudience().sender(sender).sendMessage(component);
+        } catch (Throwable ignored) {
+            sender.sendMessage(LEGACY_SERIALIZER.serialize(component));
+        }
+    }
+
+    public static void sendActionBar(Player player, Component component) {
+        if (player == null || component == null) return;
+
+        if (VersionUtil.atOrAbove("26.2")) {
+            player.sendActionBar(component);
+            return;
+        }
+
+        try {
+            OraxenPlugin.get().getAudience().player(player).sendActionBar(component);
+        } catch (Throwable ignored) {
+            player.sendActionBar(component);
+        }
+    }
+
+    public static void showTitle(Player player, Title title) {
+        if (player == null || title == null) return;
+
+        if (VersionUtil.atOrAbove("26.2")) {
+            player.showTitle(title);
+            return;
+        }
+
+        try {
+            OraxenPlugin.get().getAudience().player(player).showTitle(title);
+        } catch (Throwable ignored) {
+            player.showTitle(title);
+        }
+    }
+
+    public static void openBook(Player player, Book book) {
+        if (player == null || book == null) return;
+
+        if (VersionUtil.atOrAbove("26.2")) {
+            player.openBook(book);
+            return;
+        }
+
+        try {
+            OraxenPlugin.get().getAudience().player(player).openBook(book);
+        } catch (Throwable ignored) {
+            player.openBook(book);
+        }
+    }
+
+    public static void playSound(Player player, Sound sound) {
+        if (player == null || sound == null) return;
+
+        if (VersionUtil.atOrAbove("26.2")) {
+            player.playSound(sound);
+            return;
+        }
+
+        try {
+            OraxenPlugin.get().getAudience().player(player).playSound(sound);
+        } catch (Throwable ignored) {
+            player.playSound(sound);
+        }
+    }
+
+    public static void stopSound(Player player, Sound sound) {
+        if (player == null || sound == null) return;
+
+        if (VersionUtil.atOrAbove("26.2")) {
+            player.stopSound(sound);
+            return;
+        }
+
+        try {
+            OraxenPlugin.get().getAudience().player(player).stopSound(sound);
+        } catch (Throwable ignored) {
+            player.stopSound(sound);
+        }
+    }
 
     /**
      * @param message The string to parse

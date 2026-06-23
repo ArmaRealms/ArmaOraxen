@@ -1,13 +1,12 @@
 package io.th0rgal.oraxen.commands;
 
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.ArgumentSuggestions;
-import dev.jorel.commandapi.arguments.BooleanArgument;
-import dev.jorel.commandapi.arguments.EntitySelectorArgument;
-import dev.jorel.commandapi.arguments.TextArgument;
+import io.th0rgal.oraxen.commands.arguments.ArgumentSuggestions;
+import io.th0rgal.oraxen.commands.arguments.BooleanArgument;
+import io.th0rgal.oraxen.commands.arguments.EntitySelectorArgument;
+import io.th0rgal.oraxen.commands.arguments.TextArgument;
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.Message;
-import io.th0rgal.oraxen.config.ResourcesManager;
+import io.th0rgal.oraxen.configs.Message;
+import io.th0rgal.oraxen.configs.ResourcesManager;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import org.bukkit.entity.Player;
 
@@ -18,8 +17,8 @@ import java.util.zip.ZipEntry;
 public class PackCommand {
 
     @SuppressWarnings("unchecked")
-    CommandAPICommand getPackCommand() {
-        return new CommandAPICommand("pack")
+    OraxenCommand getPackCommand() {
+        return new OraxenCommand("pack")
                 .withPermission("oraxen.command.pack")
                 .withSubcommand(sendPackCommand())
                 .withSubcommand(sendPackMessage())
@@ -27,8 +26,8 @@ public class PackCommand {
 
     }
 
-    private CommandAPICommand sendPackCommand() {
-        return new CommandAPICommand("send")
+    private OraxenCommand sendPackCommand() {
+        return new OraxenCommand("send")
                 .withPermission("oraxen.command.pack.send")
                 .withOptionalArguments(new EntitySelectorArgument.ManyPlayers("targets"))
                 .executes((sender, args) -> {
@@ -55,8 +54,8 @@ public class PackCommand {
                 });
     }
 
-    private CommandAPICommand sendPackMessage() {
-        return new CommandAPICommand("msg")
+    private OraxenCommand sendPackMessage() {
+        return new OraxenCommand("msg")
                 .withOptionalArguments(new EntitySelectorArgument.ManyPlayers("targets"))
                 .executes((sender, args) -> {
                     final Collection<Player> targets = (Collection<Player>) args.getOptional("targets")
@@ -76,8 +75,8 @@ public class PackCommand {
                 });
     }
 
-    private CommandAPICommand extractDefaultPackContent() {
-        return new CommandAPICommand("extract_default")
+    private OraxenCommand extractDefaultPackContent() {
+        return new OraxenCommand("extract_default")
                 .withOptionalArguments(new TextArgument("folder").replaceSuggestions(ArgumentSuggestions.strings("all", "textures", "models", "sounds")))
                 .withOptionalArguments(new BooleanArgument("override"))
                 .executes((sender, args) -> {

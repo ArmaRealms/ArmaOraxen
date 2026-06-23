@@ -2,7 +2,7 @@ package io.th0rgal.oraxen.packets.packetevents;
 
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.utils.PacketHelpers;
 
 import static com.github.retrooper.packetevents.protocol.packettype.PacketType.Play.Server.ACTION_BAR;

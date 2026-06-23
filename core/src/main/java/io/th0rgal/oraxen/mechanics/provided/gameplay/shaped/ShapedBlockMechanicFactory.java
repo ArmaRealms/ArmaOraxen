@@ -4,13 +4,14 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.jeff_media.customblockdata.CustomBlockData;
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.mechanics.ConfigProperty;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
 import io.th0rgal.oraxen.mechanics.MechanicInfo;
 import io.th0rgal.oraxen.mechanics.MechanicsManager;
 import io.th0rgal.oraxen.mechanics.PropertyType;
+import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -29,13 +30,14 @@ import java.util.Map;
 )
 public class ShapedBlockMechanicFactory extends MechanicFactory {
 
+    private static final String MINIMUM_VERSION = "1.20.4";
     private static ShapedBlockMechanicFactory instance;
 
     // Map of Material -> Mechanic for quick lookup
     private final Map<Material, ShapedBlockMechanic> mechanicByMaterial = new HashMap<>();
 
-    // Track which variations are used per block type
-    private final Map<ShapedBlockType, boolean[]> usedVariations = new HashMap<>();
+    // Track which item owns each variation per block type
+    private final Map<ShapedBlockType, Map<Integer, String>> usedVariations = new HashMap<>();
 
     // Store model names for blockstate generation
     private final Map<Material, String> modelByMaterial = new HashMap<>();
@@ -52,6 +54,8 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
     private final List<String> toolTypes;
     private final boolean convertVanillaWaxed;
     private final boolean handleWorldGeneration;
+    private final boolean registerListeners;
+    private boolean enabled;
 
     @ConfigProperty(type = PropertyType.STRING, description = "Type of shaped block: STAIR, SLAB, DOOR, TRAPDOOR, GRATE, BULB")
     public static final String PROP_TYPE = "type";
@@ -72,20 +76,19 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
         toolTypes = section.getStringList("tool_types");
         convertVanillaWaxed = section.getBoolean("convert_vanilla_waxed", true);
         handleWorldGeneration = section.getBoolean("handle_world_generation", true);
+        this.registerListeners = registerListeners;
+        enabled = false;
+
+        if (!isSupportedServerVersion()) {
+            if (Settings.DEBUG.toBool()) {
+                Logs.logWarning("Shaped block mechanic is disabled on this server version. It requires Minecraft " + MINIMUM_VERSION + "+.");
+            }
+            return;
+        }
 
         // Initialize variation tracking
         for (ShapedBlockType type : ShapedBlockType.values()) {
-            usedVariations.put(type, new boolean[4]);
-        }
-
-        // Register pack modifier to generate blockstate files after all items are parsed
-        OraxenPlugin.get().getResourcePack().addModifiers(getMechanicID(), packFolder -> {
-            generateBlockstates();
-        });
-
-        if (registerListeners) {
-            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(),
-                new ShapedBlockMechanicListener(this));
+            usedVariations.put(type, new HashMap<>());
         }
 
         if (Settings.DEBUG.toBool()) {
@@ -97,8 +100,21 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
         return instance;
     }
 
+    public static boolean isEnabled() {
+        return instance != null && instance.enabled && MechanicsManager.isMechanicEnabled("block");
+    }
+
+    public static boolean isSupportedServerVersion() {
+        return VersionUtil.atOrAbove(MINIMUM_VERSION);
+    }
+
     public static void clearInstance(ShapedBlockMechanicFactory factory) {
         if (instance == factory) instance = null;
+    }
+
+    private String itemId(ConfigurationSection section) {
+        ConfigurationSection itemSection = section.getParent() != null ? section.getParent().getParent() : null;
+        return itemSection != null ? itemSection.getName() : section.getCurrentPath();
     }
 
     /**
@@ -118,21 +134,41 @@ public class ShapedBlockMechanicFactory extends MechanicFactory {
         return handleWorldGeneration;
     }
 
+    private void enable() {
+        if (enabled) return;
+        enabled = true;
+
+        // Register pack modifier to generate blockstate files after all items are parsed
+        OraxenPlugin.get().getResourcePack().addModifiers(getMechanicID(), packFolder -> generateBlockstates());
+
+        if (registerListeners) {
+            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(),
+                new ShapedBlockMechanicListener(this));
+        }
+    }
+
     @Override
     public Mechanic parse(ConfigurationSection section) {
+        if (!isSupportedServerVersion()) {
+            Logs.logWarning("Ignoring shaped block mechanic for " + itemId(section) + ": shaped blocks require Minecraft " + MINIMUM_VERSION + "+.");
+            return null;
+        }
+
+        enable();
         ShapedBlockMechanic mechanic = new ShapedBlockMechanic(this, section);
 
         // Validate and register the variation
         ShapedBlockType type = mechanic.getBlockType();
         int variation = mechanic.getCustomVariation();
 
-        boolean[] variations = usedVariations.get(type);
-        if (variations[variation - 1]) {
+        Map<Integer, String> variations = usedVariations.get(type);
+        String previousItem = variations.get(variation);
+        if (previousItem != null && !previousItem.equals(mechanic.getItemID())) {
             Logs.logError("Duplicate custom_variation " + variation + " for " + type +
-                " shaped block in item: " + mechanic.getItemID());
+                " shaped block in item: " + mechanic.getItemID() + " (already used by " + previousItem + ")");
             return null;
         }
-        variations[variation - 1] = true;
+        variations.put(variation, mechanic.getItemID());
 
         // Register the mechanic by material
         mechanicByMaterial.put(mechanic.getPlacedMaterial(), mechanic);

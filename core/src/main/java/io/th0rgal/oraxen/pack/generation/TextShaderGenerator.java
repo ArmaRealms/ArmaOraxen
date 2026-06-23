@@ -1,9 +1,9 @@
 package io.th0rgal.oraxen.pack.generation;
 
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.Settings;
-import io.th0rgal.oraxen.font.AnimatedGlyph;
-import io.th0rgal.oraxen.font.TextEffect;
+import io.th0rgal.oraxen.configs.Settings;
+import io.th0rgal.oraxen.glyphs.AnimatedGlyph;
+import io.th0rgal.oraxen.glyphs.TextEffect;
 import io.th0rgal.oraxen.utils.HashUtils;
 import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.logs.Logs;
@@ -306,61 +306,61 @@ class TextShaderGenerator {
     }
 
     private void generateTextShadersForTarget(TextShaderTarget target, TextShaderFeatures features, String pathPrefix) {
-        // 1.21.x still expects explicit shader json files in packs.
-        // 26.x moved to generated pipeline metadata and should not be overridden.
-        boolean shouldWriteJson = !target.isAtLeast("26");
-
-        // Generate shaders (see-through uses a different vertex format on 1.21.6+)
-        String vshContent = getAnimationVertexShader(target, features, false);
-        String fshContent = getAnimationFragmentShader(target, false);
-        String jsonContent = shouldWriteJson ? getAnimationShaderJson(target, false) : null;
-
-        String vshSeeThrough = getAnimationVertexShader(target, features, true);
-        String fshSeeThrough = getAnimationFragmentShader(target, true);
-        String jsonSeeThrough = shouldWriteJson ? getAnimationShaderJson(target, true) : null;
-
-        String vshIntensity = getAnimationVertexShader(target, features, false);
-        String fshIntensity = getAnimationFragmentShader(target, false, true);
-        String jsonIntensity = shouldWriteJson ? getAnimationShaderJson(target, "rendertype_text_intensity", false) : null;
-
-        String vshIntensitySeeThrough = getAnimationVertexShader(target, features, true);
-        String fshIntensitySeeThrough = getAnimationFragmentShader(target, true, true);
-        String jsonIntensitySeeThrough = shouldWriteJson ? getAnimationShaderJson(target, "rendertype_text_intensity_see_through", true) : null;
-
         String shaderPath = pathPrefix + "assets/minecraft/shaders/core";
 
-        // Write shaders for both rendertype_text and rendertype_text_see_through
-        writeGeneratedCoreShader(shaderPath, "rendertype_text.vsh", vshContent);
-        writeGeneratedCoreShader(shaderPath, "rendertype_text.fsh", fshContent);
-        if (jsonContent != null)
-            writeGeneratedCoreShader(shaderPath, "rendertype_text.json", jsonContent);
-        else
-            ResourcePack.deleteFileFromVirtualAndDisk(shaderPath, "rendertype_text.json");
+        if (target.isAtLeast("26.2")) {
+            writeGeneratedCoreShader(shaderPath, "text.vsh", getAnimationVertexShader26_2(target, features));
+            writeGeneratedCoreShader(shaderPath, "text.fsh", getAnimationFragmentShader26_2(target));
+            deleteLegacyTextShaderVariants(shaderPath);
 
-        writeGeneratedCoreShader(shaderPath, "rendertype_text_see_through.vsh", vshSeeThrough);
-        writeGeneratedCoreShader(shaderPath, "rendertype_text_see_through.fsh", fshSeeThrough);
-        if (jsonSeeThrough != null)
-            writeGeneratedCoreShader(shaderPath, "rendertype_text_see_through.json", jsonSeeThrough);
-        else
-            ResourcePack.deleteFileFromVirtualAndDisk(shaderPath, "rendertype_text_see_through.json");
+            if (Settings.DEBUG.toBool()) {
+                Logs.logSuccess("Generated text shaders for " + target.displayName()
+                        + " (shader " + getShaderVersion(target) + ")" + (pathPrefix.isEmpty() ? "" : " [overlay]"));
+            }
+            return;
+        }
 
-        writeGeneratedCoreShader(shaderPath, "rendertype_text_intensity.vsh", vshIntensity);
-        writeGeneratedCoreShader(shaderPath, "rendertype_text_intensity.fsh", fshIntensity);
-        if (jsonIntensity != null)
-            writeGeneratedCoreShader(shaderPath, "rendertype_text_intensity.json", jsonIntensity);
-        else
-            ResourcePack.deleteFileFromVirtualAndDisk(shaderPath, "rendertype_text_intensity.json");
+        // 1.21.x still expects explicit shader json files in packs.
+        // 26.1.x moved to generated pipeline metadata and should not be overridden.
+        boolean shouldWriteJson = !target.isAtLeast("26");
 
-        writeGeneratedCoreShader(shaderPath, "rendertype_text_intensity_see_through.vsh", vshIntensitySeeThrough);
-        writeGeneratedCoreShader(shaderPath, "rendertype_text_intensity_see_through.fsh", fshIntensitySeeThrough);
-        if (jsonIntensitySeeThrough != null)
-            writeGeneratedCoreShader(shaderPath, "rendertype_text_intensity_see_through.json", jsonIntensitySeeThrough);
-        else
-            ResourcePack.deleteFileFromVirtualAndDisk(shaderPath, "rendertype_text_intensity_see_through.json");
+        writeLegacyTextShaderVariant(shaderPath, "rendertype_text", target, features, false, false, shouldWriteJson);
+        writeLegacyTextShaderVariant(shaderPath, "rendertype_text_see_through", target, features, true, false,
+                shouldWriteJson);
+        writeLegacyTextShaderVariant(shaderPath, "rendertype_text_intensity", target, features, false, true,
+                shouldWriteJson);
+        writeLegacyTextShaderVariant(shaderPath, "rendertype_text_intensity_see_through", target, features, true, true,
+                shouldWriteJson);
 
         if (Settings.DEBUG.toBool()) {
             Logs.logSuccess("Generated text shaders for " + target.displayName()
                     + " (shader " + getShaderVersion(target) + ")" + (pathPrefix.isEmpty() ? "" : " [overlay]"));
+        }
+    }
+
+    private void writeLegacyTextShaderVariant(String shaderPath, String shaderName, TextShaderTarget target,
+            TextShaderFeatures features, boolean seeThrough, boolean intensity, boolean shouldWriteJson) {
+        writeGeneratedCoreShader(shaderPath, shaderName + ".vsh",
+                getAnimationVertexShader(target, features, seeThrough));
+        writeGeneratedCoreShader(shaderPath, shaderName + ".fsh",
+                getAnimationFragmentShader(target, seeThrough, intensity));
+
+        if (shouldWriteJson) {
+            writeGeneratedCoreShader(shaderPath, shaderName + ".json",
+                    getAnimationShaderJson(target, shaderName, seeThrough));
+        } else {
+            ResourcePack.deleteFileFromVirtualAndDisk(shaderPath, shaderName + ".json");
+        }
+    }
+
+    private void deleteLegacyTextShaderVariants(String shaderPath) {
+        for (String shaderName : List.of(
+                "rendertype_text", "rendertype_text_see_through",
+                "rendertype_text_intensity", "rendertype_text_intensity_see_through",
+                "rendertype_text_background", "rendertype_text_background_see_through")) {
+            ResourcePack.deleteFileFromVirtualAndDisk(shaderPath, shaderName + ".json");
+            ResourcePack.deleteFileFromVirtualAndDisk(shaderPath, shaderName + ".vsh");
+            ResourcePack.deleteFileFromVirtualAndDisk(shaderPath, shaderName + ".fsh");
         }
     }
 
@@ -680,6 +680,118 @@ class TextShaderGenerator {
                 config.fogDistanceRecalc.isEmpty() ? "" : "                            " + config.fogDistanceRecalc + "\n",
                 scoreboardHiding
         );
+    }
+
+    private String getAnimationVertexShader26_2(TextShaderTarget target, TextShaderFeatures features) {
+        String textShaderConstants = getTextShaderConstants(target, features);
+        TextEffectSnippets snippets = getTextEffectSnippets(target);
+        String vertexPrelude = snippets.vertexPrelude();
+        String vertexEffects = snippets.vertexEffects();
+        VertexShaderConfig config = new VertexShaderConfig(
+                "#if !defined(IS_SEE_THROUGH) && !defined(IS_GUI)\n                        sphericalVertexDistance = fog_spherical_distance(pos);\n                        cylindricalVertexDistance = fog_cylindrical_distance(pos);\n                        #endif",
+                "#if !defined(IS_SEE_THROUGH) && !defined(IS_GUI)\n                            sphericalVertexDistance = fog_spherical_distance(pos);\n                            cylindricalVertexDistance = fog_cylindrical_distance(pos);\n                            #endif",
+                "oraxen_lit_text_color(Color)",
+                "oraxen_lit_text_color(vec4(1.0, 1.0, 1.0, visible))",
+                "(rawFrame % totalFrames)"
+        );
+
+        String header = """
+                #version 330
+
+                #moj_import <minecraft:fog.glsl>
+                #moj_import <minecraft:dynamictransforms.glsl>
+                #moj_import <minecraft:projection.glsl>
+                #moj_import <minecraft:sample_lightmap.glsl>
+                #moj_import <minecraft:globals.glsl>
+
+                in vec3 Position;
+                in vec4 Color;
+                in vec2 UV0;
+                #if !defined(IS_SEE_THROUGH) && !defined(IS_GUI)
+                in ivec2 UV2;
+                uniform sampler2D Sampler2;
+                #endif
+
+                out float sphericalVertexDistance;
+                out float cylindricalVertexDistance;
+                out vec4 vertexColor;
+                out vec2 texCoord0;
+                out vec4 effectData;
+                %s
+                %s
+
+                vec4 oraxen_lit_text_color(vec4 color) {
+                #if defined(IS_SEE_THROUGH) || defined(IS_GUI)
+                    return color;
+                #else
+                    return color * sample_lightmap(Sampler2, UV2);
+                #endif
+                }
+
+                """.formatted(textShaderConstants, vertexPrelude);
+        return header + getVertexShaderMainBody(config, vertexEffects, false);
+    }
+
+    private String getAnimationFragmentShader26_2(TextShaderTarget target) {
+        TextEffectSnippets snippets = getTextEffectSnippets(target);
+        String fragmentPrelude = snippets.fragmentPrelude();
+        String fragmentEffects = snippets.fragmentEffects();
+
+        return """
+                #version 330
+
+                #moj_import <minecraft:fog.glsl>
+                #moj_import <minecraft:dynamictransforms.glsl>
+                #moj_import <minecraft:globals.glsl>
+
+                uniform sampler2D Sampler0;
+
+                in float sphericalVertexDistance;
+                in float cylindricalVertexDistance;
+                in vec4 vertexColor;
+                in vec2 texCoord0;
+                in vec4 effectData;
+
+                out vec4 fragColor;
+
+                %s
+
+                vec4 oraxen_sample_text() {
+                    vec4 texel = texture(Sampler0, texCoord0);
+                #ifdef IS_GRAYSCALE
+                    return texel.rrrr;
+                #else
+                    return texel;
+                #endif
+                }
+
+                void main() {
+                    vec4 color = oraxen_sample_text() * vertexColor * ColorModulator;
+                    vec4 texColor = color;
+
+                    // Apply text effects if effectData.x >= 0 (effectType, 0 is rainbow)
+                    if (effectData.x >= 0.0 && effectData.y > 0.5) {
+                        int effectType = int(effectData.x + 0.5);
+                        float speed = effectData.y;
+                        float charIndex = effectData.z;
+                        float param = effectData.w;
+                        float timeSeconds = (GameTime <= 1.0) ? (GameTime * 1200.0) : (GameTime / 20.0);
+
+%s
+                    }
+
+                    color = texColor;
+
+                    if (color.a < 0.1) {
+                        discard;
+                    }
+                #if defined(IS_SEE_THROUGH) || defined(IS_GUI)
+                    fragColor = color;
+                #else
+                    fragColor = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance, FogEnvironmentalStart, FogEnvironmentalEnd, FogRenderDistanceStart, FogRenderDistanceEnd, FogColor);
+                #endif
+                }
+                """.formatted(fragmentPrelude, fragmentEffects);
     }
 
     private String getAnimationVertexShader(TextShaderTarget target, TextShaderFeatures features, boolean seeThrough) {

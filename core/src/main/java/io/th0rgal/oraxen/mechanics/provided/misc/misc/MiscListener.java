@@ -3,7 +3,7 @@ package io.th0rgal.oraxen.mechanics.provided.misc.misc;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.Utils;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -100,7 +100,7 @@ public class MiscListener implements Listener {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getHand() == null) return;
         if (item == null || block == null || block.getType() != Material.COMPOSTER) return;
         if (!(block.getBlockData() instanceof Levelled levelled)) return;
-        if (!ProtectionLib.canInteract(player, block.getLocation())) return;
+        if (!AntiGriefLib.canInteract(player, block.getLocation())) return;
         MiscMechanic mechanic = MiscMechanicFactory.get().getMechanic(item);
         if (mechanic == null || !mechanic.isCompostable()) return;
         if (event.useInteractedBlock() == Event.Result.DENY) return;

@@ -12,8 +12,8 @@ import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.compatibilities.provided.ecoitems.WrappedEcoItem;
 import io.th0rgal.oraxen.compatibilities.provided.mmoitems.WrappedMMOItem;
 import io.th0rgal.oraxen.compatibilities.provided.mythiccrucible.WrappedCrucibleItem;
-import io.th0rgal.oraxen.config.Message;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Message;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.nms.NMSHandler;
 import io.th0rgal.oraxen.nms.NMSHandlers;
 import io.th0rgal.oraxen.utils.*;
@@ -279,7 +279,9 @@ public class ItemBuilder {
             fireResistant = itemMeta.isFireResistant() ? true : null;
             hideToolTip = itemMeta.isHideTooltip() ? true : null;
             foodComponent = itemMeta.hasFood() ? itemMeta.getFood() : null;
-            toolComponent = itemMeta.hasTool() ? itemMeta.getTool() : null;
+            if (VersionUtil.atOrAbove("1.20.6")) {
+                toolComponent = itemMeta.hasTool() ? itemMeta.getTool() : null;
+            }
             enchantmentGlintOverride = itemMeta.hasEnchantmentGlintOverride() ? itemMeta.getEnchantmentGlintOverride()
                     : null;
             rarity = itemMeta.hasRarity() ? itemMeta.getRarity() : null;
@@ -926,7 +928,7 @@ public class ItemBuilder {
             itemMeta.setRarity(rarity);
         if (hasFoodComponent())
             itemMeta.setFood(foodComponent);
-        if (hasToolComponent())
+        if (hasToolComponent() && VersionUtil.atOrAbove("1.20.6"))
             itemMeta.setTool(toolComponent);
         if (fireResistant != null)
             itemMeta.setFireResistant(fireResistant);
@@ -1140,7 +1142,8 @@ public class ItemBuilder {
     }
 
     private ItemStack applyPaintingVariantComponent(ItemStack itemStack) {
-        if (paintingVariant == null || !VersionUtil.atOrAbove("1.21")) return itemStack;
+        if (paintingVariant == null) return itemStack;
+        if (!VersionUtil.atOrAbove("1.21.5") || !VersionUtil.isPaperServer()) return itemStack;
 
         Key variantKey;
         try {
@@ -1151,28 +1154,21 @@ public class ItemBuilder {
             return itemStack;
         }
 
-        if (VersionUtil.atOrAbove("1.21.5") && VersionUtil.isPaperServer()) {
-            try {
-                Registry<Art> paintingRegistry = RegistryAccess.registryAccess()
-                        .getRegistry(RegistryKey.PAINTING_VARIANT);
-                Art painting = paintingRegistry.get(variantKey);
-                if (painting == null) {
-                    Logs.logWarning("Unknown painting_variant '" + paintingVariant + "'");
-                    return itemStack;
-                }
-                itemStack.setData(DataComponentTypes.PAINTING_VARIANT, painting);
-                return itemStack;
-            } catch (NoClassDefFoundError | NoSuchFieldError | NoSuchMethodError ignored) {
-                // Fall through to the NMS path used by older supported versions.
-            } catch (Exception exception) {
-                Logs.logWarning("Failed to set painting_variant '" + paintingVariant + "'");
-                Logs.debug(exception);
+        try {
+            Registry<Art> paintingRegistry = RegistryAccess.registryAccess()
+                    .getRegistry(RegistryKey.PAINTING_VARIANT);
+            Art painting = paintingRegistry.get(variantKey);
+            if (painting == null) {
+                Logs.logWarning("Unknown painting_variant '" + paintingVariant + "'");
                 return itemStack;
             }
+            itemStack.setData(DataComponentTypes.PAINTING_VARIANT, painting);
+            return itemStack;
+        } catch (Exception exception) {
+            Logs.logWarning("Failed to set painting_variant '" + paintingVariant + "'");
+            Logs.debug(exception);
+            return itemStack;
         }
-
-        NMSHandler handler = NMSHandlers.getHandler();
-        return handler != null ? handler.paintingVariantComponent(itemStack, variantKey.asString()) : itemStack;
     }
 
     private Key parsePaintingVariantKey(String value) {
@@ -1350,6 +1346,10 @@ public class ItemBuilder {
      */
     public void setComponent(String type, Object component) {
         genericComponents.put(type, component);
+    }
+
+    public String getPaintingVariant() {
+        return paintingVariant;
     }
 
     public void setPaintingVariant(String paintingVariant) {

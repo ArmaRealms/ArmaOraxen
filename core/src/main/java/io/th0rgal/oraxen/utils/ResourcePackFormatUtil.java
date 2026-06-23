@@ -16,6 +16,8 @@ public final class ResourcePackFormatUtil {
     private static volatile Integer cachedResourcePackFormat;
     private static volatile Integer cachedDataPackFormat;
     private static final PackFormatThreshold[] PACK_FORMAT_THRESHOLDS = {
+            new PackFormatThreshold("26.2", 88),
+            new PackFormatThreshold("1.26.2", 88),
             new PackFormatThreshold("26.1", 84),
             new PackFormatThreshold("1.26.1", 84),
             new PackFormatThreshold("1.21.11", 75),

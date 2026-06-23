@@ -6,10 +6,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import dev.jorel.commandapi.CommandAPICommand;
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.Message;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Message;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.bukkit.command.CommandSender;
@@ -24,13 +23,13 @@ public class RemoveBrandingCommand {
 
     private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
 
-    CommandAPICommand getRemoveBrandingCommand() {
-        CommandAPICommand confirmed = new CommandAPICommand("confirm")
+    OraxenCommand getRemoveBrandingCommand() {
+        OraxenCommand confirmed = new OraxenCommand("confirm")
                 .withPermission("oraxen.command.remove-branding")
                 .executes((sender, args) -> {
                     removeBranding(sender);
                 });
-        return new CommandAPICommand("remove-branding")
+        return new OraxenCommand("remove-branding")
                 .withPermission("oraxen.command.remove-branding")
                 .withSubcommand(confirmed)
                 .executes((sender, args) -> {

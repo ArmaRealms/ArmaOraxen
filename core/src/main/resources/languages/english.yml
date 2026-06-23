@@ -85,6 +85,7 @@ command:
   give:
     player: "<prefix><#55ffa4>You gave <#43c9fa><player><#55ffa4> <#43fa8c><amount><#6f737d> × <#fa4362><item><#55ffa4>!"
     players: "<prefix><#55ffa4>You gave <#43c9fa><count><#55ffa4> players <#43fa8c><amount><#6f737d> × <#fa4362><item><#55ffa4>!"
+    invalid_amount: "<prefix><#fa4943>Amount must be greater than 0."
 
   totem_animation:
     success: "<prefix><#55ffa4>Played totem animation for <#43c9fa><player><#55ffa4> with <#43c9fa><item><#55ffa4>."

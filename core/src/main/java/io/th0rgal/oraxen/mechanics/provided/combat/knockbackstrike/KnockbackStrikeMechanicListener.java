@@ -3,7 +3,7 @@ package io.th0rgal.oraxen.mechanics.provided.combat.knockbackstrike;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -39,7 +39,7 @@ public class KnockbackStrikeMechanicListener implements Listener {
         LivingEntity victim = (LivingEntity) event.getEntity();
 
         // Protection check
-        if (!ProtectionLib.canInteract(attacker, victim.getLocation())) return;
+        if (!AntiGriefLib.canInteract(attacker, victim.getLocation())) return;
 
         // Player's held item
         ItemStack item = attacker.getInventory().getItemInMainHand();

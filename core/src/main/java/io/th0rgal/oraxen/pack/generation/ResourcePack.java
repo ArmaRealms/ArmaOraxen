@@ -4,21 +4,19 @@ import com.google.gson.*;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.api.events.OraxenPackGeneratedEvent;
-import io.th0rgal.oraxen.config.AppearanceMode;
-import io.th0rgal.oraxen.config.ResourcesManager;
-import io.th0rgal.oraxen.config.Settings;
-import io.th0rgal.oraxen.font.AnimatedGlyph;
-import io.th0rgal.oraxen.font.EffectFontProvider;
-import io.th0rgal.oraxen.font.Font;
-import io.th0rgal.oraxen.font.FontManager;
-import io.th0rgal.oraxen.font.Glyph;
-import io.th0rgal.oraxen.font.ShiftProvider;
-import io.th0rgal.oraxen.font.TextEffect;
+import io.th0rgal.oraxen.configs.AppearanceMode;
+import io.th0rgal.oraxen.configs.ResourcesManager;
+import io.th0rgal.oraxen.configs.Settings;
+import io.th0rgal.oraxen.glyphs.AnimatedGlyph;
+import io.th0rgal.oraxen.fonts.EffectFontProvider;
+import io.th0rgal.oraxen.fonts.Font;
+import io.th0rgal.oraxen.fonts.FontManager;
+import io.th0rgal.oraxen.glyphs.Glyph;
+import io.th0rgal.oraxen.glyphs.ShiftProvider;
+import io.th0rgal.oraxen.glyphs.TextEffect;
 import net.kyori.adventure.key.Key;
 import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.items.OraxenMeta;
-import io.th0rgal.oraxen.painting.CustomPainting;
-import io.th0rgal.oraxen.painting.PaintingDatapack;
 import io.th0rgal.oraxen.pack.upload.UploadManager;
 import io.th0rgal.oraxen.utils.*;
 import io.th0rgal.oraxen.utils.customarmor.ComponentArmorModels;
@@ -29,7 +27,6 @@ import io.th0rgal.oraxen.utils.logs.Logs;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Material;
-import org.bukkit.configuration.ConfigurationSection;
 
 import javax.imageio.ImageIO;
 import java.awt.AlphaComposite;
@@ -62,6 +59,8 @@ public class ResourcePack {
     /** Resolved multi-version flag (may differ from Settings if fallback occurred). */
     private boolean multiVersionResolved = false;
     private final AtomicBoolean generationInProgress = new AtomicBoolean(false);
+    private volatile boolean shutdownRequested = false;
+    private volatile ExecutorService activePackWorker;
 
     public ResourcePack() {
         // we use maps to avoid duplicate
@@ -70,6 +69,7 @@ public class ResourcePack {
     }
 
     public void generate() {
+        shutdownRequested = false;
         if (!generationInProgress.compareAndSet(false, true)) {
             Logs.logWarning("Resource-pack generation is already in progress, skipping duplicate request");
             return;
@@ -104,12 +104,9 @@ public class ResourcePack {
 
                 // Unregister and clear single-pack manager if switching from single-pack mode.
                 // Clearing the reference prevents getPackURL()/getPackSHA1() from returning
-                // stale data from the old mode's manager.
-                UploadManager oldUploadManager = OraxenPlugin.get().getUploadManager();
-                if (oldUploadManager != null) {
-                    oldUploadManager.unregister();
-                    OraxenPlugin.get().setUploadManager(null);
-                }
+                // stale data from the old mode's manager. setUploadManager(null) unregisters
+                // the old manager, so a separate unregister() call is not needed.
+                OraxenPlugin.get().setUploadManager(null);
 
                 generateMultiVersion(switchingFromSinglePack);
                 finishGeneration();
@@ -141,11 +138,14 @@ public class ResourcePack {
             thread.setDaemon(true);
             return thread;
         });
+        activePackWorker = packWorker;
 
         try {
             packWorker.submit(() -> {
                 try {
+                    if (shutdownRequested) return;
                     generateAsyncSafeItemAssets();
+                    if (shutdownRequested) return;
                     SchedulerUtil.runTask(() -> continueSinglePackGenerationOnMain(packWorker));
                 } catch (Exception exception) {
                     handleGenerationFailure(packWorker, "async item asset generation", exception);
@@ -159,6 +159,10 @@ public class ResourcePack {
     }
 
     private void continueSinglePackGenerationOnMain(ExecutorService packWorker) {
+        if (shutdownRequested) {
+            finishGeneration();
+            return;
+        }
         try {
             generateMiscAssets();
             applyPackModifiers();
@@ -174,7 +178,9 @@ public class ResourcePack {
         try {
             packWorker.submit(() -> {
                 try {
+                    if (shutdownRequested) return;
                     collectPackFilesAsyncSafe(output);
+                    if (shutdownRequested) return;
                     SchedulerUtil.runTask(() -> continuePostCollectionOnMain(packWorker, output));
                 } catch (Exception exception) {
                     handleGenerationFailure(packWorker, "async pack collection", exception);
@@ -186,6 +192,10 @@ public class ResourcePack {
     }
 
     private void continuePostCollectionOnMain(ExecutorService packWorker, List<VirtualFile> output) {
+        if (shutdownRequested) {
+            finishGeneration();
+            return;
+        }
         try {
             handleCustomArmor(output);
             applyArmorStandModelOverrides(output);
@@ -200,7 +210,9 @@ public class ResourcePack {
         try {
             packWorker.submit(() -> {
                 try {
+                    if (shutdownRequested) return;
                     postProcessOutputAsyncSafe(output);
+                    if (shutdownRequested) return;
                     SchedulerUtil.runTask(() -> finishSinglePackOutputOnMain(packWorker, output));
                 } catch (Exception exception) {
                     handleGenerationFailure(packWorker, "async pack post-processing", exception);
@@ -212,9 +224,12 @@ public class ResourcePack {
     }
 
     private void finishSinglePackOutputOnMain(ExecutorService packWorker, List<VirtualFile> output) {
+        if (shutdownRequested) {
+            finishGeneration();
+            return;
+        }
         try {
             soundGenerator.generateSound(output);
-            generatePaintingDatapack(output);
 
             OraxenPackGeneratedEvent event = new OraxenPackGeneratedEvent(output);
             EventUtils.callEvent(event);
@@ -230,8 +245,11 @@ public class ResourcePack {
         try {
             packWorker.submit(() -> {
                 try {
+                    if (shutdownRequested) return;
                     filterGeneratedCoreShadersBelow1214(output, MinecraftVersion.getCurrentVersion());
+                    if (shutdownRequested) return;
                     ZipUtils.writeZipFile(pack, output);
+                    if (shutdownRequested) return;
                     SchedulerUtil.runTask(this::uploadGeneratedPackAndFinish);
                 } catch (Exception exception) {
                     handleGenerationFailure(packWorker, "async pack writing", exception);
@@ -246,7 +264,9 @@ public class ResourcePack {
 
     private void uploadGeneratedPackAndFinish() {
         try {
-            uploadGeneratedPack();
+            if (!shutdownRequested) {
+                uploadGeneratedPack();
+            }
         } finally {
             finishGeneration();
         }
@@ -265,6 +285,19 @@ public class ResourcePack {
 
     private void finishGeneration() {
         generationInProgress.set(false);
+        if (activePackWorker != null && activePackWorker.isShutdown()) {
+            activePackWorker = null;
+        }
+    }
+
+    public void shutdown() {
+        shutdownRequested = true;
+        ExecutorService packWorker = activePackWorker;
+        if (packWorker != null) {
+            packWorker.shutdownNow();
+            activePackWorker = null;
+        }
+        finishGeneration();
     }
 
     private void handleGenerationFailure(ExecutorService packWorker, String phase, Exception exception) {
@@ -536,38 +569,6 @@ public class ResourcePack {
     private void postProcessOutput(List<VirtualFile> output) {
         postProcessOutputAsyncSafe(output);
         soundGenerator.generateSound(output);
-        generatePaintingDatapack(output);
-    }
-
-    private void generatePaintingDatapack(List<VirtualFile> output) {
-        ConfigurationSection paintingsSection = OraxenPlugin.get().getConfigsManager().getPaintings()
-                .getConfigurationSection("paintings");
-        if (paintingsSection == null) return;
-
-        List<CustomPainting> paintings = new ArrayList<>();
-        for (String key : paintingsSection.getKeys(false)) {
-            ConfigurationSection paintingSection = paintingsSection.getConfigurationSection(key);
-            if (paintingSection == null) continue;
-            if (!paintingSection.getBoolean("enabled", true)) continue;
-
-            try {
-                paintings.add(CustomPainting.fromConfig(key, paintingSection));
-            } catch (IllegalArgumentException exception) {
-                Logs.logWarning("Failed to parse custom painting '" + key + "' in paintings.yml");
-                Logs.debug(exception);
-            }
-        }
-
-        if (!VersionUtil.atOrAbove("1.21")) {
-            if (!paintings.isEmpty()) {
-                Logs.logWarning("Custom paintings require Minecraft 1.21 or newer. Skipping paintings datapack.");
-            }
-            return;
-        }
-
-        PaintingDatapack paintingDatapack = new PaintingDatapack(paintings);
-        paintingDatapack.clearOldDataPack();
-        paintingDatapack.generateAssets(output);
     }
 
     private void postProcessOutputAsyncSafe(List<VirtualFile> output) {

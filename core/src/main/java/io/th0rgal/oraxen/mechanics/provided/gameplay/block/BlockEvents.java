@@ -1,6 +1,5 @@
 package io.th0rgal.oraxen.mechanics.provided.gameplay.block;
 
-import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.compatibilities.CompatibilitiesManager;
 import io.th0rgal.oraxen.compatibilities.provided.placeholderapi.PapiAliases;
 import io.th0rgal.oraxen.utils.AdventureUtils;
@@ -140,7 +139,7 @@ public class BlockEvents {
     private record MessageAction(String message) implements BlockEventAction {
         @Override
         public void run(Player player) {
-            OraxenPlugin.get().getAudience().player(player).sendMessage(
+            AdventureUtils.sendMessage(player,
                     AdventureUtils.MINI_MESSAGE.deserialize(applyPlaceholders(message, player))
             );
         }

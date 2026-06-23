@@ -1,7 +1,7 @@
 package io.th0rgal.oraxen.pack.dispatch;
 
-import io.th0rgal.oraxen.config.Message;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Message;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.pack.upload.hosts.HostingProvider;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.SHA1Utils;

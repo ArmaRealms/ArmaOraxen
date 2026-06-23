@@ -7,6 +7,8 @@ import io.th0rgal.oraxen.api.events.chorusblock.OraxenChorusBlockDamageEvent;
 import io.th0rgal.oraxen.api.events.furniture.OraxenFurnitureDamageEvent;
 import io.th0rgal.oraxen.api.events.noteblock.OraxenNoteBlockDamageEvent;
 import io.th0rgal.oraxen.api.events.stringblock.OraxenStringBlockDamageEvent;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockBreaking;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockDurability;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.chorusblock.ChorusBlockMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.NoteBlockMechanic;
@@ -20,7 +22,7 @@ import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
 import io.th0rgal.oraxen.utils.drops.Drop;
 import io.th0rgal.oraxen.utils.wrappers.EnchantmentWrapper;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -102,17 +104,26 @@ public abstract class BreakerSystem {
         if (startedDigging) {
             // Get these when block is started being broken to minimize checks & allow for proper damage checks later
             final Drop drop;
-            if (furnitureMechanic != null)
+            final BlockBreaking.DurabilityAction durabilityAction;
+            if (furnitureMechanic != null) {
                 drop = furnitureMechanic.getDrop() != null ? furnitureMechanic.getDrop() : Drop.emptyDrop();
-            else if (noteMechanic != null)
+                durabilityAction = null;
+            } else if (noteMechanic != null) {
                 drop = noteMechanic.getDrop(item) != null ? noteMechanic.getDrop(item) : Drop.emptyDrop();
-            else if (stringMechanic != null)
+                durabilityAction = noteMechanic.getDurabilityAction(item);
+            } else if (stringMechanic != null) {
                 drop = stringMechanic.getDrop(item) != null ? stringMechanic.getDrop(item) : Drop.emptyDrop();
-            else if (chorusMechanic != null)
+                durabilityAction = stringMechanic.getDurabilityAction(item);
+            } else if (chorusMechanic != null) {
                 drop = chorusMechanic.getDrop(item) != null ? chorusMechanic.getDrop(item) : Drop.emptyDrop();
-            else if (shapedMechanic != null)
+                durabilityAction = chorusMechanic.getDurabilityAction(item);
+            } else if (shapedMechanic != null) {
                 drop = shapedMechanic.getDrop(item) != null ? shapedMechanic.getDrop(item) : Drop.emptyDrop();
-            else drop = null;
+                durabilityAction = shapedMechanic.getDurabilityAction(item);
+            } else {
+                drop = null;
+                durabilityAction = null;
+            }
 
             if (breakerLocations.contains(location)) {
                 SchedulerUtil.ScheduledTask existingTask = breakerTasks.remove(location);
@@ -156,9 +167,16 @@ public abstract class BreakerSystem {
                             valueHolder[0]);
 
                     if (valueHolder[0]++ < 10) return;
-                    if (EventUtils.callEvent(new BlockBreakEvent(block, player)) && ProtectionLib.canBreak(player, location)) {
-                        // Damage item with properties identified earlier
-                        ItemUtils.damageItem(player, drop, item);
+                    BlockDurability.setSuppressVanillaDamageCancellation(true);
+                    boolean canBreak;
+                    try {
+                        canBreak = EventUtils.callEvent(new BlockBreakEvent(block, player)) && AntiGriefLib.canBreak(player, location);
+                    } finally {
+                        BlockDurability.setSuppressVanillaDamageCancellation(false);
+                    }
+                    if (canBreak) {
+                        // Damage item with properties identified earlier, unless the block mechanic configured durability itself.
+                        if (durabilityAction == null) ItemUtils.damageItem(player, drop, item);
                         modifier.breakBlock(player, block, item);
                     } else stopBlockHitSound(location);
 
@@ -178,7 +196,7 @@ public abstract class BreakerSystem {
 
             // Use entity scheduler for player operations on Folia (player may move to different region)
             SchedulerUtil.runForEntity(player, () -> {
-                if (!ProtectionLib.canBreak(player, location))
+                if (!AntiGriefLib.canBreak(player, location))
                     player.sendBlockChange(location, block.getBlockData());
             });
 

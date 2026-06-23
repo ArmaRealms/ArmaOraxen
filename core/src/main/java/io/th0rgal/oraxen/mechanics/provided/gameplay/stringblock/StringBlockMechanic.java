@@ -42,10 +42,9 @@ public class StringBlockMechanic extends Mechanic {
     private final List<String> randomPlaceBlock;
     private final SaplingMechanic saplingMechanic;
     private final boolean isTall;
-
-    private final BlockLockerMechanic blockLocker;
     private final List<ClickAction> clickActions;
     private final BlockEvents blockEvents;
+    private final BlockLockerMechanic blockLocker;
 
     // Stackable block support: each variation represents one stack level
     private final List<StackVariation> stackVariations;
@@ -139,6 +138,10 @@ public class StringBlockMechanic extends Mechanic {
 
     public boolean isTall() { return isTall; }
 
+    public BlockLockerMechanic getBlockLocker() {
+        return blockLocker;
+    }
+
     public int getCustomVariation() {
         return customVariation;
     }
@@ -149,6 +152,10 @@ public class StringBlockMechanic extends Mechanic {
 
     public Drop getDrop(ItemStack tool) {
         return breaking.drop(tool);
+    }
+
+    public BlockBreaking.DurabilityAction getDurabilityAction(ItemStack tool) {
+        return breaking.durabilityAction(tool);
     }
 
     public boolean hasHardness() {
@@ -197,10 +204,6 @@ public class StringBlockMechanic extends Mechanic {
 
     public boolean isImmovable() {
         return immovable;
-    }
-
-    public BlockLockerMechanic getBlockLocker() {
-        return blockLocker;
     }
 
     public boolean isFalling() {

@@ -1,15 +1,14 @@
 package io.th0rgal.oraxen.commands;
 
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.ArgumentSuggestions;
-import dev.jorel.commandapi.arguments.TextArgument;
+import io.th0rgal.oraxen.commands.arguments.ArgumentSuggestions;
+import io.th0rgal.oraxen.commands.arguments.TextArgument;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenFurniture;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.api.OraxenPack;
 import io.th0rgal.oraxen.api.events.OraxenItemsLoadedEvent;
-import io.th0rgal.oraxen.config.Message;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Message;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.hud.HudManager;
 import io.th0rgal.oraxen.items.ItemUpdater;
 import io.th0rgal.oraxen.mechanics.MechanicsManager;
@@ -32,6 +31,7 @@ public class ReloadCommand {
     private static final String CONFIGS_RELOAD = "configs";
     private static final String MESSAGES_RELOAD = "messages";
     private static final String HUD_RELOAD = "huds";
+    private static final String PAINTINGS_RELOAD = "paintings";
 
     public static void reloadItems(@Nullable CommandSender sender) {
         sendReloadMessage(sender, ITEMS_RELOAD);
@@ -86,6 +86,7 @@ public class ReloadCommand {
     public static void reloadConfigs(@Nullable CommandSender sender) {
         sendReloadMessage(sender, CONFIGS_RELOAD);
         OraxenPlugin.get().reloadConfigs();
+        OraxenPlugin.get().reloadCustomPaintings();
     }
 
     public static void reloadMessages(@Nullable CommandSender sender) {
@@ -93,16 +94,22 @@ public class ReloadCommand {
         OraxenPlugin.get().reloadConfigs();
     }
 
+    public static void reloadPaintings(@Nullable CommandSender sender) {
+        sendReloadMessage(sender, PAINTINGS_RELOAD);
+        OraxenPlugin.get().reloadConfigs();
+        OraxenPlugin.get().reloadCustomPaintings();
+    }
+
     private static void sendReloadMessage(@Nullable CommandSender sender, String reloaded) {
         Message.RELOAD.send(sender, AdventureUtils.tagResolver("reloaded", reloaded));
     }
 
-    CommandAPICommand getReloadCommand() {
-        return new CommandAPICommand("reload")
+    OraxenCommand getReloadCommand() {
+        return new OraxenCommand("reload")
                 .withAliases("rl")
                 .withPermission("oraxen.command.reload")
                 .withArguments(new TextArgument("type").replaceSuggestions(
-                        ArgumentSuggestions.strings("items", "pack", "hud", "recipes", "configs", "messages", "all")))
+                        ArgumentSuggestions.strings("items", "pack", "hud", "recipes", "configs", "messages", "paintings", "all")))
                 .executes((sender, args) -> {
                     switch (((String) args.get("type")).toUpperCase()) {
                         case "HUD" -> reloadHud(sender);
@@ -111,10 +118,12 @@ public class ReloadCommand {
                         case "RECIPES" -> reloadRecipes(sender);
                         case "CONFIGS" -> reloadConfigs(sender);
                         case "MESSAGES" -> reloadMessages(sender);
+                        case "PAINTINGS" -> reloadPaintings(sender);
                         default -> {
                             MechanicsManager.unloadListeners();
                             MechanicsManager.unregisterTasks();
                             reloadMessages(sender);
+                            reloadPaintings(sender);
                             MechanicsManager.registerNativeMechanics();
                             reloadItems(sender);
                             reloadPack(sender);

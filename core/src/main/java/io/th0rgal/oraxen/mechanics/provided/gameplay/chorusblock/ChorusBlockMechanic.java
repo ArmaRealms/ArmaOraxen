@@ -1,6 +1,5 @@
 package io.th0rgal.oraxen.mechanics.provided.gameplay.chorusblock;
 
-import io.th0rgal.oraxen.compatibilities.provided.blocklocker.BlockLockerMechanic;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockBreaking;
@@ -35,7 +34,6 @@ public class ChorusBlockMechanic extends Mechanic {
     private final boolean isFalling;
     private final boolean blastResistant;
     private final boolean immovable;
-    private final BlockLockerMechanic blockLocker;
     private final List<ClickAction> clickActions;
     private final BlockEvents blockEvents;
     private final float seatHeight;
@@ -65,9 +63,6 @@ public class ChorusBlockMechanic extends Mechanic {
 
         ConfigurationSection blockSoundsSection = section.getConfigurationSection("block_sounds");
         blockSounds = blockSoundsSection != null ? new BlockSounds(blockSoundsSection) : null;
-
-        ConfigurationSection blockLockerSection = section.getConfigurationSection("blocklocker");
-        blockLocker = blockLockerSection != null ? new BlockLockerMechanic(blockLockerSection) : null;
 
         ConfigurationSection storageSection = section.getConfigurationSection("storage");
         storage = storageSection != null ? new StorageMechanic(storageSection) : null;
@@ -115,6 +110,10 @@ public class ChorusBlockMechanic extends Mechanic {
 
     public Drop getDrop(ItemStack tool) {
         return breaking.drop(tool);
+    }
+
+    public BlockBreaking.DurabilityAction getDurabilityAction(ItemStack tool) {
+        return breaking.durabilityAction(tool);
     }
 
     public boolean canPlaceOn(org.bukkit.block.BlockFace face) { return placeable == null || placeable.canPlaceOn(face); }
@@ -178,10 +177,6 @@ public class ChorusBlockMechanic extends Mechanic {
 
     public boolean isImmovable() {
         return immovable;
-    }
-
-    public BlockLockerMechanic getBlockLocker() {
-        return blockLocker;
     }
 
     public List<ClickAction> getClickActions() {

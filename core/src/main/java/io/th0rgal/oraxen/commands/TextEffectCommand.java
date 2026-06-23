@@ -1,11 +1,10 @@
 package io.th0rgal.oraxen.commands;
 
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.ArgumentSuggestions;
-import dev.jorel.commandapi.arguments.GreedyStringArgument;
-import dev.jorel.commandapi.arguments.StringArgument;
-import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.font.TextEffect;
+import io.th0rgal.oraxen.commands.arguments.ArgumentSuggestions;
+import io.th0rgal.oraxen.commands.arguments.GreedyStringArgument;
+import io.th0rgal.oraxen.commands.arguments.StringArgument;
+import io.th0rgal.oraxen.glyphs.TextEffect;
+import io.th0rgal.oraxen.utils.AdventureUtils;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 
@@ -28,8 +27,8 @@ public class TextEffectCommand {
                 .toArray(String[]::new);
     }
 
-    public CommandAPICommand getTextEffectCommand() {
-        return new CommandAPICommand("texteffect")
+    public OraxenCommand getTextEffectCommand() {
+        return new OraxenCommand("texteffect")
                 .withPermission("oraxen.command.texteffect")
                 .withArguments(
                         new StringArgument("effect").replaceSuggestions(ArgumentSuggestions.strings(getEffectNames())),
@@ -44,44 +43,44 @@ public class TextEffectCommand {
 
     private void executeTextEffect(Player player, String effectName, String text) {
         if (text == null || text.isEmpty()) {
-            player.sendMessage(Component.text("Please provide text to apply the effect to."));
+            AdventureUtils.sendMessage(player, Component.text("Please provide text to apply the effect to."));
             return;
         }
 
         TextEffect.Definition definition = TextEffect.getEffect(effectName);
         if (definition == null) {
-            player.sendMessage(Component.text("Unknown effect: " + effectName + ". Available: " +
+            AdventureUtils.sendMessage(player, Component.text("Unknown effect: " + effectName + ". Available: " +
                     String.join(", ", getEffectNames())));
             return;
         }
 
         if (!TextEffect.isEnabled()) {
-            player.sendMessage(Component.text("Text effects are disabled in settings.yml"));
+            AdventureUtils.sendMessage(player, Component.text("Text effects are disabled in settings.yml"));
             return;
         }
 
         if (!TextEffect.isEffectEnabled(definition)) {
-            player.sendMessage(Component.text("The " + definition.getName() + " effect is disabled"));
+            AdventureUtils.sendMessage(player, Component.text("The " + definition.getName() + " effect is disabled"));
             return;
         }
 
         Component effectComponent = TextEffect.apply(text, definition);
 
         // Send to chat
-        player.sendMessage(Component.text("Chat: ").append(effectComponent));
+        AdventureUtils.sendMessage(player, Component.text("Chat: ").append(effectComponent));
 
         // Send as actionbar
-        OraxenPlugin.get().getAudience().player(player).sendActionBar(effectComponent);
+        AdventureUtils.sendActionBar(player, effectComponent);
 
         // Info message
-        player.sendMessage(Component.text("Sent " + definition.getName() + " effect"));
+        AdventureUtils.sendMessage(player, Component.text("Sent " + definition.getName() + " effect"));
     }
 
     /**
      * Gets a command that lists all available text effects.
      */
-    public CommandAPICommand getTextEffectsListCommand() {
-        return new CommandAPICommand("texteffects")
+    public OraxenCommand getTextEffectsListCommand() {
+        return new OraxenCommand("texteffects")
                 .withPermission("oraxen.command.texteffect")
                 .executes((sender, args) -> {
                     sender.sendMessage("Available text effects:");
@@ -107,7 +106,7 @@ public class TextEffectCommand {
                         for (TextEffect.Definition definition : TextEffect.getEffects()) {
                             if (TextEffect.isEffectEnabled(definition)) {
                                 Component demo = TextEffect.apply(definition.getName(), definition);
-                                player.sendMessage(Component.text("  " + definition.getName() + ": ").append(demo));
+                                AdventureUtils.sendMessage(player, Component.text("  " + definition.getName() + ": ").append(demo));
                             }
                         }
                     }

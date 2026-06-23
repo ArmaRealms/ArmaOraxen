@@ -1,6 +1,6 @@
 package io.th0rgal.oraxen.pack.generation;
 
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.utils.PluginUtils;
 import io.th0rgal.oraxen.utils.logs.Logs;
 

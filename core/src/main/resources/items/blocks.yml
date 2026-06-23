@@ -27,6 +27,9 @@ caveblock:
           drops:
             - item: caveblock
               probability: 1.0
+          durability:
+            add: 0
+            remove: 2
 
 amethyst_ore:
   displayname: '<gradient:#4B36B1:#6699FF>Amethyst Ore'
@@ -56,9 +59,15 @@ amethyst_ore:
             - item: amethyst
               probability: 1.0
               fortune: 1.0
+          durability:
+            add: 0
+            remove: 1
               
         - else:
           hardness: 6
+          durability:
+            add: 0
+            remove: 2
 
 ruby_ore:
   displayname: '<gradient:#FA7CBB:#F14658>Ruby Ore'
@@ -88,8 +97,14 @@ ruby_ore:
             - item: ruby
               probability: 1.0
               fortune: 1.0
+          durability:
+            add: 0
+            remove: 1
         - else:
           hardness: 8
+          durability:
+            add: 0
+            remove: 2
 
 
 onyx_ore:
@@ -120,8 +135,14 @@ onyx_ore:
             - item: onyx
               probability: 1.0
               fortune: 1.0
+          durability:
+            add: 0
+            remove: 1
         - else:
           hardness: 8
+          durability:
+            add: 0
+            remove: 2
 
 orax_ore:
   displayname: '<gradient:#3685EC:#72C1E4>Orax Ore'
@@ -151,5 +172,11 @@ orax_ore:
             - item: orax
               probability: 1.0
               fortune: 1.0
+          durability:
+            add: 0
+            remove: 1
         - else:
           hardness: 8
+          durability:
+            add: 0
+            remove: 2

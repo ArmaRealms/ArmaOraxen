@@ -1,12 +1,11 @@
 package io.th0rgal.oraxen.commands;
 
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.ArgumentSuggestions;
-import dev.jorel.commandapi.arguments.IntegerArgument;
-import dev.jorel.commandapi.arguments.StringArgument;
-import dev.jorel.commandapi.arguments.TextArgument;
+import io.th0rgal.oraxen.commands.arguments.ArgumentSuggestions;
+import io.th0rgal.oraxen.commands.arguments.IntegerArgument;
+import io.th0rgal.oraxen.commands.arguments.StringArgument;
+import io.th0rgal.oraxen.commands.arguments.TextArgument;
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.Message;
+import io.th0rgal.oraxen.configs.Message;
 import io.th0rgal.oraxen.recipes.CustomRecipe;
 import io.th0rgal.oraxen.recipes.builders.*;
 import io.th0rgal.oraxen.recipes.listeners.RecipesEventsManager;
@@ -17,16 +16,16 @@ import org.bukkit.entity.Player;
 import java.util.List;
 
 public class RecipesCommand {
-    CommandAPICommand getRecipesCommand() {
-        return new CommandAPICommand("recipes")
+    OraxenCommand getRecipesCommand() {
+        return new OraxenCommand("recipes")
                 .withPermission("oraxen.command.recipes")
                 .withSubcommand(getShowCommand())
                 .withSubcommand(getBuilderCommand())
                 .withSubcommand(getSaveCommand());
     }
 
-    private CommandAPICommand getShowCommand() {
-        return new CommandAPICommand("show")
+    private OraxenCommand getShowCommand() {
+        return new OraxenCommand("show")
                 .withPermission("oraxen.command.recipes.show")
                 .withArguments(new TextArgument("type").replaceSuggestions(ArgumentSuggestions.strings(info ->
                         ArrayUtils.addAll(new String[]{"all"},
@@ -49,8 +48,8 @@ public class RecipesCommand {
                 });
     }
 
-    private CommandAPICommand getBuilderCommand() {
-        return new CommandAPICommand("builder")
+    private OraxenCommand getBuilderCommand() {
+        return new OraxenCommand("builder")
                 .withPermission("oraxen.command.recipes.builder")
                 .withSubcommand(getShapedBuilderCommand())
                 .withSubcommand(getShapelessBuilderCommand())
@@ -71,8 +70,8 @@ public class RecipesCommand {
                 });
     }
 
-    private CommandAPICommand getShapedBuilderCommand() {
-        return new CommandAPICommand("shaped")
+    private OraxenCommand getShapedBuilderCommand() {
+        return new OraxenCommand("shaped")
                 .withPermission("oraxen.command.recipes.builder")
                 .executes((sender, args) -> {
                     if (sender instanceof Player player) {
@@ -83,8 +82,8 @@ public class RecipesCommand {
                 });
     }
 
-    private CommandAPICommand getShapelessBuilderCommand() {
-        return new CommandAPICommand("shapeless")
+    private OraxenCommand getShapelessBuilderCommand() {
+        return new OraxenCommand("shapeless")
                 .withPermission("oraxen.command.recipes.builder")
                 .executes((sender, args) -> {
                     if (sender instanceof Player player) {
@@ -95,8 +94,8 @@ public class RecipesCommand {
                 });
     }
 
-    private CommandAPICommand getFurnaceBuilderCommand() {
-        return new CommandAPICommand("furnace")
+    private OraxenCommand getFurnaceBuilderCommand() {
+        return new OraxenCommand("furnace")
                 .withPermission("oraxen.command.recipes.builder")
                 .withArguments(new IntegerArgument("cookingtime"))
                 .withArguments(new IntegerArgument("experience"))
@@ -114,8 +113,8 @@ public class RecipesCommand {
                 });
     }
 
-    private CommandAPICommand getBlastingBuilderCommand() {
-        return new CommandAPICommand("blasting")
+    private OraxenCommand getBlastingBuilderCommand() {
+        return new OraxenCommand("blasting")
                 .withPermission("oraxen.command.recipes.builder")
                 .withArguments(new IntegerArgument("cookingtime"))
                 .withArguments(new IntegerArgument("experience"))
@@ -133,8 +132,8 @@ public class RecipesCommand {
                 });
     }
 
-    private CommandAPICommand getCampfireBuilderCommand() {
-        return new CommandAPICommand("campfire")
+    private OraxenCommand getCampfireBuilderCommand() {
+        return new OraxenCommand("campfire")
                 .withPermission("oraxen.command.recipes.builder")
                 .withArguments(new IntegerArgument("cookingtime"))
                 .withArguments(new IntegerArgument("experience"))
@@ -152,8 +151,8 @@ public class RecipesCommand {
                 });
     }
 
-    private CommandAPICommand getSmokingBuilderCommand() {
-        return new CommandAPICommand("smoking")
+    private OraxenCommand getSmokingBuilderCommand() {
+        return new OraxenCommand("smoking")
                 .withPermission("oraxen.command.recipes.builder")
                 .withArguments(new IntegerArgument("cookingtime"))
                 .withArguments(new IntegerArgument("experience"))
@@ -171,8 +170,8 @@ public class RecipesCommand {
                 });
     }
 
-    private CommandAPICommand getStonecuttingBuilderCommand() {
-        return new CommandAPICommand("stonecutting")
+    private OraxenCommand getStonecuttingBuilderCommand() {
+        return new OraxenCommand("stonecutting")
                 .withPermission("oraxen.command.recipes.builder")
                 .executes((sender, args) -> {
                     if (sender instanceof Player player) {
@@ -183,8 +182,8 @@ public class RecipesCommand {
                 });
     }
 
-    private CommandAPICommand getSaveCommand() {
-        return new CommandAPICommand("save")
+    private OraxenCommand getSaveCommand() {
+        return new OraxenCommand("save")
                 .withPermission("oraxen.command.recipes.builder")
                 .withArguments(new TextArgument("name"))
                 .withOptionalArguments(new StringArgument("permission"))

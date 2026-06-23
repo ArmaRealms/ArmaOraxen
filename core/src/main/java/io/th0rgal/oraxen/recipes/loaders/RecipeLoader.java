@@ -6,6 +6,8 @@ import io.th0rgal.oraxen.compatibilities.provided.ecoitems.WrappedEcoItem;
 import io.th0rgal.oraxen.compatibilities.provided.mythiccrucible.WrappedCrucibleItem;
 import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.items.ItemUpdater;
+import io.th0rgal.oraxen.mechanics.MechanicFactory;
+import io.th0rgal.oraxen.mechanics.MechanicsManager;
 import io.th0rgal.oraxen.recipes.CustomRecipe;
 import io.th0rgal.oraxen.recipes.listeners.RecipesEventsManager;
 import io.th0rgal.oraxen.utils.OraxenYaml;
@@ -97,13 +99,22 @@ public abstract class RecipeLoader {
     }
 
     protected RecipeChoice getRecipeChoice(ConfigurationSection ingredientSection) {
+        return getRecipeChoice(ingredientSection, true);
+    }
+
+    protected RecipeChoice getWorkbenchRecipeChoice(ConfigurationSection ingredientSection) {
+        return getRecipeChoice(ingredientSection, false);
+    }
+
+    private RecipeChoice getRecipeChoice(ConfigurationSection ingredientSection, boolean exactOraxenChoice) {
 
         if (ingredientSection.isString("oraxen_item")) {
             String itemId = ingredientSection.getString("oraxen_item");
             ItemBuilder builder = OraxenItems.getItemById(itemId);
             if (builder == null)
                 throw new IllegalArgumentException("Recipe " + section.getName() + " references unknown Oraxen ingredient: " + itemId);
-            return new RecipeChoice.ExactChoice(ItemUpdater.updateItem(builder.build()));
+            ItemStack ingredient = ItemUpdater.updateItem(builder.build());
+            return exactOraxenChoice || !hasBackpackMechanic(itemId) ? new RecipeChoice.ExactChoice(ingredient) : new RecipeChoice.MaterialChoice(ingredient.getType());
         }
 
         if (ingredientSection.isString("crucible_item")) {
@@ -144,6 +155,11 @@ public abstract class RecipeLoader {
         if (itemStack == null) return null;
         return new RecipeChoice.ExactChoice(itemStack);
 
+    }
+
+    private boolean hasBackpackMechanic(String itemId) {
+        MechanicFactory backpackFactory = MechanicsManager.getMechanicFactory("backpack");
+        return backpackFactory != null && backpackFactory.getMechanic(itemId) != null;
     }
 
     protected NamespacedKey getNamespacedKey() {

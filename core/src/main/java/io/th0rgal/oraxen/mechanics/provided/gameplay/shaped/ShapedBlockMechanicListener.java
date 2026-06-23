@@ -4,7 +4,7 @@ import com.jeff_media.customblockdata.CustomBlockData;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenBlocks;
 import io.th0rgal.oraxen.api.OraxenItems;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.utils.BlockHelpers;
 import io.th0rgal.oraxen.utils.SchedulerUtil;
@@ -12,7 +12,7 @@ import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
 import io.th0rgal.oraxen.utils.breaker.BreakerSystem;
 import io.th0rgal.oraxen.utils.breaker.HardnessModifier;
 import io.th0rgal.oraxen.utils.logs.Logs;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.jetbrains.annotations.Nullable;
 import org.apache.commons.lang3.Range;
 import org.bukkit.Bukkit;
@@ -369,7 +369,7 @@ public class ShapedBlockMechanicListener implements Listener {
         if (!worldHeightRange.contains(targetBlock.getY())) return false;
 
         if (BlockHelpers.isStandingInside(player, targetBlock)) return false;
-        if (!ProtectionLib.canBuild(player, targetBlock.getLocation())) return false;
+        if (!AntiGriefLib.canBuild(player, targetBlock.getLocation())) return false;
 
         if (mechanic.hasLimitedPlacing()) {
             if (!mechanic.getLimitedPlacing().checkLimitedMechanic(clickedBlock)) return false;
@@ -381,7 +381,7 @@ public class ShapedBlockMechanicListener implements Listener {
         Block upperBlock = targetBlock.getRelative(BlockFace.UP);
         if (!BlockHelpers.isReplaceable(upperBlock.getType())) return false;
         if (BlockHelpers.isStandingInside(player, upperBlock)) return false;
-        if (!ProtectionLib.canBuild(player, upperBlock.getLocation())) return false;
+        if (!AntiGriefLib.canBuild(player, upperBlock.getLocation())) return false;
         // Validate upper block is within world height limits
         if (upperBlock.getY() >= targetBlock.getWorld().getMaxHeight()) return false;
         return true;
@@ -482,7 +482,7 @@ public class ShapedBlockMechanicListener implements Listener {
 
         Player player = event.getPlayer();
 
-        if (!ProtectionLib.canBreak(player, block.getLocation())) {
+        if (!AntiGriefLib.canBreak(player, block.getLocation())) {
             event.setCancelled(true);
             return;
         }
@@ -530,7 +530,7 @@ public class ShapedBlockMechanicListener implements Listener {
                     }
 
                     if (shouldDouble) {
-                        if (!ProtectionLib.canBuild(player, clickedBlock.getLocation())) {
+                        if (!AntiGriefLib.canBuild(player, clickedBlock.getLocation())) {
                             return false;
                         }
 

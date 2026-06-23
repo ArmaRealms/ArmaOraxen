@@ -1,6 +1,6 @@
 package io.th0rgal.oraxen.utils;
 
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -11,6 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
@@ -193,6 +194,7 @@ public class OraxenYaml extends YamlConfiguration {
     @NotNull
     public static YamlConfiguration loadConfiguration(@NotNull File file) throws RuntimeException {
         YamlConfiguration config = new YamlConfiguration();
+        config.options().parseComments(true);
         try {
             config.load(file);
         } catch (InvalidConfigurationException e) {
@@ -209,8 +211,25 @@ public class OraxenYaml extends YamlConfiguration {
         return config;
     }
 
+    @NotNull
+    public static YamlConfiguration loadConfiguration(@NotNull Reader reader) throws RuntimeException {
+        YamlConfiguration config = new YamlConfiguration();
+        config.options().parseComments(true);
+        try {
+            config.load(reader);
+        } catch (InvalidConfigurationException e) {
+            Logs.logError("Error loading YAML configuration from reader");
+            Logs.logError("Ensure that your config is formatted correctly:");
+            Logs.logWarning(e.getMessage());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return config;
+    }
+
     @Override
     public void load(@NotNull File file) {
+        options().parseComments(true);
         try {
             super.load(file);
         } catch (Exception e) {

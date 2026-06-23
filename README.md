@@ -1,193 +1,228 @@
 <h1 align="center">
   <br>
-  <img src="docs/icon-512.png" alt="Oraxen Logo" width="128">
+  <img src="assets/logo.png" alt="Oraxen Logo" width="64">
   <br>
   Oraxen
   <br>
 </h1>
 
-<h4 align="center">Source code of the Oraxen Spigot plugin, made with love in Java.</h4>
+<h4 align="center">A Minecraft plugin for easily creating custom items, blocks, glyphs, paintings, music discs, and more.</h4>
 
 <p align="center">
   <a href="https://www.codefactor.io/repository/github/oraxen/oraxen">
-    <img src="https://www.codefactor.io/repository/github/oraxen/oraxen/badge" alt="CodeFactor Score"/>
+    <img src="https://img.shields.io/codefactor/grade/github/oraxen/oraxen?style=flat-square&label=CodeFactor" alt="CodeFactor Score">
   </a>
-  <a href="https://repo.oraxen.com/#/releases/io/th0rgal/oraxen">
-    <img src="https://img.shields.io/maven-metadata/v?metadataUrl=https://repo.oraxen.com/releases/io/th0rgal/oraxen/maven-metadata.xml" alt="Version"/>
+
+  <a href="https://repo.oraxen.com/releases/io/th0rgal/oraxen/">
+    <img alt="Maven Version" src="https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Frepo.oraxen.com%2Freleases%2Fio%2Fth0rgal%2Foraxen%2Fmaven-metadata.xml&style=flat-square&label=Maven&color=red">
   </a>
-  <a href="https://www.spigotmc.org/resources/oraxen.72448/">
-    <img src="https://img.shields.io/badge/spigot-oraxen-brightgreen" alt="Spigot"/>
+
+  <a href="https://discord.gg/N7AJFJTgBS">
+    <img alt="Discord" src="https://img.shields.io/discord/1302959035838107728?style=flat-square&logo=discord&label=Discord&color=blue">
   </a>
+
+  <a href="https://oraxen.mizius.com">
+    <img alt="Documentation" src="https://img.shields.io/badge/Docs-Wiki-red?style=flat-square">
+  </a>
+
   <a href="https://bstats.org/plugin/bukkit/Oraxen">
-    <img src="https://img.shields.io/bstats/servers/5371?color=brightgreen" alt="bStats Servers"/>
+    <img alt="bStats Servers" src="https://img.shields.io/bstats/servers/5371?style=flat-square&logo=codeforces&color=green">
   </a>
+
   <a href="https://bstats.org/plugin/bukkit/Oraxen">
-    <img src="https://img.shields.io/bstats/players/5371?color=brightgreen" alt="bStats Players"/>
+    <img alt="bStats Players" src="https://img.shields.io/bstats/players/5371?style=flat-square&logo=codeforces&color=green">
   </a>
 </p>
 
-<p align="center">
-  <a href="#what-is-it">What is it?</a> •
-  <a href="#features">Features</a> •
-  <a href="#contributing">Contributing</a> •
-  <a href="#api">API</a> •
-  <a href="#license">License</a>
-</p>
+## Overview
 
----
+Oraxen is a Minecraft plugin that allows server owners, administrators, and developers to easily create custom content through configuration files and a simple resource pack setup.
 
-## What is it?
-
-Oraxen is a Minecraft plugin that allows you to modify the game by adding new items, weapons, blocks, and more. One of its key features is the ability to generate the texture pack automatically from the configuration, which greatly simplifies the work of administrators. It also includes an extensive API which can be used by developers to expand Oraxen's capabilities.
+It supports Paper (including forks) and Folia from versions 1.20.1 through 26.2.
 
 ## Features
 
-- Automatically generate the resource-pack
-- Automatically upload the resource-pack
-- Automatically send the resource-pack to your players
-- Create new items in a few lines of configuration
-- Support for custom items, weapons, armors, blocks, and more
-- Modular mechanics system to empower your items
-- Automatic configuration updates when you update the plugin
-- Handle configuration errors gracefully
+Some of the features Oraxen provides to server owners and administrators are listed below.
+
+### Specialties
+
+- Built-in ViaVersion support for versions 1.21.4–26.2, with optional advanced support for versions 1.20–26.2 through MultiVersionPacks.
+- Hot reloading for custom paintings and, in the future, custom music discs.
+- Fast support through tickets and a team that listens to the community and considers its ideas.
+- Well-organized documentation available [here](https://oraxen.mizius.com).
+
+### Items
+
+- Swords, pickaxes, food, shields, bows, and more.
+
+### Blocks
+
+- Blocks, slabs, stairs, doors, and more. Supports hot reloading and animations.
+
+![Blocks](assets/blocks.png)
+
+<details>
+  <summary><strong>Example</strong></summary>
+
+```yaml
+example-block:
+  itemname: 'Cool block'
+  Mechanics:
+  block:
+    type: FULL # FULL, STRING, CHORUS, STAIR, SLAB, DOOR, TRAPDOOR, GRATE, BULB
+    light: 15
+    block-sounds:
+      break-sound: block.wood.break
+      place-sound: block.wood.place
+    placeable:
+      floor: true # Top of blocks
+      wall: true  # Sides of blocks
+      roof: false # Underside of blocks
+      allow:
+        - minecraft:grass
+      disallow:
+        - minecraft:dirt
+    custom-variation: 5
+    appearance: # Textures are also supported
+      model: blocks/cool-block
+    events: # Run actions when a placed block is clicked
+      - click: right # BOTH, LEFT, RIGHT
+        actions:
+          - command: 'say "<Player> clicked this block"'
+            executor: CONSOLE # PLAYER, CONSOLE, OP-PLAYER
+          - message: '<green>Hi <Player>.'
+    breaking: # Custom drop and breaking configuration
+      - when: # When the tool is...
+          - minecraft:iron_axe
+          - minecraft:golden_axe
+          - minecraft:diamond_axe
+          - minecraft:netherite_axe # Tags are also supported through "#<tag>"
+        hardness: 2 # Hardness when one of these tools is used
+        drops: # Drops when one of these tools is used
+          - item: crystalmush_log
+            probability: 1.0
+            silk-touch: false # Only drop when the tool has Silk Touch
+            fortune: 1 # Percentage increase per Fortune level, where 1 equals 100%
+        durability:
+          remove: 1 # Remove or add durability when breaking
+          add: 0
+      - else: # Anything not covered by another `when` section
+        hardness: 4
+        drops:
+          - item: example-block
+            probability: 1.0
+        durability:
+          remove: 2 # Remove or add durability when breaking
+          add: 0
+````
+
+</details>
+
+### Paintings
+
+* Custom paintings with support for hot reloading and animations.
+
+![Paintings](assets/paintings.png)
+
+<details>
+  <summary><strong>Example</strong></summary>
+
+A tutorial is available [here](https://oraxen.mizius.com/usage/tutorials/491d3).
+
+```yaml
+example-painting:
+  material: PAINTING
+  itemname: "<gold>Example Painting"
+  Components:
+    painting_variant: "oraxen:example"
+```
+
+```yaml
+paintings:
+  oraxen:example:
+    author: the_jan_craft
+    title: <red>Example Painting
+    asset_id: oraxen:example # References plugins/Oraxen/pack/assets/oraxen/textures/painting/example.png
+    width: 1
+    height: 1
+```
+
+</details>
+
+### Sounds and Music Discs
+
+* Custom sounds and music discs.
+
+![Music Discs](assets/discs.png)
+
+<details>
+  <summary><strong>Example</strong></summary>
+
+Tutorials are available [here](https://oraxen.mizius.com/usage/tutorials/d31l5f) and [here](https://oraxen.mizius.com/usage/tutorials/23ho7).
+
+```yaml
+example-disc:
+  material: MUSIC_DISC_13
+  itemname: "<gold>Example Disc"
+  Pack:
+    model: discs/example
+  Components:
+    jukebox_playable:
+      show_in_tooltip: true
+      song_key: "oraxen:example"
+```
+
+```yaml
+sounds:
+  - id: oraxen:example
+    category: records
+    sound: discs/example.ogg # References plugins/Oraxen/pack/sounds/discs/example.ogg
+    stream: true
+    subtitle: "Example Song"
+    jukebox:
+      description: "<gold>Example <yellow>Song</yellow></gold>"
+      duration: 20s
+```
+
+</details>
+
+### Glyphs and Animated Glyphs
+
+* Animated and static emojis, ranks, GUIs, escape menus, and more.
+
+![Glyphs](assets/glyphs.png)
+
+<details>
+  <summary><strong>More Images</strong></summary>
+
+![GUIs](assets/guis.png)
+
+![Escape Menu](assets/esc.png)
+
+</details>
+
+### Armor
+
+* Custom armor and elytra.
+
+![Armor](assets/armors.png)
+
+### Recipes
+
+* Crafting, smelting, blasting, smoking, and stonecutting recipes, with an easy-to-use in-game GUI editor.
+
+### Text Effects
+
+* Colored text animations.
+
+## Building
+See https://oraxen.mizius.com/developers/compiling.
 
 ## Contributing
-
-If you want to contribute to Oraxen, you can do so by creating a pull request. You should make a pull-request to the `develop` branch.
-
-1. Fork Oraxen on GitHub
-2. Clone your forked repository (`git clone`)
-3. Create your feature branch (`git checkout -b my-feature`)
-4. Commit your changes (`git commit -am 'Add my feature'`)
-5. Push to the branch (`git push origin my-feature`)
-6. Create a new Pull Request to the `develop` branch
-7. Wait for your pull request to be reviewed and merged
-8. Celebrate your contribution!
-
-## API
-
-Oraxen's API is primarily found in these four classes:
-
-| Class | Description |
-|-------|-------------|
-| `OraxenItems` | Methods related to Oraxen items |
-| `OraxenBlocks` | Methods related to custom blocks in Oraxen |
-| `OraxenFurniture` | Methods related to custom furniture in Oraxen |
-| `OraxenPack` | Methods related to the resource-pack |
-
-### Repository
-
-<details>
-<summary><b>Gradle (Kotlin DSL)</b></summary>
-
-```kotlin
-maven("https://repo.oraxen.com/releases")
-```
-</details>
-
-<details>
-<summary><b>Gradle (Groovy)</b></summary>
-
-```groovy
-maven {
-    url "https://repo.oraxen.com/releases"
-}
-```
-</details>
-
-<details>
-<summary><b>Maven</b></summary>
-
-```xml
-<repository>
-  <id>oraxen</id>
-  <name>Oraxen Repository</name>
-  <url>https://repo.oraxen.com/releases</url>
-</repository>
-```
-</details>
-
-### Dependency
-
-[![version](https://img.shields.io/maven-metadata/v?metadataUrl=https://repo.oraxen.com/releases/io/th0rgal/oraxen/maven-metadata.xml)](https://repo.oraxen.com/#/releases/io/th0rgal/oraxen)
-
-The latest version can be found at the badge above.
-
-<details>
-<summary><b>Gradle (Kotlin DSL)</b></summary>
-
-```kotlin
-compileOnly("io.th0rgal:oraxen:VERSION")
-```
-</details>
-
-<details>
-<summary><b>Gradle (Groovy)</b></summary>
-
-```groovy
-compileOnly 'io.th0rgal:oraxen:VERSION'
-```
-</details>
-
-<details>
-<summary><b>Maven (with exclusions)</b></summary>
-
-```xml
-<dependency>
-    <groupId>io.th0rgal</groupId>
-    <artifactId>oraxen</artifactId>
-    <version>1.167.0</version>
-    <exclusions>
-        <exclusion>
-            <groupId>me.gabytm.util</groupId>
-            <artifactId>actions-spigot</artifactId>
-        </exclusion>
-        <exclusion>
-            <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-        </exclusion>
-        <exclusion>
-            <groupId>com.ticxo</groupId>
-            <artifactId>PlayerAnimator</artifactId>
-        </exclusion>
-        <exclusion>
-            <groupId>io.th0rgal</groupId>
-            <artifactId>protectionlib</artifactId>
-        </exclusion>
-        <exclusion>
-            <groupId>dev.triumphteam</groupId>
-            <artifactId>triumph-gui</artifactId>
-        </exclusion>
-        <exclusion>
-            <groupId>org.bstats</groupId>
-            <artifactId>bstats-bukkit</artifactId>
-        </exclusion>
-        <exclusion>
-            <groupId>com.jeff-media</groupId>
-            <artifactId>custom-block-data</artifactId>
-        </exclusion>
-        <exclusion>
-            <groupId>com.jeff-media</groupId>
-            <artifactId>persistent-data-serializer</artifactId>
-        </exclusion>
-        <exclusion>
-            <groupId>com.jeff_media</groupId>
-            <artifactId>MorePersistentDataTypes</artifactId>
-        </exclusion>
-        <exclusion>
-            <groupId>gs.mclo</groupId>
-            <artifactId>java</artifactId>
-        </exclusion>
-    </exclusions>
-    <scope>provided</scope>
-</dependency>
-```
-</details>
-
-Snapshot builds are also available at [https://repo.oraxen.com/snapshots](https://repo.oraxen.com/snapshots).
+See https://oraxen.mizius.com/developers/contributing.
 
 ## License
 
-*Click here to read [the entire license](https://github.com/Th0rgal/Oraxen/blob/master/LICENSE.md).*
+Read the full license in [`LICENSE.md`](LICENSE.md).
 
-Oraxen is a paid plugin. To use it you must purchase a license on [spigotmc.org](https://spigotmc.org) or [builtbybit.com](https://builtbybit.com/resources/oraxen-custom-items-blocks-more.16594/). Nevertheless we will not try to prevent you from downloading the source code and rebuilding it, as long as you do not distribute it (whether it is modified or intact and compiled or whether it is the source code, partial or complete). Public forks are allowed as long as you comply with the license (in order to propose a pull request). Buying a license will not only save you time, I will do my best to help you if you have any concerns and it will show me that you appreciate my work.
+Oraxen is a paid plugin. You must purchase a license from [SpigotMC](https://www.spigotmc.org/resources/oraxen.72448/) or [BuiltByBit](https://builtbybit.com/resources/oraxen-custom-items-blocks-more.16594/) to use it. Public forks are permitted for contributing pull requests, provided that you comply with the license. Do not redistribute compiled builds or source code, whether modified or unmodified, except as permitted by the license.

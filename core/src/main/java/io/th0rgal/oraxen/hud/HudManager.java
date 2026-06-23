@@ -2,8 +2,8 @@ package io.th0rgal.oraxen.hud;
 
 import com.jeff_media.morepersistentdatatypes.DataType;
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.ConfigsManager;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.ConfigsManager;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import me.clip.placeholderapi.PlaceholderAPI;

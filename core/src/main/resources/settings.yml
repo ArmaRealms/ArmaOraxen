@@ -33,7 +33,6 @@ ConfigsTools:
   skipped_model_data_numbers: []
   disable_automatic_model_data: false
   disable_automatic_glyph_code: false
-  enable_configs_updater: true
   error_item:
     material: PODZOL
     excludeFromInventory: false # set to true if you don't want to display it inside inventory
@@ -79,7 +78,6 @@ CustomArmor:
 
 CustomBlocks:
   block_correction: NMS # Valid types are NMS and LEGACY
-  use_legacy_noteblocks: true # Setting relevant for future changes, for now leave this to true
 
 ItemUpdater:
   # Update the items in player inventory to the latest in config when player joins
@@ -108,7 +106,7 @@ Pack:
     # Enable this for servers with players on multiple Minecraft versions (ViaVersion/ProtocolSupport).
     # When enabled, generates separate pack files with correct pack_format for each client version.
     #
-    # Supported versions: 1.20, 1.20.2, 1.20.3-1.20.4, 1.20.5-1.20.6, 1.21-1.21.1, 1.21.2-1.21.3, 1.21.4, 1.21.5, 1.21.6, 1.21.7-1.21.8, 1.21.9+
+    # Supported versions: 1.20, 1.20.2, 1.20.3-1.20.4, 1.20.5-1.20.6, 1.21-1.21.1, 1.21.2-1.21.3, 1.21.4, 1.21.5, 1.21.6, 1.21.7-1.21.8, 1.21.9-1.21.11, 26.1, 26.2+
     # Each pack has appropriate pack_format and supported_formats range for client compatibility.
     #
     # Requirements:
@@ -219,6 +217,7 @@ Pack:
     send_pre_join: false # Pre-join dispatch (Paper 1.21.7+). Takes priority over send_on_join when supported. Requires explicit opt-in.
     send_on_join: true # Join dispatch (after full join). Default mode for most servers.
     send_on_reload: true
+    stop: [] # Client versions that should not receive the pack. Quote every rule, e.g. '< 1.12', '= 1.21.11' or '> 1.21.11'.
     delay: -1
     mandatory: true
     disable_movement_on_load: true # If true, players will not be able to move while the pack is loading

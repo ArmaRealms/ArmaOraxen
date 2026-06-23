@@ -1,6 +1,6 @@
 package io.th0rgal.oraxen.items;
 
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Settings;
 import org.bukkit.Material;
 
 import java.util.*;

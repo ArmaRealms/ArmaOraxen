@@ -10,7 +10,7 @@ import io.th0rgal.oraxen.api.events.chorusblock.OraxenChorusBlockPlaceEvent;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.limitedplacing.LimitedPlacing;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.storage.StorageMechanic;
 import io.th0rgal.oraxen.utils.*;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.apache.commons.lang3.Range;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -600,7 +600,7 @@ public class ChorusBlockMechanicListener implements Listener {
 
         Range<Integer> worldHeightRange = Range.between(target.getWorld().getMinHeight(),
                 target.getWorld().getMaxHeight() - 1);
-        if (!ProtectionLib.canBuild(player, target.getLocation()))
+        if (!AntiGriefLib.canBuild(player, target.getLocation()))
             blockPlaceEvent.setCancelled(true);
         if (!worldHeightRange.contains(target.getY()))
             blockPlaceEvent.setCancelled(true);

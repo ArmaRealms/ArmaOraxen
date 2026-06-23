@@ -1,8 +1,6 @@
 package io.th0rgal.oraxen.commands;
 
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.*;
-import io.th0rgal.oraxen.OraxenPlugin;
+import io.th0rgal.oraxen.commands.arguments.*;
 import io.th0rgal.oraxen.api.OraxenBlocks;
 import io.th0rgal.oraxen.api.OraxenFurniture;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureMechanic;
@@ -14,14 +12,14 @@ import java.util.*;
 
 public class AdminCommand {
 
-    CommandAPICommand getAdminCommand() {
-        return new CommandAPICommand("admin")
+    OraxenCommand getAdminCommand() {
+        return new OraxenCommand("admin")
                 .withPermission("oraxen.command.admin")
                 .withSubcommands(getFurniturePlaceRemoveCommand(), getNoteblockPlaceRemoveCommand());
     }
 
-    private CommandAPICommand getNoteblockPlaceRemoveCommand() {
-        return new CommandAPICommand("block")
+    private OraxenCommand getNoteblockPlaceRemoveCommand() {
+        return new OraxenCommand("block")
                 .withArguments(new TextArgument("block").replaceSuggestions(ArgumentSuggestions.strings(OraxenBlocks.getBlockIDs())))
                 .withArguments(new TextArgument("type").replaceSuggestions(ArgumentSuggestions.strings("place", "remove")))
                 .withOptionalArguments(new LocationArgument("location"))
@@ -30,7 +28,7 @@ public class AdminCommand {
                 .executesPlayer((player, args) -> {
                     String id = (String) args.get("block");
                     if (!OraxenBlocks.isOraxenBlock(id)) {
-                        OraxenPlugin.get().getAudience().player(player).sendMessage(AdventureUtils.MINI_MESSAGE.deserialize("<prefix> <red>Unknown block <white>" + id + "<red>."));
+                        AdventureUtils.sendMessage(player, AdventureUtils.MINI_MESSAGE.deserialize("<prefix> <red>Unknown block <white>" + id + "<red>."));
                     } else {
                         Location loc = (Location) args.getOptional("location").orElse(player.getLocation());
                         String type = (String) args.get("type");
@@ -45,10 +43,10 @@ public class AdminCommand {
                 });
     }
 
-    private CommandAPICommand getFurniturePlaceRemoveCommand() {
+    private OraxenCommand getFurniturePlaceRemoveCommand() {
         Set<String> furnitureIDs = OraxenFurniture.getFurnitureIDs();
         furnitureIDs.add("all");
-        return new CommandAPICommand("furniture")
+        return new OraxenCommand("furniture")
                 .withArguments(
                         new TextArgument("type").replaceSuggestions(ArgumentSuggestions.strings("place", "remove")),
                         new TextArgument("furniture").replaceSuggestions(ArgumentSuggestions.strings(furnitureIDs))
@@ -63,7 +61,7 @@ public class AdminCommand {
                     assert type != null;
                     String id = (String) args.getOrDefault("furniture", "");
                     if (!OraxenFurniture.isFurniture(id))
-                        OraxenPlugin.get().getAudience().player(player).sendMessage(AdventureUtils.MINI_MESSAGE.deserialize("<prefix> <red>Unknown furniture <white>" + id + "<red>."));
+                        AdventureUtils.sendMessage(player, AdventureUtils.MINI_MESSAGE.deserialize("<prefix> <red>Unknown furniture <white>" + id + "<red>."));
                     else {
                         Location loc = (Location) args.getOptional("location").orElse(player.getLocation());
                         int radius = (int) args.getOptional("radius").orElse(0);

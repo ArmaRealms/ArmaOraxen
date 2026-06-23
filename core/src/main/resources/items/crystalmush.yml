@@ -30,11 +30,17 @@ crystalmush_log:
           drops:
             - item: crystalmush_log
               probability: 1.0
+          durability:
+            add: 0
+            remove: 1
         - else:
           hardness: 4
           drops:
             - item: crystalmush_log
               probability: 1.0
+          durability:
+            add: 0
+            remove: 2
 
 # Crystal Mushroom Planks - animated plank texture
 crystalmush_planks:
@@ -64,11 +70,17 @@ crystalmush_planks:
           drops:
             - item: crystalmush_planks
               probability: 1.0
+          durability:
+            add: 0
+            remove: 1
         - else:
           hardness: 4
           drops:
             - item: crystalmush_planks
               probability: 1.0
+          durability:
+            add: 0
+            remove: 2
 
 # Crystal Mushroom Leaves - transparent animated leaves using copper bulb blockstates
 # BULB type uses copper bulbs which allow custom transparent full blocks with block/leaves parent
@@ -100,9 +112,15 @@ crystalmush_leaves:
           drops:
             - item: crystalmush_leaves
               probability: 1.0
+          durability:
+            add: 0
+            remove: 1
 
         - else:
           hardness: 1
+          durability:
+            add: 0
+            remove: 2
 
 # Crystal Mushroom Trapdoor - animated trapdoor
 crystalmush_trapdoor:
@@ -132,11 +150,17 @@ crystalmush_trapdoor:
           drops:
             - item: crystalmush_trapdoor
               probability: 1.0
+          durability:
+            add: 0
+            remove: 1
         - else:
           hardness: 4
           drops:
             - item: crystalmush_trapdoor
               probability: 1.0
+          durability:
+            add: 0
+            remove: 2
 
 # Crystal Mushroom Door
 crystalmush_door:
@@ -169,11 +193,17 @@ crystalmush_door:
           drops:
             - item: crystalmush_door
               probability: 1.0
+          durability:
+            add: 0
+            remove: 2
         - else:
           hardness: 4
           drops:
             - item: crystalmush_door
               probability: 1.0
+          durability:
+            add: 0
+            remove: 2
 
 # Crystal Mushroom Stairs
 crystalmush_stairs:
@@ -203,11 +233,17 @@ crystalmush_stairs:
           drops:
             - item: crystalmush_stairs
               probability: 1.0
+          durability:
+            add: 0
+            remove: 1
         - else:
           hardness: 4
           drops:
             - item: crystalmush_stairs
               probability: 1.0
+          durability:
+            add: 0
+            remove: 2
 
 # Crystal Mushroom Slab
 crystalmush_slab:
@@ -237,8 +273,14 @@ crystalmush_slab:
           drops:
             - item: crystalmush_slab
               probability: 1.0
+          durability:
+            add: 0
+            remove: 1
         - else:
           hardness: 4
           drops:
             - item: crystalmush_slab
               probability: 1.0
+          durability:
+            add: 0
+            remove: 2

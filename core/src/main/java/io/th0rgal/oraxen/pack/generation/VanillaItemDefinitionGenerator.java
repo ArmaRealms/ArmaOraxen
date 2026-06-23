@@ -77,12 +77,20 @@ public class VanillaItemDefinitionGenerator {
      */
     public VanillaItemDefinitionGenerator(@NotNull Material material, @NotNull List<ItemBuilder> items,
             boolean useSelect, boolean includeBothModes) {
+        this(material, items, new PredicatesGenerator(material, items), useSelect, includeBothModes);
+    }
+
+    VanillaItemDefinitionGenerator(@NotNull Material material, @NotNull List<ItemBuilder> items,
+            @NotNull PredicatesGenerator predicatesHelper, boolean useSelect, boolean includeBothModes) {
         this.material = material;
         this.items = new ArrayList<>(items);
-        this.predicatesHelper = new PredicatesGenerator(material, items);
+        this.predicatesHelper = predicatesHelper;
         this.useSelect = useSelect;
         this.includeBothModes = includeBothModes;
+        sortItemsForMode();
+    }
 
+    private void sortItemsForMode() {
         // Sort items based on mode:
         // - useSelect=true (MODEL_DATA_IDS): alphabetically by Oraxen item id
         // - useSelect=false (MODEL_DATA_FLOAT_LEGACY): by numeric CustomModelData value
@@ -139,17 +147,33 @@ public class VanillaItemDefinitionGenerator {
      */
     private JsonObject createVanillaModelReference() {
         String vanillaModelPath = "minecraft:" + predicatesHelper.getVanillaModelName(material);
-        
-        // Use special model types for items that require custom rendering (shield, conduit, etc.)
-        JsonObject baseModel = isSpecialModelMaterial(material) 
-                ? createSpecialModelObject(vanillaModelPath, getSpecialModelType(material))
-                : createModelObject(vanillaModelPath);
+
+        // Use special model types for items that require custom rendering (heads, shield, conduit, etc.)
+        JsonObject baseModel;
+        if (isSpecialHeadMaterial(material)) {
+            baseModel = createSpecialHeadModelObject(material);
+        } else if (isSpecialModelMaterial(material)) {
+            baseModel = createSpecialModelObject(vanillaModelPath, getSpecialModelType(material));
+        } else {
+            baseModel = createModelObject(vanillaModelPath);
+        }
 
         // Add tints for dyeable/potion items
         addTintsIfNeeded(baseModel);
 
         // Wrap with special state handling for specific materials
         return wrapWithStateHandling(baseModel, vanillaModelPath);
+    }
+
+    /**
+     * Checks if a material requires the skull/head special renderer instead of a regular model.
+     */
+    private boolean isSpecialHeadMaterial(Material mat) {
+        return switch (mat) {
+            case PLAYER_HEAD, SKELETON_SKULL, WITHER_SKELETON_SKULL, ZOMBIE_HEAD,
+                    CREEPER_HEAD, DRAGON_HEAD, PIGLIN_HEAD -> true;
+            default -> false;
+        };
     }
 
     /**
@@ -168,6 +192,38 @@ public class VanillaItemDefinitionGenerator {
             case CONDUIT -> "minecraft:conduit";
             case DECORATED_POT -> "minecraft:decorated_pot";
             default -> null;
+        };
+    }
+
+    /**
+     * Creates the vanilla skull/head fallback for 1.21.4+ item definitions.
+     */
+    private JsonObject createSpecialHeadModelObject(Material mat) {
+        if (mat == Material.PLAYER_HEAD) {
+            return createSpecialModelObject("minecraft:item/template_skull", "minecraft:player_head");
+        }
+
+        JsonObject specialObj = new JsonObject();
+        specialObj.addProperty("type", "minecraft:special");
+        specialObj.addProperty("base", "minecraft:item/template_skull");
+
+        JsonObject modelType = new JsonObject();
+        modelType.addProperty("type", "minecraft:head");
+        modelType.addProperty("kind", getHeadKind(mat));
+        specialObj.add("model", modelType);
+
+        return specialObj;
+    }
+
+    private String getHeadKind(Material mat) {
+        return switch (mat) {
+            case SKELETON_SKULL -> "skeleton";
+            case WITHER_SKELETON_SKULL -> "wither_skeleton";
+            case ZOMBIE_HEAD -> "zombie";
+            case CREEPER_HEAD -> "creeper";
+            case DRAGON_HEAD -> "dragon";
+            case PIGLIN_HEAD -> "piglin";
+            default -> throw new IllegalArgumentException("Unsupported head material: " + mat);
         };
     }
 

@@ -46,7 +46,6 @@ public class NoteBlockMechanic extends Mechanic {
     private final DirectionalBlock directionalBlock;
     private final List<ClickAction> clickActions;
     private final BlockEvents blockEvents;
-
     private final BlockLockerMechanic blockLocker;
 
     @SuppressWarnings("unchecked")
@@ -124,6 +123,10 @@ public class NoteBlockMechanic extends Mechanic {
     public boolean isDirectional() { return directionalBlock != null; }
     public DirectionalBlock getDirectional() { return directionalBlock; }
 
+    public BlockLockerMechanic getBlockLocker() {
+        return blockLocker;
+    }
+
     public String getModel(ConfigurationSection section) {
         if (model != null)
             return model;
@@ -143,6 +146,14 @@ public class NoteBlockMechanic extends Mechanic {
         if (isDirectional() && !getDirectional().isParentBlock() && !breaking.hasHardness(tool))
             return directionalBlock.getParentMechanic().getDrop(tool);
         return breaking.drop(tool);
+    }
+
+    public BlockBreaking.DurabilityAction getDurabilityAction(ItemStack tool) {
+        BlockBreaking.DurabilityAction action = breaking.durabilityAction(tool);
+        if (action != null) return action;
+        if (isDirectional() && !getDirectional().isParentBlock())
+            return directionalBlock.getParentMechanic().getDurabilityAction(tool);
+        return null;
     }
 
     public boolean hasHardness() {
@@ -221,10 +232,6 @@ public class NoteBlockMechanic extends Mechanic {
         if (isDirectional() && !getDirectional().isParentBlock()) {
             return immovable || directionalBlock.getParentMechanic().isImmovable();
         } else return immovable;
-    }
-
-    public BlockLockerMechanic getBlockLocker() {
-        return blockLocker;
     }
 
 }

@@ -3,7 +3,7 @@ package io.th0rgal.oraxen.pack.upload;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.events.OraxenPackPreUploadEvent;
 import io.th0rgal.oraxen.api.events.OraxenPackUploadEvent;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.pack.dispatch.MultiVersionPackSender;
 import io.th0rgal.oraxen.pack.dispatch.PackSender;
 import io.th0rgal.oraxen.pack.dispatch.PlayerVersionDetector;
@@ -132,11 +132,13 @@ public class MultiVersionUploadManager {
         boolean createProviderPerVersion = firstProvider.requiresNewInstancePerUpload();
         int versionIndex = 0;
         for (PackVersion packVersion : versions) {
+            if (cancelled) return false;
             try {
                 HostingProvider provider = createProviderPerVersion && versionIndex++ > 0
                         ? HostingProviderFactory.createHostingProvider(false)
                         : firstProvider;
                 uploadPackVersion(packVersion, provider);
+                if (cancelled) return false;
                 String sha1Hex = packVersion.getPackSHA1Hex();
                 if (sha1Hex != null) {
                     currentSHA1s.put(packVersion.getMinecraftVersion(), sha1Hex);
@@ -164,17 +166,20 @@ public class MultiVersionUploadManager {
     }
 
     private void uploadPackVersion(PackVersion packVersion, HostingProvider provider) throws IOException {
+        if (cancelled) return;
         Logs.logInfo("Uploading pack for Minecraft " + packVersion.getMinecraftVersion() + "...");
 
         // Fire pre-upload event
         OraxenPackPreUploadEvent event = new OraxenPackPreUploadEvent();
         EventUtils.callEvent(event);
+        if (cancelled) return;
 
         // Upload pack (provider calculates SHA-1 internally)
         boolean success = provider.uploadPack(packVersion.getPackFile(), packVersion.getMinecraftVersion());
         if (!success) {
             throw new IOException("Failed to upload pack");
         }
+        if (cancelled) return;
 
         // Capture provider state NOW, before the next upload overwrites it.
         String url = provider.getPackURL();
@@ -234,7 +239,10 @@ public class MultiVersionUploadManager {
         cancelled = true;
         if (packSender != null) {
             packSender.unregister();
+            packSender = null;
         }
+
+        versionManager = null;
 
         if (receiver != null) {
             HandlerList.unregisterAll(receiver);

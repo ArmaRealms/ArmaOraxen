@@ -47,6 +47,12 @@ public class BlockBreaking {
         return rule != null ? rule.drop() : Drop.emptyDrop();
     }
 
+    @Nullable
+    public DurabilityAction durabilityAction(ItemStack tool) {
+        Rule rule = ruleFor(tool);
+        return rule != null ? rule.durabilityAction() : null;
+    }
+
     public double attributeSpeedMultiplier(ItemStack tool, Material blockType) {
         double nativeSpeed = nativeToolSpeed(tool, blockType);
         return configuredToolSpeed(tool, blockType) / nativeSpeed;
@@ -98,12 +104,13 @@ public class BlockBreaking {
             if (hasMatchers && !fallback && matchers.isEmpty()) {
                 Logs.logWarning("Block mechanic " + sourceID + " has a 'when' breaking rule with no valid tool entries; the rule will never match.");
             }
-            if (!map.containsKey("hardness") && !map.containsKey("drops")) {
-                Logs.logWarning("Block mechanic " + sourceID + " has a breaking rule without 'hardness' or 'drops'; using default hardness 1.0 and no drops.");
+            if (!map.containsKey("hardness") && !map.containsKey("drops") && !map.containsKey("durability")) {
+                Logs.logWarning("Block mechanic " + sourceID + " has a breaking rule without 'hardness', 'drops', or 'durability'; using default hardness 1.0 and no drops.");
             }
             double hardness = parseDouble(map.get("hardness"), 1.0D, sourceID);
             Drop drop = parseDrop(map.get("drops"), sourceID);
-            parsedRules.add(new Rule(matchers, fallback, hardness, drop));
+            DurabilityAction durabilityAction = parseDurabilityAction(map.get("durability"), sourceID);
+            parsedRules.add(new Rule(matchers, fallback, hardness, drop, durabilityAction));
             if (fallback) seenFallback = true;
         }
 
@@ -120,7 +127,31 @@ public class BlockBreaking {
             Logs.logWarning("Block mechanic " + sourceID + " has a legacy 'drop' section, but block tool types are unavailable; no drops will be configured.");
         }
 
-        return List.of(new Rule(List.of(), true, parseDouble(section.get("hardness"), 1.0D, sourceID), drop));
+        return List.of(new Rule(List.of(), true, parseDouble(section.get("hardness"), 1.0D, sourceID), drop, null));
+    }
+
+    @Nullable
+    private DurabilityAction parseDurabilityAction(Object value, String sourceID) {
+        if (value == null) return null;
+        if (!(value instanceof Map<?, ?> map)) {
+            Logs.logWarning("Invalid durability action in block mechanic " + sourceID + "; expected 'add'/'remove' map.");
+            return null;
+        }
+
+        int add = parseNonNegativeInt(map.get("add"), 0, "durability.add", sourceID);
+        int remove = parseNonNegativeInt(map.get("remove"), 0, "durability.remove", sourceID);
+        return new DurabilityAction(add, remove);
+    }
+
+    private int parseNonNegativeInt(Object value, int fallback, String key, String sourceID) {
+        if (value == null) return fallback;
+        try {
+            return Math.max(0, Integer.parseInt(value.toString()));
+        } catch (NumberFormatException exception) {
+            Logs.logWarning("Invalid " + key + " value '" + value + "' in block mechanic " + sourceID + "; using " + fallback + " instead.");
+            Logs.debug(exception);
+            return fallback;
+        }
     }
 
     private List<ToolMatcher> parseMatchers(Object value, String sourceID) {
@@ -288,7 +319,11 @@ public class BlockBreaking {
         return tag != null && tag.isTagged(blockType);
     }
 
-    private record Rule(List<ToolMatcher> matchers, boolean fallback, double hardness, Drop drop) {
+    public record DurabilityAction(int add, int remove) {
+    }
+
+    private record Rule(List<ToolMatcher> matchers, boolean fallback, double hardness, Drop drop,
+                        @Nullable DurabilityAction durabilityAction) {
         private boolean matches(ItemStack tool) {
             return matchers.stream().anyMatch(matcher -> matcher.matches(tool));
         }

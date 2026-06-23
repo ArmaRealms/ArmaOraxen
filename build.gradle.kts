@@ -1,8 +1,6 @@
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.util.*
-import kotlin.io.path.Path
-import kotlin.io.path.listDirectoryEntries
 
 plugins {
     id("java")
@@ -14,39 +12,10 @@ plugins {
 }
 
 
-class NMSVersion(val nmsVersion: String, val serverVersion: String)
-
-infix fun String.toNms(that: String): NMSVersion = NMSVersion(this, that)
-val isCI = System.getenv("CI") != null
-val SUPPORTED_VERSIONS: List<NMSVersion> = listOfNotNull(
-    "v1_26_R1" toNms "26.1.2.build.5-alpha",
-    "v1_20_R1" toNms "1.20.1-R0.1-SNAPSHOT",
-    "v1_20_R2" toNms "1.20.2-R0.1-SNAPSHOT",
-    "v1_20_R3" toNms "1.20.4-R0.1-SNAPSHOT",
-    "v1_20_R4" toNms "1.20.6-R0.1-SNAPSHOT",
-    "v1_21_R1" toNms "1.21.1-R0.1-SNAPSHOT",
-    "v1_21_R2" toNms "1.21.3-R0.1-SNAPSHOT",
-    "v1_21_R3" toNms "1.21.4-R0.1-SNAPSHOT",
-    "v1_21_R4" toNms "1.21.5-R0.1-SNAPSHOT",
-    "v1_21_R5" toNms "1.21.8-R0.1-SNAPSHOT", // also for 1.21.7
-    "v1_21_R6_old" toNms "1.21.10-R0.1-SNAPSHOT", // 1.21.9 and 1.21.10 (uses ResourceLocation)
-    "v1_21_R6" toNms "1.21.11-R0.1-SNAPSHOT", // 1.21.11 Paper (Mojang-mapped)
-    // Skip Spigot modules in CI - requires BuildTools to install Spigot artifacts to local Maven
-    if (!isCI) "v1_20_R4_spigot" toNms "1.20.6-R0.1-SNAPSHOT" else null,
-    if (!isCI) "v1_21_R1_spigot" toNms "1.21.1-R0.1-SNAPSHOT" else null,
-    if (!isCI) "v1_21_R2_spigot" toNms "1.21.3-R0.1-SNAPSHOT" else null,
-    if (!isCI) "v1_21_R3_spigot" toNms "1.21.4-R0.1-SNAPSHOT" else null,
-    if (!isCI) "v1_21_R4_spigot" toNms "1.21.5-R0.1-SNAPSHOT" else null,
-    if (!isCI) "v1_21_R5_spigot" toNms "1.21.8-R0.1-SNAPSHOT" else null,
-    if (!isCI) "v1_21_R6_old_spigot" toNms "1.21.10-R0.1-SNAPSHOT" else null,
-    if (!isCI) "v1_21_R6_spigot" toNms "1.21.11-R0.1-SNAPSHOT" else null
-)
-
 val compiled = (project.findProperty("oraxen_compiled")?.toString() ?: "true").toBoolean()
 val pluginPath = project.findProperty("oraxen_plugin_path")?.toString()
 val devPluginPath = project.findProperty("oraxen_dev_plugin_path")?.toString()
 val foliaPluginPath = project.findProperty("oraxen_folia_plugin_path")?.toString()
-val spigotPluginPath = project.findProperty("oraxen_spigot_plugin_path")?.toString()
 val pluginVersion: String by project
 val runServerVersion = findProperty("mcVersion") as String? ?: "26.1.2"
 val runServerMajorVersion = Regex("""^\D*(?:1\.)?(\d+)""")
@@ -97,9 +66,11 @@ allprojects {
         }
         maven("https://repo.oraxen.com/releases") {
             content {
-                includeGroup("io.th0rgal") // protectionlib
                 includeGroup("md.thomas.hopper") // hopper
             }
+        }
+        maven("https://repo.momirealms.net/releases/") {
+            content { includeGroup("net.momirealms") } // AntiGriefLib
         }
         maven("https://repo.oraxen.com/snapshots") {
             content {
@@ -112,7 +83,8 @@ allprojects {
         }
         maven("https://maven.enginehub.org/repo/") {
             content {
-                includeGroupAndSubgroups("com.sk89q.worldedit") // world edit
+                includeGroupAndSubgroups("com.sk89q.worldedit") // WorldEdit
+                includeGroupAndSubgroups("com.sk89q.worldguard") // WorldGuard
                 includeGroupAndSubgroups("org.enginehub") // WorldEdit transitive dependencies (lin-bus-bom, etc)
             }
         }
@@ -141,7 +113,7 @@ allprojects {
 
 dependencies {
     implementation(project(path = ":core"))
-    SUPPORTED_VERSIONS.forEach { implementation(project(path = ":${it.nmsVersion}", configuration = "reobf")) }
+    implementation(project(path = ":nms", configuration = "reobf"))
 }
 
 
@@ -190,14 +162,13 @@ tasks {
     runServer {
         downloadPlugins {
             hangar("ProtocolLib", "5.4.0")
-            hangar("CommandAPI", "11.1.0")
         }
         minecraftVersion(runServerVersion)
         jvmArgs("-Dcom.mojang.eula.agree=true")
     }
 
     shadowJar {
-        SUPPORTED_VERSIONS.forEach { dependsOn(":${it.nmsVersion}:reobfJar") }
+        dependsOn(":nms:jar")
 
         archiveClassifier = null
         oraxenLibs.bundles.libraries.shade.get().forEach {
@@ -261,7 +232,6 @@ bukkit {
     foliaSupported = true
     authors = listOf("th0rgal", "https://github.com/oraxen/oraxen/blob/master/CONTRIBUTORS.md")
     softDepend = listOf(
-        "CommandAPI",
         "ProtocolLib",
         "packetevents",
         "LightAPI", "PlaceholderAPI", "MythicMobs", "MMOItems", "MythicCrucible", "MythicMobs", "BossShopPro",
@@ -281,29 +251,6 @@ bukkit {
     libraries = oraxenLibs.bundles.libraries.bukkit.get().map { it.toString() }
 }
 
-
-if (spigotPluginPath != null) {
-    tasks {
-        val defaultPath = findByName("reobfJar") ?: findByName("shadowJar") ?: findByName("jar")
-        // Define the main copy task
-        val copyJarTask = register<Copy>("copyJar") {
-            this.doNotTrackState("Overwrites the plugin jar to allow for easier reloading")
-            dependsOn(shadowJar, jar)
-            from(defaultPath)
-            into(spigotPluginPath)
-            doLast {
-                println("Copied to plugin directory $spigotPluginPath")
-                Path(spigotPluginPath).listDirectoryEntries()
-                    .filter { it.fileName.toString().matches("oraxen-.*.jar".toRegex()) }
-                    .filterNot { it.fileName.toString().endsWith("$pluginVersion.jar") }
-                    .forEach { delete(it) }
-            }
-        }
-
-        // Make the build task depend on all individual copy tasks
-        named<DefaultTask>("build").get().dependsOn(copyJarTask)
-    }
-}
 
 // Headless pack generation task
 // Usage: ./gradlew generatePack -PmcVersion=1.21.4 [-PserverType=paper] [-PoutputDir=./build/pack] [-PconfigDir=./my-configs]

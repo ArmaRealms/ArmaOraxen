@@ -1,12 +1,11 @@
 package io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.jukebox;
 
-import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenFurniture;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.api.events.furniture.OraxenFurnitureBreakEvent;
 import io.th0rgal.oraxen.api.events.furniture.OraxenFurnitureInteractEvent;
-import io.th0rgal.oraxen.config.AppearanceMode;
-import io.th0rgal.oraxen.config.Message;
+import io.th0rgal.oraxen.configs.AppearanceMode;
+import io.th0rgal.oraxen.configs.Message;
 import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.items.OraxenMeta;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureFactory;
@@ -65,7 +64,7 @@ public class JukeboxListener implements Listener {
         if (displayName != null) {
             Component message = AdventureUtils.MINI_MESSAGE.deserialize(
                 Message.MECHANICS_JUKEBOX_NOW_PLAYING.toString(), AdventureUtils.tagResolver("disc", displayName));
-            OraxenPlugin.get().getAudience().player(player).sendActionBar(message);
+            AdventureUtils.sendActionBar(player, message);
         }
 
         event.setCancelled(true);

@@ -166,8 +166,8 @@ class PackVersionManagerTest {
             .orElse(null);
 
         assertNotNull(highest);
-        assertEquals(84, highest.getPackFormat(), "max() should return highest pack format (84 for 26.1)");
-        assertEquals("26.1", highest.getMinecraftVersion());
+        assertEquals(88, highest.getPackFormat(), "max() should return highest pack format (88 for 26.2)");
+        assertEquals("26.2", highest.getMinecraftVersion());
     }
 
     @Test

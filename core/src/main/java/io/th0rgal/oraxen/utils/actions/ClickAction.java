@@ -1,7 +1,7 @@
 package io.th0rgal.oraxen.utils.actions;
 
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import me.gabytm.util.actions.actions.Action;
 import org.bukkit.configuration.ConfigurationSection;
