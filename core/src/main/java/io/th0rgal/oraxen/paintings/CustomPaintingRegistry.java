@@ -222,6 +222,7 @@ public final class CustomPaintingRegistry {
         private final Class<?> registryAccessClass;
         private final Class<?> resourceLocationClass;
         private final Class<?> resourceKeyClass;
+        private final Class<?> registrationInfoClass;
         private final Class<?> holderReferenceClass;
         private final Class<?> tagKeyClass;
         private final Class<?> paintingVariantClass;
@@ -251,6 +252,7 @@ public final class CustomPaintingRegistry {
         private final Method resourceKeyLocationMethod;
         private final Method toIdRemoveIntMethod;
         private final Method toIdPutMethod;
+        private final Object builtInRegistrationInfo;
 
         private Ref() throws ReflectiveOperationException {
             craftServerClass = Class.forName("org.bukkit.craftbukkit.CraftServer");
@@ -260,6 +262,7 @@ public final class CustomPaintingRegistry {
             registryAccessClass = Class.forName("net.minecraft.core.RegistryAccess");
             resourceLocationClass = resourceLocationClass();
             resourceKeyClass = Class.forName("net.minecraft.resources.ResourceKey");
+            registrationInfoClass = optionalClass("net.minecraft.core.RegistrationInfo");
             holderReferenceClass = Class.forName("net.minecraft.core.Holder$Reference");
             tagKeyClass = Class.forName("net.minecraft.tags.TagKey");
             paintingVariantClass = paintingVariantClass();
@@ -284,21 +287,25 @@ public final class CustomPaintingRegistry {
             lookupOrThrowMethod = registryAccessClass.getMethod("lookupOrThrow", resourceKeyClass);
             resourceKeyCreateMethod = resourceKeyClass.getMethod("create", resourceKeyClass, resourceLocationClass);
             registryRegisterMethod = registryRegisterMethod();
-            containsKeyMethod = registryClass.getMethod("containsKey", resourceLocationClass);
-            registryGetResourceKeyMethod = registryClass.getMethod("get", resourceKeyClass);
-            registryGetTagMethod = registryClass.getMethod("get", tagKeyClass);
-            registryGetIdMethod = registryClass.getMethod("getId", Object.class);
+            containsKeyMethod = registryMethod("containsKey", resourceLocationClass);
+            registryGetResourceKeyMethod = registryMethod("get", resourceKeyClass);
+            registryGetTagMethod = registryMethod("get", tagKeyClass);
+            registryGetIdMethod = registryMethod("getId", Object.class);
             bindValueMethod = holderReferenceClass.getDeclaredMethod("bindValue", Object.class);
             bindValueMethod.setAccessible(true);
             bindTagMethod = optionalMethod(mappedRegistryClass, "bindTag", tagKeyClass, List.class);
             bindTagsMethod = optionalMethod(mappedRegistryClass, "bindTags", Map.class);
-            registryGetTagsMethod = optionalMethod(registryClass, "getTags");
+            Method getTagsMethod = optionalMethod(mappedRegistryClass, "getTags");
+            registryGetTagsMethod = getTagsMethod != null ? getTagsMethod : optionalMethod(registryClass, "getTags");
             unwrapKeyMethod = Class.forName("net.minecraft.core.Holder").getMethod("unwrapKey");
             resourceKeyLocationMethod = resourceKeyLocationMethod();
 
             Class<?> toIdClass = toIdField.getType();
             toIdRemoveIntMethod = toIdClass.getMethod("removeInt", Object.class);
             toIdPutMethod = toIdClass.getMethod("put", Object.class, int.class);
+            builtInRegistrationInfo = registrationInfoClass != null
+                    ? registrationInfoClass.getField("BUILT_IN").get(null)
+                    : null;
         }
 
         private static Ref get() throws ReflectiveOperationException {
@@ -331,6 +338,14 @@ public final class CustomPaintingRegistry {
             }
         }
 
+        private static Class<?> optionalClass(String name) {
+            try {
+                return Class.forName(name);
+            } catch (ClassNotFoundException ignored) {
+                return null;
+            }
+        }
+
         private static Method optionalMethod(Class<?> owner, String name, Class<?>... parameterTypes) {
             try {
                 return owner.getMethod(name, parameterTypes);
@@ -339,17 +354,34 @@ public final class CustomPaintingRegistry {
             }
         }
 
+        private Method registryMethod(String name, Class<?>... parameterTypes) throws NoSuchMethodException {
+            try {
+                return mappedRegistryClass.getMethod(name, parameterTypes);
+            } catch (NoSuchMethodException ignored) {
+                return registryClass.getMethod(name, parameterTypes);
+            }
+        }
+
         private record RegistryRegisterMethod(Method method, boolean staticMethod, boolean passesRegistry) {
 
-            private static RegistryRegisterMethod of(Method method) throws NoSuchMethodException {
+            private static RegistryRegisterMethod of(Method method) {
                 boolean staticMethod = Modifier.isStatic(method.getModifiers());
                 boolean passesRegistry = method.getParameterCount() == 3;
-                if (passesRegistry && !staticMethod)
-                    throw new NoSuchMethodException(method + " must be static when it accepts a registry argument");
                 return new RegistryRegisterMethod(method, staticMethod, passesRegistry);
             }
 
-            private void invoke(Object registry, Object location, Object variant) throws ReflectiveOperationException {
+            private boolean acceptsResourceKey() {
+                return method.getParameterCount() > 0
+                        && method.getParameterTypes()[staticMethod && passesRegistry ? 1 : 0].getName()
+                        .equals("net.minecraft.resources.ResourceKey");
+            }
+
+            private void invoke(Object registry, Object location, Object resourceKey, Object variant, Object registrationInfo) throws ReflectiveOperationException {
+                if (!staticMethod && passesRegistry) {
+                    method.invoke(registry, resourceKey, variant, registrationInfo);
+                    return;
+                }
+
                 if (passesRegistry) {
                     method.invoke(null, registry, location, variant);
                     return;
@@ -364,6 +396,14 @@ public final class CustomPaintingRegistry {
         }
 
         private RegistryRegisterMethod registryRegisterMethod() throws NoSuchMethodException {
+            if (registrationInfoClass != null) {
+                try {
+                    return RegistryRegisterMethod.of(mappedRegistryClass.getMethod("register", resourceKeyClass, Object.class, registrationInfoClass));
+                } catch (NoSuchMethodException ignored) {
+                    // Try static Registry register fallbacks below.
+                }
+            }
+
             try {
                 return RegistryRegisterMethod.of(registryClass.getMethod("register", registryClass, resourceLocationClass, Object.class));
             } catch (NoSuchMethodException ignored) {
@@ -490,7 +530,8 @@ public final class CustomPaintingRegistry {
         }
 
         private void register(Object registry, Object location, Object variant) throws ReflectiveOperationException {
-            registryRegisterMethod.invoke(registry, location, variant);
+            Object resourceKey = registryRegisterMethod.acceptsResourceKey() ? resourceKey(location) : null;
+            registryRegisterMethod.invoke(registry, location, resourceKey, variant, builtInRegistrationInfo);
         }
 
         @SuppressWarnings("unchecked")
