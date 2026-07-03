@@ -1,10 +1,9 @@
 # Contributors
-
-## Special thanks for all the people who had helped this project so far:
+## Special thanks for all the people who had helped this project so far.
 
 ### Code improvement
 
-> Developers who have contributed to the source code
+> Developers who have contributed to the source code.
 
 * [Boy0000](https://github.com/Boy0000): Maintained the plugin until end of 2024, responsible for adding several mechanics, fixing bugs, and improving the code quality.
 * [pxlarified](https://github.com/pxlarified): Active contributor since 2024, working on bug fixes and improvements.
@@ -105,9 +104,9 @@
 54. [LeoZL](https://www.spigotmc.org/members/leozl.787388/)
 55. [feixiangtian](https://www.spigotmc.org/members/feixiangtian.837890/)
 
-### Idea givers
+### Suggesters
 
-> People who have given ideas to improve Oraxen
+> People who have given ideas to improve Oraxen.
 
 * [MiniDigger](https://github.com/MiniDigger): suggested to generate custom models id automatically
 * [Ancientkingg](https://github.com/Ancientkingg): helped to introduce custom textured armors without optifine
@@ -115,16 +114,7 @@
 
 ### Correctors
 
-> Persons who have identified spelling errors (including in the doc)
+> Persons who have identified spelling errors (including in the documentation).
 
 * Jeroen
 * [craterhater](https://www.spigotmc.org/members/craterhater.49025/)
-
-## I would like to join this list. How can I help the project?
-
-I'm currently looking for contributions for the following:
-
-- [ ] Bug fixes
-- [ ] Refactors
-- [ ] Configs improvements
-- [ ] Ideas (even if we already have a ton to implement)

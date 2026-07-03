@@ -1,6 +1,6 @@
 package io.th0rgal.oraxen.utils.customarmor;
 
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.logs.Logs;
 
@@ -14,6 +14,9 @@ public enum CustomArmorType {
     public static CustomArmorType fromString(String type) {
         try {
             CustomArmorType customArmorType = CustomArmorType.valueOf(type.toUpperCase());
+            if (!Settings.CUSTOM_ARMOR_AUTO_SELECT_TYPE.toBool())
+                return customArmorType;
+
             if (!VersionUtil.atOrAbove("1.21.2") && customArmorType == COMPONENT) {
                 Logs.logError("Component based custom armor is only supported in 1.21.2 and above.");
                 throw new IllegalArgumentException();

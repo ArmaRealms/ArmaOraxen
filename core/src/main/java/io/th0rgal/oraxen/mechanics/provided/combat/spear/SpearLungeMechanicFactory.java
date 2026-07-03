@@ -3,7 +3,7 @@ package io.th0rgal.oraxen.mechanics.provided.combat.spear;
 import com.google.gson.JsonObject;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.events.OraxenPackGeneratedEvent;
-import io.th0rgal.oraxen.config.AppearanceMode;
+import io.th0rgal.oraxen.configs.AppearanceMode;
 import io.th0rgal.oraxen.mechanics.ConfigProperty;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;

@@ -28,6 +28,24 @@ public class BlockSounds {
     public static float VANILLA_FALL_VOLUME = 0.5f;
     public static float VANILLA_FALL_PITCH = 0.75f;
 
+    public static boolean isBlockSoundEnabled(ConfigurationSection section) {
+        return isEnabled(section, "block", "noteblock_and_block", true);
+    }
+
+    public static boolean isStringBlockSoundEnabled(ConfigurationSection section) {
+        return isEnabled(section, "block", "stringblock_and_furniture", true);
+    }
+
+    public static boolean isFurnitureSoundEnabled(ConfigurationSection section) {
+        return isEnabled(section, "furniture", "stringblock_and_furniture", true);
+    }
+
+    private static boolean isEnabled(ConfigurationSection section, String key, String legacyKey, boolean defaultValue) {
+        if (section == null) return defaultValue;
+        if (section.contains(key)) return section.getBoolean(key, defaultValue);
+        return section.getBoolean(legacyKey, defaultValue);
+    }
+
     private final String placeSound;
     private final String breakSound;
     private final String stepSound;
@@ -68,6 +86,8 @@ public class BlockSounds {
         ConfigurationSection soundSection = section.getConfigurationSection(key);
         return section.isString(key + "_sound")
                 ? section.getString(key + "_sound")
+                : section.isString(key + "-sound")
+                ? section.getString(key + "-sound")
                 : soundSection != null
                 ? soundSection.getString("sound")
                 : null;
@@ -77,7 +97,7 @@ public class BlockSounds {
         ConfigurationSection soundSection = section.getConfigurationSection(type);
         if (soundSection == null) {
             return (float) section.getDouble("volume", defaultValue);
-        } else return defaultValue;
+        } else return (float) soundSection.getDouble("volume", defaultValue);
     }
 
     private float getPitch(ConfigurationSection section, String type, float defaultValue) {

@@ -1,6 +1,10 @@
 package io.th0rgal.oraxen.pack.generation;
 
-import io.th0rgal.oraxen.config.Settings;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.utils.VirtualFile;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.jetbrains.annotations.NotNull;
@@ -8,7 +12,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -17,6 +24,7 @@ public class PackMerger {
     private final File uploadsDirectory;
     private static final String UPLOADS_DIR_NAME = "uploads";
     private final Map<String, String> fileOrigins = new LinkedHashMap<>();
+    private final JsonArray mergedOverlayEntries = new JsonArray();
 
     public PackMerger(File packFolder) {
         this.uploadsDirectory = new File(packFolder, UPLOADS_DIR_NAME);
@@ -26,33 +34,41 @@ public class PackMerger {
     public List<VirtualFile> mergeUploadedPacks() {
         Map<String, VirtualFile> mergedFilesMap = new LinkedHashMap<>();
         fileOrigins.clear();
+        clearMergedOverlayEntries();
 
         if (!uploadsDirectory.exists()) {
             uploadsDirectory.mkdirs();
             return new ArrayList<>();
         }
 
-        File[] uploadedPacks = uploadsDirectory.listFiles((dir, name) -> name.toLowerCase().endsWith(".zip"));
+        File[] uploadedPacks = uploadsDirectory.listFiles(file -> file.isDirectory() || file.getName().toLowerCase().endsWith(".zip"));
         if (uploadedPacks == null || uploadedPacks.length == 0) {
             return new ArrayList<>();
         }
 
-        for (File packZip : uploadedPacks) {
-            if (!packZip.isFile() || !packZip.canRead()) {
-                Logs.logWarning("Cannot read pack file: <yellow>" + packZip.getName() + "</yellow>");
+        Arrays.sort(uploadedPacks, Comparator.comparing(File::getName, String.CASE_INSENSITIVE_ORDER));
+        int processedPacks = 0;
+        for (File pack : uploadedPacks) {
+            if (!pack.canRead()) {
+                Logs.logWarning("Cannot read pack: <yellow>" + pack.getName() + "</yellow>");
                 continue;
             }
             try {
-                mergePackZip(packZip, mergedFilesMap);
+                if (pack.isDirectory()) {
+                    mergePackDirectory(pack, mergedFilesMap);
+                } else {
+                    mergePackZip(pack, mergedFilesMap);
+                }
+                processedPacks++;
             } catch (IOException e) {
-                Logs.logError("Failed to merge pack: <red>" + packZip.getName() + "</red>");
+                Logs.logError("Failed to merge pack: <red>" + pack.getName() + "</red>");
                 e.printStackTrace();
             }
         }
 
         List<VirtualFile> result = new ArrayList<>(mergedFilesMap.values());
         if (!result.isEmpty()) {
-            Logs.logSuccess("Merged <blue>" + result.size() + "</blue> files from <blue>" + uploadedPacks.length + "</blue> uploaded pack(s)");
+            Logs.logSuccess("Merged <blue>" + result.size() + "</blue> files from <blue>" + processedPacks + "</blue> uploaded pack(s)");
         }
 
         return result;
@@ -112,6 +128,12 @@ public class PackMerger {
 
                 byte[] buffer = zis.readAllBytes();
 
+                if (normalizedPath.equals("pack.mcmeta")) {
+                    mergeOverlayEntries(buffer, packName);
+                    zis.closeEntry();
+                    continue;
+                }
+
                 VirtualFile virtualFile = new VirtualFile(
                         getParentFolder(normalizedPath),
                         getFileName(normalizedPath),
@@ -145,6 +167,122 @@ public class PackMerger {
         }
     }
 
+    private void mergePackDirectory(File packDirectory, Map<String, VirtualFile> mergedFilesMap) throws IOException {
+        String packName = packDirectory.getName();
+        Logs.logInfo("Processing pack | <blue>" + packName + "</blue>");
+
+        List<String> packRoots = detectResourcePackRoots(packDirectory.toPath());
+        if (packRoots.isEmpty()) {
+            Logs.logWarning("No valid resource pack structure found in <yellow>" + packName + "</yellow>");
+            Logs.logWarning("Expected 'assets/' folder at root or nested within the folder");
+            return;
+        }
+
+        if (packRoots.size() > 1) {
+            Logs.logInfo("Found <blue>" + packRoots.size() + "</blue> resource pack(s) in <blue>" + packName + "</blue>");
+        }
+
+        int fileCount = 0;
+        int overrideCount = 0;
+        int skippedCoreShaderCount = 0;
+        Path basePath = packDirectory.toPath();
+
+        try (Stream<Path> paths = Files.walk(basePath)) {
+            Iterator<Path> iterator = paths.filter(Files::isRegularFile).iterator();
+            while (iterator.hasNext()) {
+                Path file = iterator.next();
+                String entryPath = basePath.relativize(file).toString().replace(File.separatorChar, '/');
+
+                String normalizedPath = normalizeEntryPath(entryPath, packRoots);
+                if (normalizedPath == null || shouldIgnoreNormalizedPath(normalizedPath)) {
+                    continue;
+                }
+
+                if (Boolean.TRUE.equals(Settings.REMOVE_CORE_SHADERS_FROM_IMPORTED_PACKS.getValue())
+                        && PackFileCollector.isCoreShaderPath(normalizedPath)) {
+                    skippedCoreShaderCount++;
+                    continue;
+                }
+
+                byte[] buffer = Files.readAllBytes(file);
+
+                if (normalizedPath.equals("pack.mcmeta")) {
+                    mergeOverlayEntries(buffer, packName);
+                    continue;
+                }
+
+                VirtualFile virtualFile = new VirtualFile(
+                        getParentFolder(normalizedPath),
+                        getFileName(normalizedPath),
+                        new ByteArrayInputStream(buffer)
+                );
+
+                String filePath = virtualFile.getPath();
+                if (mergedFilesMap.containsKey(filePath)) {
+                    String previousPack = fileOrigins.get(filePath);
+                    Logs.logWarning("<blue>" + packName + "</blue> will override existing file <yellow>" + filePath + "</yellow> from <red>" + previousPack + "</red>");
+                    overrideCount++;
+                }
+
+                mergedFilesMap.put(filePath, virtualFile);
+                fileOrigins.put(filePath, packName);
+                fileCount++;
+            }
+        }
+
+        if (fileCount > 0) {
+            if (overrideCount > 0) {
+                Logs.logSuccess("Added <green>" + (fileCount - overrideCount) + "</green> new files, <yellow>" + overrideCount + "</yellow> overrides from <blue>" + packName + "</blue>");
+            } else {
+                Logs.logSuccess("Added <green>" + fileCount + "</green> files from <blue>" + packName + "</blue>");
+            }
+        }
+        if (skippedCoreShaderCount > 0) {
+            Logs.logInfo("Skipped <yellow>" + skippedCoreShaderCount
+                    + "</yellow> imported core shader file(s) from <blue>" + packName + "</blue>");
+        }
+    }
+
+    @NotNull
+    public JsonArray getMergedOverlayEntries() {
+        return mergedOverlayEntries.deepCopy();
+    }
+
+    private void clearMergedOverlayEntries() {
+        while (!mergedOverlayEntries.isEmpty()) {
+            mergedOverlayEntries.remove(0);
+        }
+    }
+
+    private void mergeOverlayEntries(byte[] mcmetaContent, String packName) {
+        JsonArray entries;
+        try {
+            JsonElement parsed = JsonParser.parseString(new String(mcmetaContent, StandardCharsets.UTF_8));
+            if (!parsed.isJsonObject()) {
+                return;
+            }
+
+            JsonObject root = parsed.getAsJsonObject();
+            if (!root.has("overlays") || !root.get("overlays").isJsonObject()) {
+                return;
+            }
+
+            JsonObject overlays = root.getAsJsonObject("overlays");
+            if (!overlays.has("entries") || !overlays.get("entries").isJsonArray()) {
+                return;
+            }
+
+            entries = overlays.getAsJsonArray("entries");
+        } catch (Exception e) {
+            Logs.logWarning("Failed to read overlay entries from <yellow>" + packName + "</yellow> pack.mcmeta: " + e.getMessage());
+            return;
+        }
+
+        for (JsonElement entry : entries) {
+            mergedOverlayEntries.add(entry.deepCopy());
+        }
+    }
+
     /**
      * Detects all resource pack root prefixes in a zip file.
      * A resource pack root is the path prefix before 'assets/' or where pack.mcmeta is located.
@@ -164,40 +302,58 @@ public class PackMerger {
              ZipInputStream zis = new ZipInputStream(fis, StandardCharsets.UTF_8)) {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
-                String name = entry.getName();
-
-                // Skip macOS metadata directories - don't detect them as valid pack roots
-                if (name.startsWith("__MACOSX/") || name.contains("/__MACOSX/")) {
-                    zis.closeEntry();
-                    continue;
-                }
-
-                // Look for assets/ folders - must be at start or after a path separator
-                // This prevents matching "testassets/" as a valid assets folder
-                int assetsIndex = findAssetsFolder(name);
-                if (assetsIndex >= 0) {
-                    String root = name.substring(0, assetsIndex);
-                    roots.add(root);
-                }
-                
-                // Also check for pack.mcmeta at various levels
-                if (name.endsWith("pack.mcmeta")) {
-                    String root = getParentFolder(name);
-                    if (!root.isEmpty()) {
-                        root = root + "/";
-                    }
-                    roots.add(root);
-                }
-                
+                addResourcePackRoot(entry.getName(), roots);
                 zis.closeEntry();
             }
         }
-        
+
+        return filterNestedRoots(roots);
+    }
+
+    private List<String> detectResourcePackRoots(Path packDirectory) throws IOException {
+        Set<String> roots = new LinkedHashSet<>();
+        try (Stream<Path> paths = Files.walk(packDirectory)) {
+            Iterator<Path> iterator = paths.iterator();
+            while (iterator.hasNext()) {
+                Path path = iterator.next();
+                String name = packDirectory.relativize(path).toString().replace(File.separatorChar, '/');
+                addResourcePackRoot(name, roots);
+            }
+        }
+
+        return filterNestedRoots(roots);
+    }
+
+    private void addResourcePackRoot(String name, Set<String> roots) {
+        // Skip macOS metadata directories - don't detect them as valid pack roots
+        if (name.startsWith("__MACOSX/") || name.contains("/__MACOSX/")) {
+            return;
+        }
+
+        // Look for assets/ folders - must be at start or after a path separator
+        // This prevents matching "testassets/" as a valid assets folder
+        int assetsIndex = findAssetsFolder(name);
+        if (assetsIndex >= 0) {
+            String root = name.substring(0, assetsIndex);
+            roots.add(root);
+        }
+
+        // Also check for pack.mcmeta at various levels
+        if (name.endsWith("pack.mcmeta")) {
+            String root = getParentFolder(name);
+            if (!root.isEmpty()) {
+                root = root + "/";
+            }
+            roots.add(root);
+        }
+    }
+
+    private List<String> filterNestedRoots(Set<String> roots) {
         // Remove roots that are subdirectories of other roots
         // (e.g., if we have both "" and "subdir/", keep only "")
         List<String> sortedRoots = new ArrayList<>(roots);
         sortedRoots.sort(Comparator.comparingInt(String::length));
-        
+
         List<String> finalRoots = new ArrayList<>();
         for (String root : sortedRoots) {
             boolean isSubdirOfExisting = false;
@@ -213,7 +369,7 @@ public class PackMerger {
                 finalRoots.add(root);
             }
         }
-        
+
         return finalRoots;
     }
 

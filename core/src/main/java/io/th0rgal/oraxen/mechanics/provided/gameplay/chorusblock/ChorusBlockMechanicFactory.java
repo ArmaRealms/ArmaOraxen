@@ -9,6 +9,7 @@ import io.th0rgal.oraxen.mechanics.MechanicsManager;
 import io.th0rgal.oraxen.nms.NMSHandlers;
 import io.th0rgal.oraxen.utils.PaperConfigUpdater;
 import io.th0rgal.oraxen.utils.VersionUtil;
+import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.apache.commons.lang3.Range;
 import org.bukkit.Bukkit;
@@ -34,8 +35,14 @@ public class ChorusBlockMechanicFactory extends MechanicFactory {
     private static ChorusBlockMechanicFactory instance;
     public final List<String> toolTypes;
     public final boolean customSounds;
+    private final boolean registerListeners;
+    private boolean enabled;
 
     public ChorusBlockMechanicFactory(ConfigurationSection section) {
+        this(section, true);
+    }
+
+    public ChorusBlockMechanicFactory(ConfigurationSection section, boolean registerListeners) {
         super(section);
         instance = this;
         variants = new JsonObject();
@@ -44,38 +51,8 @@ public class ChorusBlockMechanicFactory extends MechanicFactory {
                 getModelJson("block/chorus_plant"));
         toolTypes = section.getStringList("tool_types");
         customSounds = areCustomSoundsEnabled();
-
-        // Register blockstate modifier for chorus_plant.json
-        OraxenPlugin.get().getResourcePack().addModifiers(getMechanicID(),
-                packFolder -> OraxenPlugin.get().getResourcePack()
-                        .writeStringToVirtual("assets/minecraft/blockstates",
-                                "chorus_plant.json", getBlockstateContent()));
-
-        // Register listeners
-        MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(),
-                new ChorusBlockMechanicListener());
-        if (customSounds) {
-            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(),
-                    new ChorusBlockSoundListener());
-        }
-
-        // Physics-related listeners
-        if (VersionUtil.isPaperServer()) {
-            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(),
-                    new ChorusBlockMechanicListener.ChorusBlockMechanicPaperListener());
-        }
-        boolean chorusPlantUpdatesDisabled = NMSHandlers.isChorusPlantUpdatesDisabled();
-        if (!VersionUtil.isPaperServer() || !chorusPlantUpdatesDisabled) {
-            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(),
-                    new ChorusBlockMechanicListener.ChorusBlockMechanicPhysicsListener());
-        }
-
-        // Warn if Paper config is not set (auto-update happens earlier in plugin enable)
-        if (VersionUtil.isPaperServer() && VersionUtil.atOrAbove("1.20.1")
-                && !chorusPlantUpdatesDisabled
-                && PaperConfigUpdater.wasBlockUpdateSettingUpdated("disable-chorus-plant-updates")) {
-            Logs.logWarning("Paper block-updates.disable-chorus-plant-updates is not enabled, restart may be required");
-        }
+        this.registerListeners = registerListeners;
+        enabled = false;
     }
 
     public static JsonObject getModelJson(String modelName) {
@@ -103,17 +80,21 @@ public class ChorusBlockMechanicFactory extends MechanicFactory {
     }
 
     public static boolean isEnabled() {
-        return instance != null && MechanicsManager.isMechanicEnabled("chorusblock");
+        return instance != null && instance.enabled && MechanicsManager.isMechanicEnabled("block");
     }
 
     public static boolean areCustomSoundsEnabled() {
         ConfigurationSection customSoundsSection = OraxenPlugin.get().getConfigsManager().getMechanics()
                 .getConfigurationSection("custom_block_sounds");
-        return customSoundsSection == null || customSoundsSection.getBoolean("chorusblock", true);
+        return BlockSounds.isBlockSoundEnabled(customSoundsSection);
     }
 
     public static ChorusBlockMechanicFactory getInstance() {
         return instance;
+    }
+
+    public static void clearInstance(ChorusBlockMechanicFactory factory) {
+        if (instance == factory) instance = null;
     }
 
     /**
@@ -164,8 +145,48 @@ public class ChorusBlockMechanicFactory extends MechanicFactory {
         return chorusPlant.toString();
     }
 
+    private void enable() {
+        if (enabled) return;
+        enabled = true;
+
+        // Register blockstate modifier for chorus_plant.json
+        OraxenPlugin.get().getResourcePack().addModifiers(getMechanicID(),
+                packFolder -> OraxenPlugin.get().getResourcePack()
+                        .writeStringToVirtual("assets/minecraft/blockstates",
+                                "chorus_plant.json", getBlockstateContent()));
+
+        if (!registerListeners) return;
+
+        // Register listeners
+        MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(),
+                new ChorusBlockMechanicListener());
+        if (customSounds) {
+            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(),
+                    new ChorusBlockSoundListener());
+        }
+
+        // Physics-related listeners
+        if (VersionUtil.isPaperServer()) {
+            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(),
+                    new ChorusBlockMechanicListener.ChorusBlockMechanicPaperListener());
+        }
+        boolean chorusPlantUpdatesDisabled = NMSHandlers.isChorusPlantUpdatesDisabled();
+        if (!VersionUtil.isPaperServer() || !chorusPlantUpdatesDisabled) {
+            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(),
+                    new ChorusBlockMechanicListener.ChorusBlockMechanicPhysicsListener());
+        }
+
+        // Warn if Paper config is not set (auto-update happens earlier in plugin enable)
+        if (VersionUtil.isPaperServer() && VersionUtil.atOrAbove("1.20.1")
+                && !chorusPlantUpdatesDisabled
+                && PaperConfigUpdater.wasBlockUpdateSettingUpdated("disable-chorus-plant-updates")) {
+            Logs.logWarning("Paper block-updates.disable-chorus-plant-updates is not enabled, restart may be required");
+        }
+    }
+
     @Override
     public Mechanic parse(ConfigurationSection itemMechanicConfiguration) {
+        enable();
         ChorusBlockMechanic mechanic = new ChorusBlockMechanic(this, itemMechanicConfiguration);
         if (!Range.between(1, MAX_BLOCK_VARIATION).contains(mechanic.getCustomVariation())) {
             Logs.logError("The custom_variation of " + mechanic.getItemID() + " is " + mechanic.getCustomVariation()

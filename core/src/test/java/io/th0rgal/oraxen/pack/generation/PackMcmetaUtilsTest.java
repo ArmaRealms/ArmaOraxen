@@ -1,10 +1,16 @@
 package io.th0rgal.oraxen.pack.generation;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import io.th0rgal.oraxen.utils.VirtualFile;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -99,7 +105,7 @@ class PackMcmetaUtilsTest {
         assertNotNull(highest);
         assertEquals(999, highest.getMaxFormatInclusive(),
             "Highest pack version should have max_inclusive 999");
-        assertEquals("26.1", highest.getMinecraftVersion());
+        assertEquals("26.2", highest.getMinecraftVersion());
     }
 
     @Test
@@ -169,11 +175,17 @@ class PackMcmetaUtilsTest {
         assertEquals(75, v12111.getMinFormatInclusive());
         assertEquals(83, v12111.getMaxFormatInclusive());
 
-        // 26.1: format 84, range [84, 999]
+        // 26.1: format 84, range [84, 87]
         PackVersion v261 = manager.getVersion("26.1");
         assertNotNull(v261);
         assertEquals(84, v261.getMinFormatInclusive());
-        assertEquals(999, v261.getMaxFormatInclusive());
+        assertEquals(87, v261.getMaxFormatInclusive());
+
+        // 26.2: format 88, range [88, 999]
+        PackVersion v262 = manager.getVersion("26.2");
+        assertNotNull(v262);
+        assertEquals(88, v262.getMinFormatInclusive());
+        assertEquals(999, v262.getMaxFormatInclusive());
     }
 
     @Test
@@ -199,5 +211,106 @@ class PackMcmetaUtilsTest {
         assertEquals(64, supportedFormats.get("max_inclusive").getAsInt());
         assertFalse(pack.has("min_format"));
         assertFalse(pack.has("max_format"));
+    }
+
+    @Test
+    void testMergeOverlayEntriesPreservesPackMetadata() {
+        JsonObject mcmeta = JsonParser.parseString("""
+                {
+                  "pack": {
+                    "pack_format": 75,
+                    "description": "Oraxen",
+                    "min_format": 18,
+                    "max_format": 999
+                  },
+                  "overlays": {
+                    "entries": [
+                      {
+                        "formats": {"min_inclusive": 18, "max_inclusive": 45},
+                        "directory": "overlay_1_20_2"
+                      }
+                    ]
+                  }
+                }
+                """).getAsJsonObject();
+        JsonArray importedEntries = JsonParser.parseString("""
+                [
+                  {
+                    "formats": [35, 45],
+                    "directory": "betterhud_1_21_2",
+                    "min_format": 35,
+                    "max_format": 45
+                  }
+                ]
+                """).getAsJsonArray();
+
+        PackMcmetaUtils.mergeOverlayEntries(mcmeta, importedEntries);
+
+        JsonObject pack = mcmeta.getAsJsonObject("pack");
+        assertEquals(75, pack.get("pack_format").getAsInt());
+        assertEquals("Oraxen", pack.get("description").getAsString());
+        assertEquals(18, pack.get("min_format").getAsInt());
+        assertEquals(999, pack.get("max_format").getAsInt());
+
+        JsonArray entries = mcmeta.getAsJsonObject("overlays").getAsJsonArray("entries");
+        assertEquals(2, entries.size());
+        assertEquals("overlay_1_20_2", entries.get(0).getAsJsonObject().get("directory").getAsString());
+        assertEquals("betterhud_1_21_2", entries.get(1).getAsJsonObject().get("directory").getAsString());
+    }
+
+    @Test
+    void testMergeOverlayEntriesIntoOutputConsumesNestedPackMcmetaOnly() throws Exception {
+        List<VirtualFile> output = new ArrayList<>();
+        output.add(jsonFile("", "pack.mcmeta", """
+                {
+                  "pack": {
+                    "pack_format": 75,
+                    "description": "Oraxen"
+                  },
+                  "overlays": {
+                    "entries": [
+                      {"directory": "oraxen_overlay"}
+                    ]
+                  }
+                }
+                """));
+        output.add(jsonFile("betterhud", "pack.mcmeta", """
+                {
+                  "pack": {
+                    "pack_format": 75,
+                    "description": "Ignored"
+                  },
+                  "overlays": {
+                    "entries": [
+                      {"directory": "betterhud_overlay"}
+                    ]
+                  }
+                }
+                """));
+        output.add(jsonFile("assets/minecraft/models/item", "stick.json", "{}"));
+
+        PackMcmetaUtils.mergeOverlayEntriesIntoOutput(output, new JsonArray());
+
+        assertEquals(2, output.size());
+        assertTrue(output.stream().noneMatch(file -> file.getPath().equals("betterhud/pack.mcmeta")));
+
+        byte[] mergedContent = output.stream()
+                .filter(file -> file.getPath().equals("pack.mcmeta"))
+                .findFirst()
+                .orElseThrow()
+                .getInputStream()
+                .readAllBytes();
+        JsonObject merged = JsonParser.parseString(new String(mergedContent, StandardCharsets.UTF_8)).getAsJsonObject();
+
+        assertNotNull(merged);
+        assertEquals("Oraxen", merged.getAsJsonObject("pack").get("description").getAsString());
+        JsonArray entries = merged.getAsJsonObject("overlays").getAsJsonArray("entries");
+        assertEquals(2, entries.size());
+        assertEquals("oraxen_overlay", entries.get(0).getAsJsonObject().get("directory").getAsString());
+        assertEquals("betterhud_overlay", entries.get(1).getAsJsonObject().get("directory").getAsString());
+    }
+
+    private static VirtualFile jsonFile(String parentFolder, String name, String content) {
+        return new VirtualFile(parentFolder, name, new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)));
     }
 }

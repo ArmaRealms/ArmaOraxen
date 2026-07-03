@@ -3,7 +3,7 @@ package io.th0rgal.oraxen.mechanics.provided.combat.lifeleech;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
 import io.th0rgal.oraxen.utils.wrappers.AttributeWrapper;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.LivingEntity;
@@ -27,7 +27,7 @@ public class LifeLeechMechanicListener implements Listener {
             return;
         if (!(event.getEntity() instanceof LivingEntity livingEntity))
             return;
-        if (!ProtectionLib.canInteract(damager, event.getEntity().getLocation()))
+        if (!AntiGriefLib.canInteract(damager, event.getEntity().getLocation()))
             return;
 
         String itemID = OraxenItems.getIdByItem(damager.getInventory().getItemInMainHand());

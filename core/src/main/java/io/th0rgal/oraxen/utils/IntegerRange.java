@@ -2,7 +2,7 @@ package io.th0rgal.oraxen.utils;
 
 /**
  * Simple integer range holding a lower and upper bound.
- * Replaces the CommandAPI IntegerRange to avoid runtime dependency on CommandAPI plugin.
+ * Simple replacement for external integer range helpers.
  */
 public record IntegerRange(int lowerBound, int upperBound) {
 

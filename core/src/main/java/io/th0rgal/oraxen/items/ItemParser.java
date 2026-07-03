@@ -6,8 +6,8 @@ import io.th0rgal.oraxen.compatibilities.provided.ecoitems.WrappedEcoItem;
 import io.th0rgal.oraxen.compatibilities.provided.mmoitems.WrappedMMOItem;
 import io.th0rgal.oraxen.compatibilities.provided.mythiccrucible.WrappedCrucibleItem;
 import io.th0rgal.oraxen.compatibilities.provided.placeholderapi.PapiAliases;
-import io.th0rgal.oraxen.config.AppearanceMode;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.AppearanceMode;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
 import io.th0rgal.oraxen.mechanics.MechanicsManager;
@@ -52,17 +52,18 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 
 public class ItemParser {
+
+    private static final Set<String> LEGACY_BLOCK_MECHANIC_IDS = Set.of("noteblock", "stringblock", "chorusblock", "shaped_block");
+    private static final Map<String, String> LEGACY_BLOCK_MECHANIC_TYPES = Map.of(
+            "noteblock", "FULL",
+            "stringblock", "STRING",
+            "chorusblock", "CHORUS",
+            "shaped_block", "STAIR"
+    );
 
     public static final Map<String, ModelData> MODEL_DATAS_BY_ID = new HashMap<>();
 
@@ -74,15 +75,16 @@ public class ItemParser {
     private WrappedEcoItem ecoItem;
     private ItemParser templateItem;
     private boolean configUpdated = false;
+    private boolean blockConfigMigrated = false;
 
     public ItemParser(final ConfigurationSection section) {
         this.section = section;
 
         if (section.isString("template")) templateItem = ItemTemplate.getParserTemplate(section.getString("template"));
 
-        final ConfigurationSection crucibleSection = section.getConfigurationSection("crucible");
-        final ConfigurationSection mmoSection = section.getConfigurationSection("mmoitem");
-        final ConfigurationSection ecoItemSection = section.getConfigurationSection("ecoitem");
+        final ConfigurationSection crucibleSection = OraxenYaml.getConfigurationSection(section, "crucible");
+        final ConfigurationSection mmoSection = OraxenYaml.getConfigurationSection(section, "mmoitem");
+        final ConfigurationSection ecoItemSection = OraxenYaml.getConfigurationSection(section, "ecoitem");
         if (crucibleSection != null) crucibleItem = new WrappedCrucibleItem(crucibleSection);
         else if (section.isString("crucible_id"))
             crucibleItem = new WrappedCrucibleItem(section.getString("crucible_id"));
@@ -90,13 +92,13 @@ public class ItemParser {
         else if (section.isString("ecoitem_id")) ecoItem = new WrappedEcoItem(section.getString("ecoitem_id"));
         else if (mmoSection != null) mmoItem = new WrappedMMOItem(mmoSection);
 
-        Material material = Material.getMaterial(section.getString("material", ""));
+        Material material = OraxenYaml.getMaterial(section.getString("material", ""));
         if (material == null) material = usesTemplate() ? templateItem.type : Material.PAPER;
         type = material;
 
         oraxenMeta = templateItem != null ? templateItem.oraxenMeta : new OraxenMeta();
-        if (section.isConfigurationSection("Pack")) {
-            final ConfigurationSection packSection = section.getConfigurationSection("Pack");
+        if (OraxenYaml.isConfigurationSection(section, "Pack")) {
+            final ConfigurationSection packSection = OraxenYaml.getConfigurationSection(section, "Pack");
             oraxenMeta.setPackInfos(packSection);
             assert packSection != null;
             if (packSection.isInt("custom_model_data"))
@@ -184,7 +186,7 @@ public class ItemParser {
             item.setDisplayName(PapiAliases.setPlaceholders(section.getString("displayname")));
         }
 
-        final ConfigurationSection components = section.getConfigurationSection("Components");
+        final ConfigurationSection components = OraxenYaml.getConfigurationSection(section, "Components");
         if (components == null || !VersionUtil.atOrAbove("1.20.5")) return;
 
         // Handle legacy components for backward compatibility
@@ -206,17 +208,18 @@ public class ItemParser {
     }
 
     private void handleLegacyComponents(final ItemBuilder item, final ConfigurationSection components) {
-        if (components.contains("durability")) {
-            item.setDamagedOnBlockBreak(components.getBoolean("durability.damage_block_break"));
-            item.setDamagedOnEntityHit(components.getBoolean("durability.damage_entity_hit"));
-            item.setDurability(Math.max(components.getInt("durability.value"), components.getInt("durability", 1)));
+        if (OraxenYaml.contains(components, "durability")) {
+            item.setDamagedOnBlockBreak(OraxenYaml.getBoolean(components, "durability.damage_block_break"));
+            item.setDamagedOnEntityHit(OraxenYaml.getBoolean(components, "durability.damage_entity_hit"));
+            item.setDurability(Math.max(OraxenYaml.getInt(components, "durability.value"),
+                    OraxenYaml.getInt(components, "durability", 1)));
         }
-        if (components.contains("fire_resistant"))
-            item.setFireResistant(components.getBoolean("fire_resistant"));
-        if (components.contains("hide_tooltip"))
-            item.setHideToolTip(components.getBoolean("hide_tooltip"));
-        if (components.contains("max_stack_size"))
-            item.setMaxStackSize(components.getInt("max_stack_size"));
+        if (OraxenYaml.contains(components, "fire_resistant"))
+            item.setFireResistant(OraxenYaml.getBoolean(components, "fire_resistant"));
+        if (OraxenYaml.contains(components, "hide_tooltip"))
+            item.setHideToolTip(OraxenYaml.getBoolean(components, "hide_tooltip"));
+        if (OraxenYaml.contains(components, "max_stack_size"))
+            item.setMaxStackSize(OraxenYaml.getInt(components, "max_stack_size"));
 
         final NMSHandler nmsHandler = NMSHandlers.getHandler();
         if (nmsHandler == null) {
@@ -225,16 +228,19 @@ public class ItemParser {
                 Logs.logError("Item parsing: " + (section != null ? section.getName() : "unknown section"));
             }
         } else {
-            Optional.ofNullable(components.getConfigurationSection("food"))
+            Optional.ofNullable(OraxenYaml.getConfigurationSection(components, "food"))
                     .ifPresent(food -> nmsHandler.foodComponent(item, food));
         }
 
-        Optional.ofNullable(components.getConfigurationSection("tool"))
+        Optional.ofNullable(OraxenYaml.getConfigurationSection(components, "tool"))
                 .ifPresent(toolSection -> parseToolComponent(item, toolSection));
 
         if (!VersionUtil.atOrAbove("1.21")) return;
 
-        final ConfigurationSection jukeboxSection = components.getConfigurationSection("jukebox_playable");
+        Optional.ofNullable(OraxenYaml.getString(components, "painting_variant"))
+                .ifPresent(item::setPaintingVariant);
+
+        final ConfigurationSection jukeboxSection = OraxenYaml.getConfigurationSection(components, "jukebox_playable");
         if (jukeboxSection != null && VersionUtil.isPaperServer()) {
             try {
                 final JukeboxPlayableComponent jukeboxPlayable = new ItemStack(Material.MUSIC_DISC_CREATOR)
@@ -267,10 +273,10 @@ public class ItemParser {
         }
 
         if (!VersionUtil.atOrAbove("1.21.2")) return;
-        Optional.ofNullable(components.getConfigurationSection("equippable"))
+        Optional.ofNullable(OraxenYaml.getConfigurationSection(components, "equippable"))
                 .ifPresent(equippable -> parseEquippableComponent(item, equippable));
 
-        Optional.ofNullable(components.getConfigurationSection("use_cooldown")).ifPresent((cooldownSection) -> {
+        Optional.ofNullable(OraxenYaml.getConfigurationSection(components, "use_cooldown")).ifPresent((cooldownSection) -> {
             try {
                 final UseCooldownComponent useCooldownComponent = new ItemStack(Material.PAPER).getItemMeta()
                         .getUseCooldown();
@@ -288,34 +294,36 @@ public class ItemParser {
             }
         });
 
-        Optional.ofNullable(components.getConfigurationSection("use_remainder"))
+        Optional.ofNullable(OraxenYaml.getConfigurationSection(components, "use_remainder"))
                 .ifPresent(useRemainder -> parseUseRemainderComponent(item, useRemainder));
 
-        Optional.ofNullable(components.getString("tooltip_style")).map(NamespacedKey::fromString)
+        Optional.ofNullable(OraxenYaml.getString(components, "tooltip_style")).map(NamespacedKey::fromString)
                 .ifPresent(item::setTooltipStyle);
-        Optional.ofNullable(components.getString("item_model")).map(NamespacedKey::fromString)
+        Optional.ofNullable(OraxenYaml.getString(components, "item_model")).map(NamespacedKey::fromString)
                 .ifPresent(item::setItemModel);
 
         if (nmsHandler != null) {
-            Optional.ofNullable(components.getConfigurationSection("consumable"))
+            Optional.ofNullable(OraxenYaml.getConfigurationSection(components, "consumable"))
                     .ifPresent(consumableSection -> nmsHandler.consumableComponent(item, consumableSection));
         }
     }
 
     private boolean isLegacyComponent(final String key) {
-        return key.equals("durability") ||
-                key.equals("fire_resistant") ||
-                key.equals("hide_tooltip") ||
-                key.equals("max_stack_size") ||
-                key.equals("food") ||
-                key.equals("tool") ||
-                key.equals("jukebox_playable") ||
-                key.equals("equippable") ||
-                key.equals("use_cooldown") ||
-                key.equals("use_remainder") ||
-                key.equals("tooltip_style") ||
-                key.equals("item_model") ||
-                key.equals("consumable");
+        final String normalizedKey = key.toLowerCase(Locale.ROOT);
+        return normalizedKey.equals("durability") ||
+                normalizedKey.equals("fire_resistant") ||
+                normalizedKey.equals("hide_tooltip") ||
+                normalizedKey.equals("max_stack_size") ||
+                normalizedKey.equals("food") ||
+                normalizedKey.equals("tool") ||
+                normalizedKey.equals("painting_variant") ||
+                normalizedKey.equals("jukebox_playable") ||
+                normalizedKey.equals("equippable") ||
+                normalizedKey.equals("use_cooldown") ||
+                normalizedKey.equals("use_remainder") ||
+                normalizedKey.equals("tooltip_style") ||
+                normalizedKey.equals("item_model") ||
+                normalizedKey.equals("consumable");
     }
 
     private void parseUseRemainderComponent(final ItemBuilder item,
@@ -332,7 +340,7 @@ public class ItemParser {
         else if (useRemainderSection.contains("ecoitem_id"))
             result = new WrappedEcoItem(useRemainderSection.getString("ecoitem_id")).build();
         else if (useRemainderSection.contains("minecraft_type")) {
-            final Material material = Material.getMaterial(useRemainderSection.getString("minecraft_type", "AIR"));
+            final Material material = OraxenYaml.getMaterial(useRemainderSection.getString("minecraft_type", "AIR"));
             if (material == null || material.isAir()) return;
             result = new ItemStack(material);
         } else result = useRemainderSection.getItemStack("minecraft_item");
@@ -355,7 +363,9 @@ public class ItemParser {
 
             if (ruleEntry.containsKey("material")) {
                 try {
-                    final Material material = Material.valueOf(String.valueOf(ruleEntry.get("material")));
+                    final Material material = OraxenYaml.getMaterial(String.valueOf(ruleEntry.get("material")));
+                    if (material == null)
+                        throw new IllegalArgumentException("Unknown material");
                     if (material.isBlock()) materials.add(material);
                 } catch (final Exception e) {
                     Logs.logWarning("Error parsing rule-entry in " + section.getName());
@@ -368,7 +378,9 @@ public class ItemParser {
                 try {
                     final List<String> materialIds = (List<String>) ruleEntry.get("materials");
                     for (final String materialId : materialIds) {
-                        final Material material = Material.valueOf(materialId);
+                        final Material material = OraxenYaml.getMaterial(materialId);
+                        if (material == null)
+                            throw new IllegalArgumentException("Unknown material");
                         if (material.isBlock()) materials.add(material);
                     }
                 } catch (final Exception e) {
@@ -468,10 +480,10 @@ public class ItemParser {
     private void applyArmorStandModelProperties(ConfigurationSection section) {
         oraxenMeta.setArmorStandHeadScale(null);
 
-        ConfigurationSection mechanicsSection = section.getConfigurationSection("Mechanics");
+        ConfigurationSection mechanicsSection = OraxenYaml.getConfigurationSection(section, "Mechanics");
         if (mechanicsSection == null) return;
 
-        ConfigurationSection furnitureSection = mechanicsSection.getConfigurationSection("furniture");
+        ConfigurationSection furnitureSection = OraxenYaml.getConfigurationSection(mechanicsSection, "furniture");
         if (furnitureSection == null) return;
 
         FurnitureMechanic.FurnitureType furnitureType = furnitureSection.isSet("type")
@@ -479,9 +491,9 @@ public class ItemParser {
                 : FurnitureFactory.defaultFurnitureType;
         if (furnitureType != FurnitureMechanic.FurnitureType.ARMOR_STAND) return;
 
-        ConfigurationSection armorStandSection = furnitureSection.getConfigurationSection("armor_stand_properties");
+        ConfigurationSection armorStandSection = OraxenYaml.getConfigurationSection(furnitureSection, "armor_stand_properties");
         if (armorStandSection == null)
-            armorStandSection = furnitureSection.getConfigurationSection("display_entity_properties");
+            armorStandSection = OraxenYaml.getConfigurationSection(furnitureSection, "display_entity_properties");
         if (armorStandSection == null) return;
 
         ArmorStandProperties properties = new ArmorStandProperties(armorStandSection);
@@ -535,7 +547,7 @@ public class ItemParser {
         parseAttributeModifiers(item, section);
 
         if (section.contains("Enchantments")) {
-            final ConfigurationSection enchantSection = section.getConfigurationSection("Enchantments");
+            final ConfigurationSection enchantSection = OraxenYaml.getConfigurationSection(section, "Enchantments");
             if (enchantSection == null)
                 return;
             for (final String enchant : enchantSection.getKeys(false)) {
@@ -589,14 +601,14 @@ public class ItemParser {
     @SuppressWarnings("unchecked")
     private void parseAttributeModifiers(final ItemBuilder item, final ConfigurationSection section) {
         // Try modern ConfigurationSection format first (requires 1.20.5+ for EquipmentSlotGroup)
-        final ConfigurationSection attrSection = section.getConfigurationSection("AttributeModifiers");
+        final ConfigurationSection attrSection = OraxenYaml.getConfigurationSection(section, "AttributeModifiers");
         if (attrSection != null) {
             if (!VersionUtil.atOrAbove("1.20.5")) {
                 Logs.logWarning("Modern AttributeModifiers config format requires server 1.20.5+, skipping for item: " + section.getName());
                 return;
             }
             for (final String key : attrSection.getKeys(false)) {
-                final ConfigurationSection modifierSection = attrSection.getConfigurationSection(key);
+                final ConfigurationSection modifierSection = OraxenYaml.getConfigurationSection(attrSection, key);
                 if (modifierSection == null) continue;
                 try {
                     final AttributeModifierEntry entry =
@@ -649,14 +661,18 @@ public class ItemParser {
 
     private void applyMechanics(ItemBuilder item) {
         final ConfigurationSection merged = mergeWithTemplateSection();
-        final ConfigurationSection mechanicsSection = merged.getConfigurationSection("Mechanics");
-        if (mechanicsSection == null) return;
+        final ConfigurationSection mechanicsSection = OraxenYaml.getConfigurationSection(merged,"Mechanics");
+        if (mechanicsSection == null) return;migrateLegacyBlockMechanics(mechanicsSection);
         for (final String mechanicID : mechanicsSection.getKeys(false)) {
             final MechanicFactory factory = MechanicsManager.getMechanicFactory(mechanicID);
-            if (factory == null)
+            if (factory == null) {
+                if (LEGACY_BLOCK_MECHANIC_IDS.contains(mechanicID.toLowerCase(Locale.ROOT)))
+                    Logs.logWarning("Item " + section.getName() + " uses legacy Mechanics." + mechanicID
+                            + "; migrate it to Mechanics.block or this mechanic will be ignored.");
                 continue;
+            }
 
-            final ConfigurationSection mechanicSection = mechanicsSection.getConfigurationSection(mechanicID);
+            final ConfigurationSection mechanicSection = OraxenYaml.getConfigurationSection(mechanicsSection, mechanicID);
             if (mechanicSection == null) continue;
             final Mechanic mechanic = factory.parse(mechanicSection);
             if (mechanic == null) continue;
@@ -667,6 +683,33 @@ public class ItemParser {
             for (final Function<ItemBuilder, ItemBuilder> itemModifier : mechanic.getItemModifiers()) {
                 item = itemModifier.apply(item);
             }
+        }
+    }
+
+    private void migrateLegacyBlockMechanics(final ConfigurationSection mechanicsSection) {
+        if (OraxenYaml.getConfigurationSection(mechanicsSection, "block") != null)
+            return;
+
+        for (final Map.Entry<String, String> legacyMechanic : LEGACY_BLOCK_MECHANIC_TYPES.entrySet()) {
+            final String legacyMechanicID = legacyMechanic.getKey();
+            final ConfigurationSection legacySection = OraxenYaml.getConfigurationSection(mechanicsSection, legacyMechanicID);
+            if (legacySection == null)
+                continue;
+
+            final ConfigurationSection blockSection = mechanicsSection.createSection("block");
+            OraxenYaml.copyConfigurationSection(legacySection, blockSection);
+            if (!blockSection.contains("type"))
+                blockSection.set("type", legacyMechanic.getValue());
+
+            mechanicsSection.set(legacyMechanicID, null);
+            OraxenYaml.invalidateKeyCache(mechanicsSection);
+            OraxenYaml.invalidateKeyCache(blockSection);
+            configUpdated = true;
+            blockConfigMigrated = true;
+            if (OraxenPlugin.get() != null)
+                Logs.logWarning("Item " + section.getName() + " uses legacy Mechanics." + legacyMechanicID
+                        + "; it has been migrated to Mechanics.block.");
+            return;
         }
     }
 
@@ -762,8 +805,11 @@ public class ItemParser {
         configUpdated = true;
 
         if (!Settings.DISABLE_AUTOMATIC_MODEL_DATA.toBool()) {
-            Optional.ofNullable(section.getConfigurationSection("Pack"))
-                    .ifPresent(c -> c.set("custom_model_data", customModelData));
+            Optional.ofNullable(OraxenYaml.getConfigurationSection(section, "Pack"))
+                    .ifPresent(c -> {
+                        c.set("custom_model_data", customModelData);
+                        OraxenYaml.invalidateKeyCache(c);
+                    });
         }
         return customModelData;
     }
@@ -775,12 +821,17 @@ public class ItemParser {
         OraxenYaml.copyConfigurationSection(templateItem.section, merged);
         OraxenYaml.copyConfigurationSection(section, merged);
         merged.set("injectId", true);
+        OraxenYaml.invalidateKeyCache(merged);
 
         return merged;
     }
 
     public boolean isConfigUpdated() {
         return configUpdated;
+    }
+
+    public boolean isBlockConfigMigrated() {
+        return blockConfigMigrated;
     }
 
 }

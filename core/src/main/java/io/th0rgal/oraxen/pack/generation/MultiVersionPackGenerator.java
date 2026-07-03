@@ -4,9 +4,10 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.events.OraxenPackGeneratedEvent;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.utils.EventUtils;
 import io.th0rgal.oraxen.utils.MinecraftVersion;
+import io.th0rgal.oraxen.utils.HashUtils;
 import io.th0rgal.oraxen.utils.SchedulerUtil;
 import io.th0rgal.oraxen.utils.VirtualFile;
 import io.th0rgal.oraxen.utils.ZipUtils;
@@ -17,8 +18,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Collections;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Generates multiple versions of resource packs for different Minecraft client versions.
@@ -61,7 +64,7 @@ import java.util.List;
  *   generation:
  *     multi_version_packs: true
  *   upload:
- *     type: polymath  # self-host is not supported for multi-version
+ *     type: lobfile  # self-host is not supported for multi-version
  * </pre>
  *
  * @see PackVersionManager
@@ -73,12 +76,20 @@ import java.util.List;
  */
 public class MultiVersionPackGenerator {
 
+    private static final MinecraftVersion GENERATED_CORE_SHADER_MIN_VERSION = new MinecraftVersion("1.21.4");
+
     private final File packFolder;
     private final PackVersionManager versionManager;
+    private final Map<String, String> generatedCoreShaderHashes;
 
     public MultiVersionPackGenerator(File packFolder) {
+        this(packFolder, Collections.emptyMap());
+    }
+
+    public MultiVersionPackGenerator(File packFolder, Map<String, String> generatedCoreShaderHashes) {
         this.packFolder = packFolder;
         this.versionManager = new PackVersionManager(packFolder);
+        this.generatedCoreShaderHashes = Map.copyOf(generatedCoreShaderHashes);
     }
 
     /**
@@ -158,10 +169,15 @@ public class MultiVersionPackGenerator {
     private void generatePackVersion(PackVersion packVersion, List<MaterializedFile> materializedFiles, JsonObject originalMcmeta) throws IOException {
         Logs.logInfo("Generating pack for Minecraft " + packVersion.getMinecraftVersion() + " (format " + packVersion.getPackFormat() + ")");
 
+        MinecraftVersion minecraftVersion = new MinecraftVersion(packVersion.getMinecraftVersion());
+
         // Create fresh VirtualFiles for this pack version
         List<VirtualFile> versionOutput = new java.util.ArrayList<>();
         for (MaterializedFile mFile : materializedFiles) {
             if (isPackMcmeta(mFile.path)) {
+                continue;
+            }
+            if (shouldExcludeGeneratedCoreShader(minecraftVersion, mFile.path, mFile.content)) {
                 continue;
             }
             // Create fresh InputStream for this pack version
@@ -172,21 +188,36 @@ public class MultiVersionPackGenerator {
             versionOutput.add(new VirtualFile(parentFolder, name, freshStream));
         }
 
-        // Create pack.mcmeta for this version (preserving user customizations from the original)
-        File tempMcmeta = createPackMcmeta(packVersion, originalMcmeta);
-        try {
-            byte[] mcmetaContent = Files.readAllBytes(tempMcmeta.toPath());
-            java.io.ByteArrayInputStream mcmetaStream = new java.io.ByteArrayInputStream(mcmetaContent);
-            versionOutput.add(new VirtualFile("", "pack.mcmeta", mcmetaStream));
+        if (isMcmetaGenerationDisabled()) {
+            addOriginalPackMcmeta(versionOutput, materializedFiles);
+        } else {
+            // Create pack.mcmeta for this version (preserving user customizations from the original)
+            File tempMcmeta = createPackMcmeta(packVersion, originalMcmeta);
+            try {
+                byte[] mcmetaContent = Files.readAllBytes(tempMcmeta.toPath());
+                java.io.ByteArrayInputStream mcmetaStream = new java.io.ByteArrayInputStream(mcmetaContent);
+                versionOutput.add(new VirtualFile("", "pack.mcmeta", mcmetaStream));
+            } finally {
+                // Always clean up temp file, even if exception occurs
+                Files.deleteIfExists(tempMcmeta.toPath());
+            }
+        }
 
-            // Generate the zip file
-            File packFile = packVersion.getPackFile();
-            ZipUtils.writeZipFile(packFile, versionOutput);
+        // Generate the zip file
+        File packFile = packVersion.getPackFile();
+        ZipUtils.writeZipFile(packFile, versionOutput);
 
-            Logs.logSuccess("  Created: " + packFile.getName() + " (" + formatFileSize(packFile.length()) + ")");
-        } finally {
-            // Always clean up temp file, even if exception occurs
-            Files.deleteIfExists(tempMcmeta.toPath());
+        Logs.logSuccess("  Created: " + packFile.getName() + " (" + formatFileSize(packFile.length()) + ")");
+    }
+
+    private void addOriginalPackMcmeta(List<VirtualFile> versionOutput, List<MaterializedFile> materializedFiles) {
+        for (MaterializedFile mFile : materializedFiles) {
+            if (!isPackMcmeta(mFile.path)) {
+                continue;
+            }
+
+            versionOutput.add(new VirtualFile("", "pack.mcmeta", new java.io.ByteArrayInputStream(mFile.content)));
+            return;
         }
     }
 
@@ -229,6 +260,23 @@ public class MultiVersionPackGenerator {
 
     private boolean isPackMcmeta(String path) {
         return "pack.mcmeta".equals(path) || path.endsWith("/pack.mcmeta");
+    }
+
+    private boolean shouldExcludeGeneratedCoreShader(MinecraftVersion minecraftVersion, String path, byte[] content) {
+        if (generatedCoreShaderHashes.isEmpty()) {
+            return false;
+        }
+
+        if (minecraftVersion.isAtLeast(GENERATED_CORE_SHADER_MIN_VERSION)) {
+            return false;
+        }
+
+        String generatedHash = generatedCoreShaderHashes.get(path);
+        return generatedHash != null && generatedHash.equals(HashUtils.sha256(content));
+    }
+
+    private boolean isMcmetaGenerationDisabled() {
+        return Boolean.TRUE.equals(Settings.DISABLE_MCMETA_GENERATION.getValue());
     }
 
     private void uploadAndSendPacks(boolean switchingFromSinglePack) {

@@ -4,9 +4,13 @@ import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.compatibilities.provided.ecoitems.WrappedEcoItem;
 import io.th0rgal.oraxen.compatibilities.provided.mythiccrucible.WrappedCrucibleItem;
+import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.items.ItemUpdater;
+import io.th0rgal.oraxen.mechanics.MechanicFactory;
+import io.th0rgal.oraxen.mechanics.MechanicsManager;
 import io.th0rgal.oraxen.recipes.CustomRecipe;
 import io.th0rgal.oraxen.recipes.listeners.RecipesEventsManager;
+import io.th0rgal.oraxen.utils.OraxenYaml;
 import net.Indyuce.mmoitems.MMOItems;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -30,21 +34,25 @@ public abstract class RecipeLoader {
     }
 
     protected ItemStack getResult() {
-        ConfigurationSection resultSection = getSection().getConfigurationSection("result");
+        ConfigurationSection resultSection = OraxenYaml.getConfigurationSection(getSection(), "result");
         if (resultSection == null) return null;
         ItemStack result;
         int amount = resultSection.getInt("amount", 1);
 
-        if (resultSection.isString("oraxen_item"))
-            result = ItemUpdater.updateItem(OraxenItems.getItemById(resultSection.getString("oraxen_item")).build());
-        else if (resultSection.isString("crucible_item"))
+        if (resultSection.isString("oraxen_item")) {
+            String itemId = resultSection.getString("oraxen_item");
+            ItemBuilder builder = OraxenItems.getItemById(itemId);
+            if (builder == null)
+                throw new IllegalArgumentException("Recipe result references unknown Oraxen item: " + itemId);
+            result = ItemUpdater.updateItem(builder.build());
+        } else if (resultSection.isString("crucible_item"))
             result = new WrappedCrucibleItem(resultSection.getString("crucible_item")).build();
         else if (resultSection.isString("mmoitems_id") && resultSection.isString("mmoitems_type"))
             result = MMOItems.plugin.getItem(resultSection.getString("mmoitems_type"), resultSection.getString("mmoitems_id"));
         else if (resultSection.isString("ecoitem_id"))
             result = new WrappedEcoItem(resultSection.getString("ecoitem_id")).build();
         else if (resultSection.isString("minecraft_type")) {
-            Material material = Material.getMaterial(resultSection.getString("minecraft_type", "AIR"));
+            Material material = OraxenYaml.getMaterial(resultSection.getString("minecraft_type", "AIR"));
             if (material == null || material.isAir()) return null;
             result = new ItemStack(material);
         } else result = resultSection.getItemStack("minecraft_item");
@@ -53,9 +61,21 @@ public abstract class RecipeLoader {
         return result;
     }
 
+    protected ItemStack getValidResult() {
+        ItemStack result = getResult();
+        if (result == null || result.isEmpty())
+            throw new IllegalArgumentException("Recipe '" + section.getName() + "' result is missing or invalid");
+        return result;
+    }
+
     protected ItemStack getIndredientItemStack(ConfigurationSection ingredientSection) {
-        if (ingredientSection.isString("oraxen_item"))
-            return ItemUpdater.updateItem(OraxenItems.getItemById(ingredientSection.getString("oraxen_item")).build());
+        if (ingredientSection.isString("oraxen_item")) {
+            String itemId = ingredientSection.getString("oraxen_item");
+            ItemBuilder builder = OraxenItems.getItemById(itemId);
+            if (builder == null)
+                throw new IllegalArgumentException("Recipe " + section.getName() + " references unknown Oraxen ingredient: " + itemId);
+            return ItemUpdater.updateItem(builder.build());
+        }
 
         if (ingredientSection.isString("crucible_item")) {
             return new WrappedCrucibleItem(ingredientSection.getString("crucible_item")).build();
@@ -70,7 +90,7 @@ public abstract class RecipeLoader {
         }
 
         if (ingredientSection.isString("minecraft_type")) {
-            Material material = Material.getMaterial(ingredientSection.getString("minecraft_type", "AIR"));
+            Material material = OraxenYaml.getMaterial(ingredientSection.getString("minecraft_type", "AIR"));
             if (material == null || material.isAir()) return null;
             return new ItemStack(material);
         }
@@ -79,27 +99,44 @@ public abstract class RecipeLoader {
     }
 
     protected RecipeChoice getRecipeChoice(ConfigurationSection ingredientSection) {
+        return getRecipeChoice(ingredientSection, true);
+    }
 
-        if (ingredientSection.isString("oraxen_item"))
-            return new RecipeChoice.ExactChoice(ItemUpdater.updateItem(OraxenItems.getItemById(ingredientSection.getString("oraxen_item")).build()));
+    protected RecipeChoice getWorkbenchRecipeChoice(ConfigurationSection ingredientSection) {
+        return getRecipeChoice(ingredientSection, false);
+    }
+
+    private RecipeChoice getRecipeChoice(ConfigurationSection ingredientSection, boolean exactOraxenChoice) {
+
+        if (ingredientSection.isString("oraxen_item")) {
+            String itemId = ingredientSection.getString("oraxen_item");
+            ItemBuilder builder = OraxenItems.getItemById(itemId);
+            if (builder == null)
+                throw new IllegalArgumentException("Recipe " + section.getName() + " references unknown Oraxen ingredient: " + itemId);
+            ItemStack ingredient = ItemUpdater.updateItem(builder.build());
+            return exactOraxenChoice || !hasBackpackMechanic(itemId) ? new RecipeChoice.ExactChoice(ingredient) : new RecipeChoice.MaterialChoice(ingredient.getType());
+        }
 
         if (ingredientSection.isString("crucible_item")) {
-            ItemStack ingredient = new WrappedCrucibleItem(section.getString("crucible_item")).build();
-            return new RecipeChoice.ExactChoice(ingredient != null ? ingredient : new ItemStack(Material.AIR));
+            ItemStack ingredient = new WrappedCrucibleItem(ingredientSection.getString("crucible_item")).build();
+            if (ingredient == null || ingredient.getType().isAir()) return null;
+            return new RecipeChoice.ExactChoice(ingredient);
         }
 
         if (ingredientSection.isString("mmoitems_id") && ingredientSection.isString("mmoitems_type")) {
             ItemStack ingredient = MMOItems.plugin.getItem(ingredientSection.getString("mmoitems_type"), ingredientSection.getString("mmoitems_id"));
-            return new RecipeChoice.ExactChoice(ingredient != null ? ingredient : new ItemStack(Material.AIR));
+            if (ingredient == null || ingredient.getType().isAir()) return null;
+            return new RecipeChoice.ExactChoice(ingredient);
         }
 
         if (ingredientSection.isString("ecoitem_id")) {
-            ItemStack ingredient = new WrappedEcoItem(section.getString("ecoitem_id")).build();
-            return new RecipeChoice.ExactChoice(ingredient != null ? ingredient : new ItemStack(Material.AIR));
+            ItemStack ingredient = new WrappedEcoItem(ingredientSection.getString("ecoitem_id")).build();
+            if (ingredient == null || ingredient.getType().isAir()) return null;
+            return new RecipeChoice.ExactChoice(ingredient);
         }
 
         if (ingredientSection.isString("minecraft_type")) {
-            Material material = Material.getMaterial(ingredientSection.getString("minecraft_type", "AIR"));
+            Material material = OraxenYaml.getMaterial(ingredientSection.getString("minecraft_type", "AIR"));
             if (material == null || material.isAir()) return null;
             return new RecipeChoice.MaterialChoice(material);
         }
@@ -118,6 +155,11 @@ public abstract class RecipeLoader {
         if (itemStack == null) return null;
         return new RecipeChoice.ExactChoice(itemStack);
 
+    }
+
+    private boolean hasBackpackMechanic(String itemId) {
+        MechanicFactory backpackFactory = MechanicsManager.getMechanicFactory("backpack");
+        return backpackFactory != null && backpackFactory.getMechanic(itemId) != null;
     }
 
     protected NamespacedKey getNamespacedKey() {

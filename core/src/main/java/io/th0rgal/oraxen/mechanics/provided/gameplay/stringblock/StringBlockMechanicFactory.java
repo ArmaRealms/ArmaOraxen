@@ -11,6 +11,7 @@ import io.th0rgal.oraxen.mechanics.provided.gameplay.stringblock.sapling.Sapling
 import io.th0rgal.oraxen.nms.NMSHandlers;
 import io.th0rgal.oraxen.utils.PaperConfigUpdater;
 import io.th0rgal.oraxen.utils.VersionUtil;
+import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.apache.commons.lang3.Range;
 import org.bukkit.Bukkit;
@@ -40,8 +41,14 @@ public class StringBlockMechanicFactory extends MechanicFactory {
     private final int saplingGrowthCheckDelay;
     public final boolean customSounds;
     public final boolean disableVanillaString;
+    private final boolean registerListeners;
+    private boolean enabled;
 
     public StringBlockMechanicFactory(ConfigurationSection section) {
+        this(section, true);
+    }
+
+    public StringBlockMechanicFactory(ConfigurationSection section, boolean registerListeners) {
         super(section);
         instance = this;
         variants = new JsonObject();
@@ -51,29 +58,8 @@ public class StringBlockMechanicFactory extends MechanicFactory {
         sapling = false;
         customSounds = areCustomSoundsEnabled();
         disableVanillaString = section.getBoolean("disable_vanilla_strings", true);
-
-        // this modifier should be executed when all the items have been parsed, just
-        // before zipping the pack
-        OraxenPlugin.get().getResourcePack().addModifiers(getMechanicID(),
-                packFolder ->
-                        OraxenPlugin.get().getResourcePack()
-                                .writeStringToVirtual("assets/minecraft/blockstates",
-                                        "tripwire.json", getBlockstateContent())
-        );
-        MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new StringBlockMechanicListener(), new SaplingListener());
-        if (customSounds) MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new StringBlockSoundListener());
-
-        // Physics-related stuff
-        if (VersionUtil.isPaperServer())
-            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new StringBlockMechanicListener.StringBlockMechanicPaperListener());
-        boolean tripwireUpdatesDisabled = NMSHandlers.isTripwireUpdatesDisabled();
-        if (!VersionUtil.isPaperServer() || !tripwireUpdatesDisabled)
-            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new StringBlockMechanicListener.StringBlockMechanicPhysicsListener());
-        // Warn if Paper config is not set (auto-update happens earlier in plugin enable)
-        if (VersionUtil.isPaperServer() && VersionUtil.atOrAbove("1.20.1") && !tripwireUpdatesDisabled
-                && PaperConfigUpdater.wasBlockUpdateSettingUpdated("disable-tripwire-updates")) {
-            Logs.logWarning("Paper block-updates.disable-tripwire-updates is not enabled, restart may be required");
-        }
+        this.registerListeners = registerListeners;
+        enabled = false;
     }
 
     public static JsonObject getModelJson(String modelName) {
@@ -98,7 +84,7 @@ public class StringBlockMechanicFactory extends MechanicFactory {
     }
 
     public static boolean isEnabled() {
-        return instance != null && MechanicsManager.isMechanicEnabled("stringblock");
+        return instance != null && instance.enabled && MechanicsManager.isMechanicEnabled("block");
     }
 
     public static boolean areCustomSoundsEnabled() {
@@ -107,11 +93,15 @@ public class StringBlockMechanicFactory extends MechanicFactory {
 
         ConfigurationSection customSoundsSection = plugin.getConfigsManager().getMechanics()
                 .getConfigurationSection("custom_block_sounds");
-        return customSoundsSection == null || customSoundsSection.getBoolean("stringblock_and_furniture", true);
+        return BlockSounds.isStringBlockSoundEnabled(customSoundsSection);
     }
 
     public static StringBlockMechanicFactory getInstance() {
         return instance;
+    }
+
+    public static void clearInstance(StringBlockMechanicFactory factory) {
+        if (instance == factory) instance = null;
     }
 
 
@@ -122,8 +112,7 @@ public class StringBlockMechanicFactory extends MechanicFactory {
      * @param itemId The Oraxen item ID.
      */
     public static void setBlockModel(Block block, String itemId) {
-        final MechanicFactory mechanicFactory = MechanicsManager.getMechanicFactory("stringblock");
-        StringBlockMechanic stringBlockMechanic = (StringBlockMechanic) mechanicFactory.getMechanic(itemId);
+        StringBlockMechanic stringBlockMechanic = getInstance().getMechanic(itemId);
         block.setBlockData(createTripwireData(stringBlockMechanic.getCustomVariation()));
     }
 
@@ -133,8 +122,39 @@ public class StringBlockMechanicFactory extends MechanicFactory {
         return tripwire.toString();
     }
 
+    private void enable() {
+        if (enabled) return;
+        enabled = true;
+
+        // this modifier should be executed when all the items have been parsed, just
+        // before zipping the pack
+        OraxenPlugin.get().getResourcePack().addModifiers(getMechanicID(),
+                packFolder ->
+                        OraxenPlugin.get().getResourcePack()
+                                .writeStringToVirtual("assets/minecraft/blockstates",
+                                        "tripwire.json", getBlockstateContent())
+        );
+        if (!registerListeners) return;
+
+        MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new StringBlockMechanicListener(), new SaplingListener());
+        if (customSounds) MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new StringBlockSoundListener());
+
+        // Physics-related stuff
+        if (VersionUtil.isPaperServer())
+            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new StringBlockMechanicListener.StringBlockMechanicPaperListener());
+        boolean tripwireUpdatesDisabled = NMSHandlers.isTripwireUpdatesDisabled();
+        if (!VersionUtil.isPaperServer() || !tripwireUpdatesDisabled)
+            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new StringBlockMechanicListener.StringBlockMechanicPhysicsListener());
+        // Warn if Paper config is not set (auto-update happens earlier in plugin enable)
+        if (VersionUtil.isPaperServer() && VersionUtil.atOrAbove("1.20.1") && !tripwireUpdatesDisabled
+                && PaperConfigUpdater.wasBlockUpdateSettingUpdated("disable-tripwire-updates")) {
+            Logs.logWarning("Paper block-updates.disable-tripwire-updates is not enabled, restart may be required");
+        }
+    }
+
     @Override
     public Mechanic parse(ConfigurationSection itemMechanicConfiguration) {
+        enable();
         StringBlockMechanic mechanic = new StringBlockMechanic(this, itemMechanicConfiguration);
         if (!Range.between(1, 127).contains(mechanic.getCustomVariation())) {
             Logs.logError("The custom_variation of " + mechanic.getItemID() + " is " + mechanic.getCustomVariation() + ", but must be between 1 and 127!");

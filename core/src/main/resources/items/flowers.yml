@@ -13,16 +13,20 @@ brunnera:
     textures:
       - default/flowers/brunnera.png # .png extension is not mandatory
   Mechanics:
-    stringblock:
-      break_sound: block.grass.break
-      place_sound: block.grass.place
-      custom_variation: 1
-      model: brunnera
-      hardness: 2
-      drop:
-        silktouch: false
-        loots:
-          - { oraxen_item: brunnera, probability: 1.0 }
+    block:
+      type: STRING
+      block-sounds:
+        break-sound: block.grass.break
+        place-sound: block.grass.place
+      custom-variation: 1
+      appearance:
+        model: brunnera
+      breaking:
+        - else:
+          hardness: 2
+          drops:
+            - item: brunnera
+              probability: 1.0
 
 daffodil:
   displayname: "<#f5ec42>Daffodil"
@@ -33,16 +37,20 @@ daffodil:
     textures:
       - default/flowers/daffodil.png # .png extension is not mandatory
   Mechanics:
-    stringblock:
-      break_sound: block.grass.break
-      place_sound: block.grass.place
-      custom_variation: 2
-      model: daffodil
-      hardness: 2
-      drop:
-        silktouch: false
-        loots:
-          - { oraxen_item: daffodil, probability: 1.0 }
+    block:
+      type: STRING
+      block-sounds:
+        break-sound: block.grass.break
+        place-sound: block.grass.place
+      custom-variation: 2
+      appearance:
+        model: daffodil
+      breaking:
+        - else:
+          hardness: 2
+          drops:
+            - item: daffodil
+              probability: 1.0
 
 dailily:
   displayname: "<#bf332c>Dailily"
@@ -53,13 +61,17 @@ dailily:
     textures:
       - default/flowers/dailily.png # .png extension is not mandatory
   Mechanics:
-    stringblock:
-      break_sound: block.grass.break
-      place_sound: block.grass.place
-      custom_variation: 3
-      model: dailily
-      hardness: 2
-      drop:
-        silktouch: false
-        loots:
-          - { oraxen_item: dailily, probability: 1.0 }
+    block:
+      type: STRING
+      block-sounds:
+        break-sound: block.grass.break
+        place-sound: block.grass.place
+      custom-variation: 3
+      appearance:
+        model: dailily
+      breaking:
+        - else:
+          hardness: 2
+          drops:
+            - item: dailily
+              probability: 1.0

@@ -1,7 +1,7 @@
 package io.th0rgal.oraxen.compatibilities.provided.placeholderapi;
 
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.font.Glyph;
+import io.th0rgal.oraxen.glyphs.Glyph;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
@@ -62,9 +62,9 @@ public class OraxenExpansion extends PlaceholderExpansion {
             }
         }
 
-        final Glyph glyph = plugin.getFontManager().getGlyphFromName(params);
+        final Glyph glyph = plugin.getFontManager().getGlyphFromID(params);
         if (glyph != null)
-            return glyph.getCharacter();
+            return glyph.getCharacters();
         return null; // Placeholder is unknown by the Expansion
     }
 }

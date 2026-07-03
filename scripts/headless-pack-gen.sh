@@ -10,7 +10,7 @@
 #
 # Options:
 #   --version, -v       Minecraft version (e.g., 1.21.4, 1.21.11) [required]
-#   --server, -s        Server type: paper, spigot, purpur (default: paper)
+#   --server, -s        Server type: paper, purpur, or another Paper-compatible project from mcserverjars (default: paper)
 #   --output, -o        Output directory for pack.zip (default: ./build/pack)
 #   --oraxen-jar, -j    Path to Oraxen jar (default: auto-detect from build/libs)
 #   --config-dir, -c    Config directory to copy into server (optional)

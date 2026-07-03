@@ -4,14 +4,16 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.ItemAttributeModifiers;
+import io.papermc.paper.registry.RegistryAccess;
+import io.papermc.paper.registry.RegistryKey;
 import com.jeff_media.morepersistentdatatypes.DataType;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.compatibilities.provided.ecoitems.WrappedEcoItem;
 import io.th0rgal.oraxen.compatibilities.provided.mmoitems.WrappedMMOItem;
 import io.th0rgal.oraxen.compatibilities.provided.mythiccrucible.WrappedCrucibleItem;
-import io.th0rgal.oraxen.config.Message;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Message;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.nms.NMSHandler;
 import io.th0rgal.oraxen.nms.NMSHandlers;
 import io.th0rgal.oraxen.utils.AdventureUtils;
@@ -24,15 +26,7 @@ import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import org.bukkit.Bukkit;
-import org.bukkit.Color;
-import org.bukkit.DyeColor;
-import org.bukkit.FireworkEffect;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.Registry;
-import org.bukkit.Tag;
+import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -69,15 +63,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @SuppressWarnings("ALL")
 public class ItemBuilder {
@@ -153,6 +139,8 @@ public class ItemBuilder {
     // 1.21+ properties
     @Nullable
     private JukeboxPlayableComponent jukeboxPlayable;
+    @Nullable
+    private String paintingVariant;
 
     // 1.21.2+ properties
     @Nullable
@@ -306,7 +294,9 @@ public class ItemBuilder {
             fireResistant = itemMeta.isFireResistant() ? true : null;
             hideToolTip = itemMeta.isHideTooltip() ? true : null;
             foodComponent = itemMeta.hasFood() ? itemMeta.getFood() : null;
-            toolComponent = itemMeta.hasTool() ? itemMeta.getTool() : null;
+            if (VersionUtil.atOrAbove("1.20.6")) {
+                toolComponent = itemMeta.hasTool() ? itemMeta.getTool() : null;
+            }
             enchantmentGlintOverride = itemMeta.hasEnchantmentGlintOverride() ? itemMeta.getEnchantmentGlintOverride()
                     : null;
             rarity = itemMeta.hasRarity() ? itemMeta.getRarity() : null;
@@ -660,7 +650,7 @@ public class ItemBuilder {
         try {
             this.jukeboxPlayable = jukeboxPlayable;
         } catch (Exception e) {
-            Logs.logWarning("Error setting JukeboxPlayable: This component is not available in your server version");
+            Logs.logWarning("Error setting JukeboxPlayable; This component is not available in your server version");
             if (Settings.DEBUG.toBool()) {
                 e.printStackTrace();
             }
@@ -883,6 +873,7 @@ public class ItemBuilder {
     public ItemBuilder clone() {
         ItemBuilder clonedBuilder = new ItemBuilder(itemStack.clone());
         clonedBuilder.genericComponents.putAll(genericComponents);
+        clonedBuilder.paintingVariant = paintingVariant;
         clonedBuilder.attributeEntries.clear();
         clonedBuilder.attributeEntries.addAll(attributeEntries);
         if (legacyAttributeModifiers != null) {
@@ -917,6 +908,7 @@ public class ItemBuilder {
         itemStack.setItemMeta(itemMeta);
         applyAttributeModifiersComponent(itemStack);
         finalItemStack = applyConsumableComponent(itemStack);
+        finalItemStack = applyPaintingVariantComponent(finalItemStack);
         finalItemStack = applyGenericComponents(finalItemStack);
 
         return this;
@@ -956,7 +948,7 @@ public class ItemBuilder {
             itemMeta.setRarity(rarity);
         if (hasFoodComponent())
             itemMeta.setFood(foodComponent);
-        if (hasToolComponent())
+        if (hasToolComponent() && VersionUtil.atOrAbove("1.20.6"))
             itemMeta.setTool(toolComponent);
         if (fireResistant != null)
             itemMeta.setFireResistant(fireResistant);
@@ -1169,6 +1161,41 @@ public class ItemBuilder {
         return itemStack;
     }
 
+    private ItemStack applyPaintingVariantComponent(ItemStack itemStack) {
+        if (paintingVariant == null) return itemStack;
+        if (!VersionUtil.atOrAbove("1.21.5") || !VersionUtil.isPaperServer()) return itemStack;
+
+        Key variantKey;
+        try {
+            variantKey = parsePaintingVariantKey(paintingVariant);
+        } catch (IllegalArgumentException exception) {
+            Logs.logWarning("Invalid painting_variant '" + paintingVariant + "'");
+            Logs.debug(exception);
+            return itemStack;
+        }
+
+        try {
+            Registry<Art> paintingRegistry = RegistryAccess.registryAccess()
+                    .getRegistry(RegistryKey.PAINTING_VARIANT);
+            Art painting = paintingRegistry.get(variantKey);
+            if (painting == null) {
+                Logs.logWarning("Unknown painting_variant '" + paintingVariant + "'");
+                return itemStack;
+            }
+            itemStack.setData(DataComponentTypes.PAINTING_VARIANT, painting);
+            return itemStack;
+        } catch (Exception exception) {
+            Logs.logWarning("Failed to set painting_variant '" + paintingVariant + "'");
+            Logs.debug(exception);
+            return itemStack;
+        }
+    }
+
+    private Key parsePaintingVariantKey(String value) {
+        String normalized = value.toLowerCase(Locale.ROOT);
+        return normalized.contains(":") ? Key.key(normalized) : Key.key("oraxen", normalized);
+    }
+
     public void save() {
         regen();
         OraxenItems.getMap().entrySet().stream().filter(entry -> entry.getValue().containsValue(this)).findFirst()
@@ -1292,10 +1319,11 @@ public class ItemBuilder {
     public ItemStack build() {
         if (finalItemStack == null)
             regen();
+        ItemStack builtItem = finalItemStack.clone();
         if (unstackable)
-            return handleUnstackable(finalItemStack);
+            return handleUnstackable(builtItem);
         else
-            return finalItemStack.clone();
+            return builtItem;
     }
 
     private ItemStack handleUnstackable(ItemStack item) {
@@ -1338,6 +1366,14 @@ public class ItemBuilder {
      */
     public void setComponent(String type, Object component) {
         genericComponents.put(type, component);
+    }
+
+    public String getPaintingVariant() {
+        return paintingVariant;
+    }
+
+    public void setPaintingVariant(String paintingVariant) {
+        this.paintingVariant = paintingVariant;
     }
 
     /**

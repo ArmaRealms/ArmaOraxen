@@ -4,13 +4,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.Settings;
-import io.th0rgal.oraxen.font.Glyph;
+import io.th0rgal.oraxen.configs.Settings;
+import io.th0rgal.oraxen.glyphs.Glyph;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextReplacementConfig;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.translation.GlobalTranslator;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.entity.Player;
@@ -56,12 +57,18 @@ public class GlyphHandlers {
         for (Glyph glyph : OraxenPlugin.get().getFontManager().getGlyphs()) {
             if (glyph.hasPermission(player)) continue;
 
-            component = component.replaceText(
-                    TextReplacementConfig.builder()
-                            .matchLiteral(glyph.getCharacter())
-                            .replacement(glyph.getGlyphComponent().font(randomKey))
-                            .build()
-            );
+            String characters = glyph.getCharacters();
+            for (int offset = 0; offset < characters.length(); ) {
+                int codePoint = characters.codePointAt(offset);
+                String character = new String(Character.toChars(codePoint));
+                component = component.replaceText(
+                        TextReplacementConfig.builder()
+                                .matchLiteral(character)
+                                .replacement(Component.text(character).font(randomKey).color(NamedTextColor.WHITE))
+                                .build()
+                );
+                offset += Character.charCount(codePoint);
+            }
 
             // Escape all glyph-tags
             Matcher matcher = glyph.baseRegex.matcher(serialized);
@@ -86,10 +93,13 @@ public class GlyphHandlers {
         for (Glyph glyph : OraxenPlugin.get().getFontManager().getGlyphs()) {
             Matcher matcher = glyph.baseRegex.matcher(serialized);
             while (matcher.find()) {
+                String match = matcher.group();
                 component = component.replaceText(
                         TextReplacementConfig.builder().once()
-                                .matchLiteral(matcher.group())
-                                .replacement(glyph.getGlyphComponent())
+                                .matchLiteral(match)
+                                .replacement(match.startsWith("<")
+                                        ? AdventureUtils.MINI_MESSAGE.deserialize(match)
+                                        : glyph.getGlyphComponent())
                                 .build());
             }
 

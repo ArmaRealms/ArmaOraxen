@@ -1,8 +1,8 @@
 package io.th0rgal.oraxen.introduction;
 
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.Message;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Message;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.utils.SchedulerUtil;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.bukkit.configuration.file.YamlConfiguration;

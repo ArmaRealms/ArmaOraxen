@@ -1,11 +1,10 @@
 package io.th0rgal.oraxen.commands;
 
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.ArgumentSuggestions;
-import dev.jorel.commandapi.arguments.TextArgument;
+import io.th0rgal.oraxen.commands.arguments.ArgumentSuggestions;
+import io.th0rgal.oraxen.commands.arguments.TextArgument;
 import io.th0rgal.oraxen.api.OraxenItems;
-import io.th0rgal.oraxen.config.Message;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Message;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.durability.DurabilityMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.durability.DurabilityMechanicFactory;
 import io.th0rgal.oraxen.utils.AdventureUtils;
@@ -21,8 +20,8 @@ import org.bukkit.persistence.PersistentDataType;
 public class RepairCommand {
 
     @Deprecated(forRemoval = true, since = "1.20.6")
-    CommandAPICommand getRepairCommand() {
-        return new CommandAPICommand("repair")
+    OraxenCommand getRepairCommand() {
+        return new OraxenCommand("repair")
                 .withPermission("oraxen.command.repair")
                 .withArguments(new TextArgument("type").replaceSuggestions(ArgumentSuggestions.strings("hand", "all")))
                 .executes((sender, args) -> {

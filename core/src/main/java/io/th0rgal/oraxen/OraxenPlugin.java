@@ -3,9 +3,15 @@ package io.th0rgal.oraxen;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.api.events.OraxenItemsLoadedEvent;
 import io.th0rgal.oraxen.commands.CommandsManager;
+import io.th0rgal.oraxen.commands.OraxenCommand;
 import io.th0rgal.oraxen.compatibilities.CompatibilitiesManager;
-import io.th0rgal.oraxen.config.*;
-import io.th0rgal.oraxen.font.FontManager;
+import io.th0rgal.oraxen.commands.TotemAnimationCommand;
+import io.th0rgal.oraxen.configs.ConfigsManager;
+import io.th0rgal.oraxen.configs.Message;
+import io.th0rgal.oraxen.configs.ResourcesManager;
+import io.th0rgal.oraxen.configs.Settings;
+import io.th0rgal.oraxen.configs.SettingsUpdater;
+import io.th0rgal.oraxen.fonts.FontManager;
 import io.th0rgal.oraxen.hopper.OraxenHopper;
 import io.th0rgal.oraxen.introduction.IntroductionGuide;
 import io.th0rgal.oraxen.mechanics.provided.cosmetic.backpack.BackpackCosmeticManager;
@@ -19,11 +25,14 @@ import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureFactory;
 import io.th0rgal.oraxen.nms.GlyphHandlers;
 import io.th0rgal.oraxen.nms.NMSHandlers;
 import io.th0rgal.oraxen.pack.dispatch.PackLoadingManager;
+import io.th0rgal.oraxen.paintings.CustomPainting;
+import io.th0rgal.oraxen.paintings.CustomPaintingListener;
+import io.th0rgal.oraxen.paintings.CustomPaintingRegistry;
 import io.th0rgal.oraxen.pack.generation.ResourcePack;
 import io.th0rgal.oraxen.pack.upload.UploadManager;
 import io.th0rgal.oraxen.recipes.builders.RecipeBuilder;
 import io.th0rgal.oraxen.recipes.RecipesManager;
-import io.th0rgal.oraxen.sound.SoundManager;
+import io.th0rgal.oraxen.sounds.SoundManager;
 import io.th0rgal.oraxen.utils.*;
 import io.th0rgal.oraxen.utils.SchedulerUtil;
 import io.th0rgal.oraxen.utils.actions.ClickActionManager;
@@ -35,7 +44,7 @@ import io.th0rgal.oraxen.utils.customarmor.CustomArmorListener;
 import io.th0rgal.oraxen.utils.inventories.InvManager;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import io.th0rgal.oraxen.utils.schema.SchemaGenerator;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -77,7 +86,7 @@ public class OraxenPlugin extends JavaPlugin {
     public static JarFile getJarFile() {
         try {
             return new JarFile(oraxen.getFile());
-        } catch (final IOException e) {
+        } catch (IOException e) {
             return null;
         }
     }
@@ -86,33 +95,34 @@ public class OraxenPlugin extends JavaPlugin {
     public void onLoad() {
         // Download dependencies registered with Hopper
         OraxenHopper.download(this);
-
-        // CommandAPI initialization is currently disabled as CommandAPI 11.0.0 doesn't yet support 1.21.11
-        // CommandAPI.onLoad(new CommandAPIPaperConfig(this).silentLogs(true));
     }
 
     @Override
     public void onEnable() {
-        // CommandAPI.onEnable();
-        ProtectionLib.init(this);
+        if (!VersionUtil.isSupportedServer()) {
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        }
+
         audience = BukkitAudiences.create(this);
         clickActionManager = new ClickActionManager(this);
         supportsDisplayEntities = VersionUtil.atOrAbove("1.19.4");
         reloadConfigs();
-        ProtectionLib.setDebug(Settings.DEBUG.toBool());
+        AntiGriefLib.setDebug(Settings.DEBUG.toBool());
+        AntiGriefLib.init(this);
 
         if (Settings.KEEP_UP_TO_DATE.toBool())
             new SettingsUpdater().handleSettingsUpdate();
         if (PacketAdapter.isProtocolLibEnabled()) {
-            if (Settings.DEBUG.toBool()) Logs.logInfo("ProtocolLib is enabled, using ProtocolLibAdapter");
+            if (Settings.DEBUG.toBool()) Logs.logInfo("ProtocolLib is enabled, using ProtocolLibAdapter.");
             packetAdapter = new ProtocolLibAdapter();
             new ProtocolLibBreakerSystem().registerListener();
         } else if (PacketAdapter.isPacketEventsEnabled()) {
-            if (Settings.DEBUG.toBool()) Logs.logInfo("PacketEvents is enabled, using PacketEventsAdapter");
+            if (Settings.DEBUG.toBool()) Logs.logInfo("PacketEvents is enabled, using PacketEventsAdapter.");
             packetAdapter = new PacketEventsAdapter();
             new PacketEventsBreakerSystem().registerListener();
         } else {
-            Logs.logWarning("[OraxenPlugin] Neither ProtocolLib nor PacketEvents is enabled, using EmptyAdapter");
+            Logs.logWarning("Neither ProtocolLib nor PacketEvents is enabled, using EmptyAdapter.");
             packetAdapter = new PacketAdapter.EmptyAdapter();
             Message.MISSING_PROTOCOLLIB.log();
         }
@@ -123,15 +133,13 @@ public class OraxenPlugin extends JavaPlugin {
         });
 
         Bukkit.getPluginManager().registerEvents(new CustomArmorListener(), this);
-        // Only register the attribute-based mining listener when no packet adapter is
-        // present.  When ProtocolLib/PacketEvents is enabled the BreakerSystem cancels
-        // START_DIGGING packets before BlockDamageEvent fires, so the attribute-based
-        // listener would never receive events.  The BreakerSystem's timer-based
-        // approach handles custom hardness in that case instead.
-        if (CustomBlockMiningListener.isSupported() && !packetAdapter.isEnabled()) {
+        // Register this even when the packet breaker is active: BreakerSystem cancels START_DIGGING
+        // before Bukkit fires BlockDamageEvent, so CustomBlockMiningListener becomes a no-op there.
+        if (CustomBlockMiningListener.isSupported()) {
             Bukkit.getPluginManager().registerEvents(new CustomBlockMiningListener(), this);
         }
         NMSHandlers.setup();
+        reloadCustomPaintings();
 
         // Auto-update Paper config for block updates (noteblock, tripwire, chorus)
         final var updatedSettings = PaperConfigUpdater.ensureAllBlockUpdatesDisabled();
@@ -153,6 +161,7 @@ public class OraxenPlugin extends JavaPlugin {
         hudManager.registerTask();
         hudManager.parsedHudDisplays = hudManager.generateHudDisplays();
         Bukkit.getPluginManager().registerEvents(new ItemUpdater(), this);
+        Bukkit.getPluginManager().registerEvents(new CustomPaintingListener(), this);
         Bukkit.getPluginManager().registerEvents(new PackLoadingManager(), this);
         io.th0rgal.oraxen.pack.generation.MultiVersionPackValidator.validateAndLogWarnings();
         resourcePack.generate();
@@ -189,10 +198,19 @@ public class OraxenPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (configsManager == null) {
+            HandlerList.unregisterAll(this);
+            OraxenCommand.unregisterAll();
+            closeAudience();
+            return;
+        }
+
+        cleanupRuntimeResources();
         HandlerList.unregisterAll(this);
         FurnitureFactory.unregisterEvolution();
         MechanicsManager.unregisterTasks();
         RecipeBuilder.clearAll();
+        TotemAnimationCommand.clearReflectionCaches();
 
         // Clean up backpack cosmetic entities to prevent ghost armor stands
         BackpackCosmeticManager.getInstance().cleanup();
@@ -202,8 +220,24 @@ public class OraxenPlugin extends JavaPlugin {
                 NMSHandlers.getHandler().glyphHandler().uninject(player);
 
         CompatibilitiesManager.disableCompatibilities();
-        // CommandAPI.onDisable();
+        OraxenCommand.unregisterAll();
         Message.PLUGIN_UNLOADED.log();
+        closeAudience();
+    }
+
+    private void cleanupRuntimeResources() {
+        setUploadManager(null);
+        setMultiVersionUploadManager(null);
+        setHudManager(null);
+        if (resourcePack != null) {
+            resourcePack.shutdown();
+        }
+    }
+
+    private void closeAudience() {
+        if (audience == null) return;
+        audience.close();
+        audience = null;
     }
 
     public ResourcesManager getResourceManager() {
@@ -220,6 +254,11 @@ public class OraxenPlugin extends JavaPlugin {
         resourceManager = new ResourcesManager(this);
     }
 
+    public void reloadCustomPaintings() {
+        CustomPaintingRegistry.reload(CustomPainting.fromConfigSection(
+                configsManager.getPaintings().getConfigurationSection("paintings")));
+    }
+
     public ConfigsManager getConfigsManager() {
         return configsManager;
     }
@@ -229,6 +268,10 @@ public class OraxenPlugin extends JavaPlugin {
     }
 
     public void setUploadManager(final UploadManager uploadManager) {
+        UploadManager previousUploadManager = this.uploadManager;
+        if (previousUploadManager != null && previousUploadManager != uploadManager) {
+            previousUploadManager.unregister();
+        }
         this.uploadManager = uploadManager;
     }
 
@@ -237,7 +280,7 @@ public class OraxenPlugin extends JavaPlugin {
     }
 
     public void setMultiVersionUploadManager(final io.th0rgal.oraxen.pack.upload.MultiVersionUploadManager multiVersionUploadManager) {
-        if (this.multiVersionUploadManager != null) {
+        if (this.multiVersionUploadManager != null && this.multiVersionUploadManager != multiVersionUploadManager) {
             this.multiVersionUploadManager.unregister();
         }
         this.multiVersionUploadManager = multiVersionUploadManager;
@@ -294,9 +337,14 @@ public class OraxenPlugin extends JavaPlugin {
     }
 
     public void setFontManager(final FontManager fontManager) {
-        this.fontManager.unregisterEvents();
+        FontManager previousFontManager = this.fontManager;
+        if (previousFontManager != null) {
+            previousFontManager.unregisterEvents();
+        }
         this.fontManager = fontManager;
-        fontManager.registerEvents();
+        if (fontManager != null) {
+            fontManager.registerEvents();
+        }
     }
 
     public HudManager getHudManager() {
@@ -304,9 +352,15 @@ public class OraxenPlugin extends JavaPlugin {
     }
 
     public void setHudManager(final HudManager hudManager) {
-        this.hudManager.unregisterEvents();
+        HudManager previousHudManager = this.hudManager;
+        if (previousHudManager != null) {
+            previousHudManager.unregisterTask();
+            previousHudManager.unregisterEvents();
+        }
         this.hudManager = hudManager;
-        hudManager.registerEvents();
+        if (hudManager != null) {
+            hudManager.registerEvents();
+        }
     }
 
     public SoundManager getSoundManager() {

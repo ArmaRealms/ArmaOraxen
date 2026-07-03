@@ -6,6 +6,7 @@ import io.th0rgal.oraxen.mechanics.provided.misc.itemtype.ItemTypeMechanic;
 import io.th0rgal.oraxen.mechanics.provided.misc.itemtype.ItemTypeMechanicFactory;
 import io.th0rgal.oraxen.utils.BlockHelpers;
 import io.th0rgal.oraxen.utils.ItemUtils;
+import io.th0rgal.oraxen.utils.logs.Logs;
 import io.th0rgal.oraxen.utils.wrappers.EnchantmentWrapper;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -24,6 +25,8 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class Drop {
 
+    private static final int MAX_DROP_LEVEL_FORTUNE_MULTIPLIER = 3;
+
     private List<String> hierarchy;
     private final List<Loot> loots;
     final boolean silktouch;
@@ -35,9 +38,22 @@ public class Drop {
     @SuppressWarnings("unchecked")
     public static Drop createDrop(final List<String> toolTypes, @NotNull final ConfigurationSection dropSection, final String sourceID) {
         final List<Loot> loots = ((List<LinkedHashMap<String, Object>>) dropSection.getList("loots", new ArrayList<>())).stream().map(c -> new Loot(c, sourceID)).toList();
+        String minimalType = dropSection.getString("minimal-type", dropSection.getString("minimal_type", ""));
+        List<String> bestTools = dropSection.isList("best-tools")
+                ? dropSection.getStringList("best-tools")
+                : dropSection.getStringList("best_tools");
+        boolean fortune = dropSection.getBoolean("fortune");
+        if (fortune && loots.stream().anyMatch(Loot::hasFortuneBonus)) {
+            double maxLootFortuneBonus = loots.stream()
+                    .mapToDouble(Loot::getFortuneBonus)
+                    .max()
+                    .orElse(0.0D);
+            double maxFortuneMultiplier = MAX_DROP_LEVEL_FORTUNE_MULTIPLIER * (1.0D + maxLootFortuneBonus * 3.0D);
+            Logs.logWarning("Drop config for " + sourceID + " uses both drop-level fortune and loot-level fortune; both bonuses will apply. With Fortune III this can multiply a loot amount by up to " + maxFortuneMultiplier + "x.");
+        }
         return new Drop(toolTypes, loots, dropSection.getBoolean("silktouch"),
-                dropSection.getBoolean("fortune"), sourceID,
-                dropSection.getString("minimal_type", ""), dropSection.getStringList("best_tools"));
+                fortune, sourceID,
+                minimalType, bestTools);
     }
 
     public Drop(final List<String> hierarchy, final List<Loot> loots, final boolean silktouch, final boolean fortune, final String sourceID,
@@ -123,6 +139,11 @@ public class Drop {
         return minimalType;
     }
 
+    public boolean isEmpty() {
+        return (sourceID == null || sourceID.isEmpty()) && loots.isEmpty() && bestTools.isEmpty()
+                && (minimalType == null || minimalType.isEmpty());
+    }
+
     public List<String> getBestTools() {
         return bestTools;
     }
@@ -149,7 +170,7 @@ public class Drop {
                 && itemInHand.getItemMeta().hasEnchant(EnchantmentWrapper.SILK_TOUCH)) {
             final ItemStack baseItem = OraxenItems.getItemById(sourceID).build();
             location.getWorld().dropItemNaturally(BlockHelpers.toCenterBlockLocation(location), baseItem);
-        } else dropLoot(loots, location, getFortuneMultiplier(itemInHand));
+        } else dropLoot(loots, location, getFortuneMultiplier(itemInHand), itemInHand);
     }
 
     public void furnitureSpawns(Entity baseEntity, ItemStack itemInHand) {
@@ -178,7 +199,7 @@ public class Drop {
                 if (lootItem == null) return false;
                 String lootItemId = OraxenItems.getIdByItem(lootItem);
                 return !lootItem.isSimilar(baseItem) && !sourceID.equals(lootItemId);
-            }).toList(), location, getFortuneMultiplier(itemInHand));
+            }).toList(), location, getFortuneMultiplier(itemInHand), itemInHand);
             // Filter loots down to only the furniture item and drop the item in the actual Furniture to preseve color etc.
             dropLoot(loots.stream()
                     .filter(loot -> {
@@ -188,7 +209,7 @@ public class Drop {
                         return lootItem.isSimilar(baseItem) || sourceID.equals(lootItemId);
                     })
                     .map(loot -> new Loot(sourceID, furnitureItem, loot.getProbability(), 1, loot.getMaxAmount()))
-                    .toList(), location, getFortuneMultiplier(itemInHand));
+                    .toList(), location, getFortuneMultiplier(itemInHand), itemInHand);
         }
     }
 
@@ -203,8 +224,8 @@ public class Drop {
         return fortuneMultiplier;
     }
 
-    private void dropLoot(final List<Loot> loots, final Location location, final int fortuneMultiplier) {
-        for (final Loot loot : loots) loot.dropNaturally(location, fortuneMultiplier);
+    private void dropLoot(final List<Loot> loots, final Location location, final int fortuneMultiplier, ItemStack itemInHand) {
+        for (final Loot loot : loots) loot.dropNaturally(location, fortuneMultiplier, itemInHand);
     }
 
     /**
@@ -212,14 +233,16 @@ public class Drop {
      * @param player the player that triggered this drop
      * @return the loots that will drop
      */
-    public List<Loot> getLootToDrop(final Player player) {
-        final ItemStack itemInHand = player.getInventory().getItemInMainHand();
-        final int fortuneMultiplier = getFortuneMultiplier(itemInHand);
-        final List<Loot> droppedLoots = new ArrayList<>();
-        for (final Loot loot : loots) {
-            final ItemStack item = loot.getItem(fortuneMultiplier);
+    public List<Loot> getLootToDrop(Player player) {
+        ItemStack itemInHand = player.getInventory().getItemInMainHand();
+        int fortuneMultiplier = getFortuneMultiplier(itemInHand);
+        List<Loot> droppedLoots = new ArrayList<>();
+        if (!canDrop(itemInHand)) return droppedLoots;
+        for (Loot loot : loots) {
+            if (!loot.canDropWith(itemInHand)) continue;
 
-            if (!canDrop(itemInHand) || item == null) continue;
+            ItemStack item = loot.getItem(fortuneMultiplier, itemInHand);
+            if (item == null) continue;
             if (Math.random() > loot.getProbability()) continue;
 
             droppedLoots.add(loot);

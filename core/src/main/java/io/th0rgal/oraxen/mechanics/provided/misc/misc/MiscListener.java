@@ -1,10 +1,9 @@
 package io.th0rgal.oraxen.mechanics.provided.misc.misc;
 
-import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
+import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.Utils;
-import io.th0rgal.oraxen.utils.VersionUtil;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -23,11 +22,13 @@ import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.Arrays;
 
@@ -37,9 +38,33 @@ import static org.bukkit.event.entity.EntityDamageEvent.DamageCause.FIRE_TICK;
 public class MiscListener implements Listener {
 
     public MiscListener(MiscMechanicFactory factory) {
-        if (VersionUtil.isPaperServer()) {
-            OraxenPlugin.get().getServer().getPluginManager().registerEvents(new PaperOnlyListeners(factory), OraxenPlugin.get());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPreventAnvilRename(PrepareAnvilEvent event) {
+        AnvilInventory anvil = event.getInventory();
+        ItemStack inputItem = anvil.getFirstItem();
+        ItemStack resultItem = event.getResult();
+        if (inputItem == null || resultItem == null || inputItem.getType() == Material.AIR) return;
+
+        MiscMechanic mechanic = MiscMechanicFactory.get().getMechanic(inputItem);
+        if (mechanic == null || !mechanic.preventsRenaming()) return;
+
+        // Only cancel when the user actually typed a rename. Repair/enchant operations leave
+        // renameText empty (or matching the original plain-text display name) and must go through.
+        // Use ItemMeta.displayName() rather than ItemStack.displayName(): the latter wraps the
+        // name in square brackets ([Cool Sword]) but anvil.getRenameText() returns the raw text,
+        // so comparing against the bracketed form would never match.
+        String renameText = anvil.getRenameText();
+        if (renameText == null || renameText.isEmpty()) return;
+
+        ItemMeta inputMeta = inputItem.getItemMeta();
+        if (inputMeta != null && inputMeta.hasDisplayName()) {
+            String inputPlain = AdventureUtils.PLAIN_TEXT.serialize(inputMeta.displayName());
+            if (renameText.equals(inputPlain)) return;
         }
+
+        event.setResult(null);
     }
 
     @EventHandler
@@ -75,7 +100,7 @@ public class MiscListener implements Listener {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getHand() == null) return;
         if (item == null || block == null || block.getType() != Material.COMPOSTER) return;
         if (!(block.getBlockData() instanceof Levelled levelled)) return;
-        if (!ProtectionLib.canInteract(player, block.getLocation())) return;
+        if (!AntiGriefLib.canInteract(player, block.getLocation())) return;
         MiscMechanic mechanic = MiscMechanicFactory.get().getMechanic(item);
         if (mechanic == null || !mechanic.isCompostable()) return;
         if (event.useInteractedBlock() == Event.Result.DENY) return;
@@ -250,8 +275,4 @@ public class MiscListener implements Listener {
         return mechanic != null && mechanic.piglinIgnoreWhenEquipped();
     }
 
-    private record PaperOnlyListeners(MiscMechanicFactory factory) implements Listener {
-
-
-    }
 }

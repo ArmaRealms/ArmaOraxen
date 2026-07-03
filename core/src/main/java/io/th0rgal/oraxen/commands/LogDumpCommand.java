@@ -1,15 +1,13 @@
 package io.th0rgal.oraxen.commands;
 
-import dev.jorel.commandapi.CommandAPICommand;
 import gs.mclo.java.APIResponse;
 import gs.mclo.java.Log;
 import gs.mclo.java.MclogsAPI;
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.utils.LU;
-import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.logs.Logs;
-import io.th0rgal.oraxen.config.Message;
+import io.th0rgal.oraxen.configs.Message;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -24,8 +22,8 @@ import java.nio.file.Path;
 
 public class LogDumpCommand {
 
-    CommandAPICommand getLogDumpCommand() {
-        return new CommandAPICommand("dump_log")
+    OraxenCommand getLogDumpCommand() {
+        return new OraxenCommand("dump-log")
                 .withPermission("oraxen.command.dumplog")
                 .executes((sender, args) -> {
                     String packUrl = "http://atlas.oraxen.com:8080/.*";
@@ -34,7 +32,7 @@ public class LogDumpCommand {
                     try {
                         Path path = OraxenPlugin.get().getDataFolder().getAbsoluteFile().getParentFile().getParentFile()
                                 .toPath().resolve("logs/latest.log");
-                        logfile = Files.readString(path).replaceAll(packUrl, "[REDACTED]");
+                        logfile = Files.readString(path).replaceAll(packUrl, "*redacted pack url*");
                         logfile += "\n\n" + new LU().hr();
                     } catch (Exception e) {
                         Message.MISSING_LOGS.log();
@@ -87,7 +85,7 @@ public class LogDumpCommand {
             reader = new BufferedReader(inputReader);
             response = reader.readLine();
         } catch (IOException e) {
-            Logs.logWarning("Failed to read hastebin result");
+            Logs.logWarning("Failed to read hastebin result.");
             if (Settings.DEBUG.toBool())
                 e.printStackTrace();
         } finally {

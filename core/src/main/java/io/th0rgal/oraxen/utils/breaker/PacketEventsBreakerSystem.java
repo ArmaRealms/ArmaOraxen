@@ -10,6 +10,8 @@ import com.github.retrooper.packetevents.util.Vector3i;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientPlayerDigging;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerBlockBreakAnimation;
 import io.th0rgal.oraxen.OraxenPlugin;
+import io.th0rgal.oraxen.utils.SchedulerUtil;
+import io.th0rgal.oraxen.utils.VersionUtil;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -33,12 +35,32 @@ public class PacketEventsBreakerSystem extends BreakerSystem {
                 blockFace = BlockFace.UP;
             }
 
+            final boolean startedDigging = wrapper.getAction() == DiggingAction.START_DIGGING;
+            final boolean finishedDigging = wrapper.getAction() == DiggingAction.FINISHED_DIGGING;
+
+            // PacketEvents invokes this listener from Netty. On Folia, reading block state from
+            // that thread can crash CraftBlock#getType because no region world data is bound.
+            if (VersionUtil.isFoliaServer()) {
+                final BlockFace finalBlockFace = blockFace;
+                SchedulerUtil.runForEntity(player, () -> {
+                    final World world = player.getWorld();
+                    final Location location = new Location(world, pos.getX(), pos.getY(), pos.getZ());
+                    SchedulerUtil.runAtLocation(location, () -> {
+                        if (!world.isChunkLoaded(pos.getX() >> 4, pos.getZ() >> 4)) return;
+                        final Block block = world.getBlockAt(pos.getX(), pos.getY(), pos.getZ());
+                        handleEvent(player, block, location, finalBlockFace, world, () -> {}, startedDigging, finishedDigging);
+                    });
+                }, null);
+                return;
+            }
+
             final World world = player.getWorld();
             if (!world.isChunkLoaded(pos.getX() >> 4, pos.getZ() >> 4)) return;
             final Block block = world.getBlockAt(pos.getX(), pos.getY(), pos.getZ());
             final Location location = block.getLocation();
 
-            handleEvent(player, block, location, blockFace, world, () -> event.setCancelled(true), wrapper.getAction() == DiggingAction.START_DIGGING);
+            handleEvent(player, block, location, blockFace, world, () -> event.setCancelled(true),
+                    startedDigging, finishedDigging);
         }
     };
 

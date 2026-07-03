@@ -1,20 +1,20 @@
 package io.th0rgal.oraxen.commands;
 
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.ArgumentSuggestions;
-import dev.jorel.commandapi.arguments.EntitySelectorArgument;
-import dev.jorel.commandapi.arguments.GreedyStringArgument;
-import dev.jorel.commandapi.arguments.IntegerArgument;
-import dev.jorel.commandapi.arguments.TextArgument;
+import io.th0rgal.oraxen.commands.arguments.ArgumentSuggestions;
+import io.th0rgal.oraxen.commands.arguments.EntitySelectorArgument;
+import io.th0rgal.oraxen.commands.arguments.GreedyStringArgument;
+import io.th0rgal.oraxen.commands.arguments.IntegerArgument;
+import io.th0rgal.oraxen.commands.arguments.TextArgument;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.compatibilities.provided.placeholderapi.PapiAliases;
-import io.th0rgal.oraxen.config.Message;
+import io.th0rgal.oraxen.configs.Message;
 import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.items.ItemUpdater;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.ItemUtils;
 import org.bukkit.Color;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -24,8 +24,11 @@ import java.util.Optional;
 
 public class CommandsManager {
 
+    private static final String INVENTORY_VIEW_PERMISSION = "oraxen.command.inventory.view";
+    private static final int MAX_GIVE_SLOTS = 36;
+
     public void loadCommands() {
-        new CommandAPICommand("oraxen")
+        new OraxenCommand("oraxen")
                 .withAliases("o", "oxn")
                 .withPermission("oraxen.command")
                 .withSubcommands(getDyeCommand(), getInvCommand(), getSimpleGiveCommand(), getGiveCommand(),
@@ -39,18 +42,19 @@ public class CommandsManager {
                         (new DebugCommand()).getDebugCommand(),
                         (new ModelDataCommand()).getHighestModelDataCommand(),
                         (new GlyphCommand()).getGlyphCommand(),
-                        (new GlyphInfoCommand()).getGlyphInfoCommand(),
-                        (new ItemInfoCommand()).getItemInfoCommand(),
-                        (new BlockInfoCommand()).getBlockInfoCommand(),
+                        (new InfoCommand()).getInfoCommand(),
                         (new HudCommand()).getHudCommand(),
                         (new LogDumpCommand().getLogDumpCommand()),
                         (new VersionCommand()).getVersionCommand(),
                         (new AdminCommand()).getAdminCommand(),
                         (new SchemaCommand()).getSchemaCommand(),
+                        (new RemoveBrandingCommand()).getRemoveBrandingCommand(),
+                        (new RemoveDefaultsCommand()).getRemoveDefaultsCommand(),
+                        (new TotemAnimationCommand()).getTotemAnimationCommand(),
                         (new TextEffectCommand()).getTextEffectCommand(),
                         (new TextEffectCommand()).getTextEffectsListCommand())
                 .executes((sender, args) -> {
-                    Message.COMMAND_HELP.send(sender);
+                    openInventoryOrHelp(sender);
                 })
                 .register();
     }
@@ -62,8 +66,8 @@ public class CommandsManager {
                 Integer.valueOf(colorStr.substring(5, 7), 16));
     }
 
-    private CommandAPICommand getDyeCommand() {
-        return new CommandAPICommand("dye")
+    private OraxenCommand getDyeCommand() {
+        return new OraxenCommand("dye")
                 .withPermission("oraxen.command.dye")
                 .withArguments(new GreedyStringArgument("color"))
                 .executes((sender, args) -> {
@@ -82,21 +86,64 @@ public class CommandsManager {
                 });
     }
 
-    private CommandAPICommand getInvCommand() {
-        return new CommandAPICommand("inventory")
+    private OraxenCommand getInvCommand() {
+        return new OraxenCommand("inventory")
                 .withAliases("inv")
-                .withPermission("oraxen.command.inventory.view")
+                .withPermission(INVENTORY_VIEW_PERMISSION)
                 .executes((sender, args) -> {
-                    if (sender instanceof final Player player)
-                        OraxenPlugin.get().getInvManager().getItemsView(player).open(player);
-                    else
-                        Message.NOT_PLAYER.send(sender);
+                    openInventory(sender);
                 });
     }
 
+    private void openInventory(final CommandSender sender) {
+        if (!(sender instanceof final Player player)) {
+            Message.NOT_PLAYER.send(sender);
+            return;
+        }
+
+        if (!player.hasPermission(INVENTORY_VIEW_PERMISSION)) {
+            Message.NO_PERMISSION.send(sender, AdventureUtils.tagResolver("permission", INVENTORY_VIEW_PERMISSION));
+            return;
+        }
+
+        OraxenPlugin.get().getInvManager().getItemsView(player).open(player);
+    }
+
+    private void openInventoryOrHelp(final CommandSender sender) {
+        if (sender instanceof final Player player && player.hasPermission(INVENTORY_VIEW_PERMISSION)) {
+            OraxenPlugin.get().getInvManager().getItemsView(player).open(player);
+            return;
+        }
+
+        sendRootHelp(sender);
+    }
+
+    private void sendRootHelp(final CommandSender sender) {
+        sender.sendMessage("Oraxen commands");
+        sender.sendMessage("/oraxen inventory - Open the item browser");
+        sender.sendMessage("/oraxen give <player> <item> [amount] - Give an Oraxen item");
+        sender.sendMessage("/oraxen pack <send|msg|extract_default> - Manage the resource pack");
+        sender.sendMessage("/oraxen reload - Reload Oraxen");
+        sender.sendMessage("/oraxen info <item|glyph|block> <id|all> - Show Oraxen info");
+        sender.sendMessage("/oraxen version - Show version information");
+    }
+
+    private void sendInvalidGiveAmount(final CommandSender sender) {
+        Message.GIVE_INVALID_AMOUNT.send(sender);
+    }
+
+    static boolean isValidGiveAmount(final int amount) {
+        return amount > 0;
+    }
+
+    static int capGiveAmountToInventory(final int amount, final int maxStackSize) {
+        final int slots = amount / maxStackSize + (amount % maxStackSize > 0 ? 1 : 0);
+        return slots > MAX_GIVE_SLOTS ? maxStackSize * MAX_GIVE_SLOTS : amount;
+    }
+
     @SuppressWarnings("unchecked")
-    private CommandAPICommand getGiveCommand() {
-        return new CommandAPICommand("give")
+    private OraxenCommand getGiveCommand() {
+        return new OraxenCommand("give")
                 .withPermission("oraxen.command.give")
                 .withArguments(new EntitySelectorArgument.ManyPlayers("targets"),
                         new TextArgument("item")
@@ -105,16 +152,21 @@ public class CommandsManager {
                 .executes((sender, args) -> {
                     final Collection<Player> targets = (Collection<Player>) args.get(0);
                     final String itemID = (String) args.get(1);
+                    int amount = (int) args.get(2);
+                    if (!isValidGiveAmount(amount)) {
+                        sendInvalidGiveAmount(sender);
+                        return;
+                    }
+
                     final ItemBuilder itemBuilder = OraxenItems.getItemById(itemID);
                     if (itemBuilder == null) {
                         Message.ITEM_NOT_FOUND.send(sender, AdventureUtils.tagResolver("item", itemID));
                         return;
                     }
-                    int amount = (int) args.get(2);
                     final int max = itemBuilder.hasMaxStackSize() ? itemBuilder.getMaxStackSize()
                             : itemBuilder.getType().getMaxStackSize();
-                    final int slots = amount / max + (max % amount > 0 ? 1 : 0);
-                    final ItemStack[] items = itemBuilder.buildArray(slots > 36 ? (amount = max * 36) : amount);
+                    amount = capGiveAmountToInventory(amount, max);
+                    final ItemStack[] items = itemBuilder.buildArray(amount);
 
                     for (final Player target : targets) {
                         for (final ItemStack item : items) {
@@ -142,8 +194,8 @@ public class CommandsManager {
     }
 
     @SuppressWarnings("unchecked")
-    private CommandAPICommand getSimpleGiveCommand() {
-        return new CommandAPICommand("give")
+    private OraxenCommand getSimpleGiveCommand() {
+        return new OraxenCommand("give")
                 .withPermission("oraxen.command.give")
                 .withArguments(new EntitySelectorArgument.ManyPlayers("targets"),
                         new TextArgument("item")
@@ -180,8 +232,8 @@ public class CommandsManager {
                 });
     }
 
-    private CommandAPICommand getTakeCommand() {
-        return new CommandAPICommand("take")
+    private OraxenCommand getTakeCommand() {
+        return new OraxenCommand("take")
                 .withPermission("oraxen.command.take")
                 .withArguments(
                         new EntitySelectorArgument.ManyPlayers("targets"),

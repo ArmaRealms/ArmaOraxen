@@ -1,10 +1,9 @@
 package io.th0rgal.oraxen.commands;
 
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.ArgumentSuggestions;
-import dev.jorel.commandapi.arguments.TextArgument;
+import io.th0rgal.oraxen.commands.arguments.ArgumentSuggestions;
+import io.th0rgal.oraxen.commands.arguments.TextArgument;
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.Message;
+import io.th0rgal.oraxen.configs.Message;
 import io.th0rgal.oraxen.hud.Hud;
 import io.th0rgal.oraxen.hud.HudManager;
 import io.th0rgal.oraxen.utils.AdventureUtils;
@@ -14,16 +13,16 @@ public class HudCommand {
 
     private final HudManager manager = OraxenPlugin.get().getHudManager();
 
-    CommandAPICommand getHudCommand() {
-        return new CommandAPICommand("hud")
+    OraxenCommand getHudCommand() {
+        return new OraxenCommand("hud")
                 .withPermission("oraxen.command.hud.toggle")
                 .withArguments(new TextArgument("type").replaceSuggestions(ArgumentSuggestions.strings("toggle")))
                 .withSubcommand(disableHudsCommand());
     }
 
-    private CommandAPICommand disableHudsCommand() {
+    private OraxenCommand disableHudsCommand() {
         String[] huds = manager.getHuds().keySet().toArray(new String[0]);
-        return new CommandAPICommand("toggle")
+        return new OraxenCommand("toggle")
                 .withPermission("oraxen.command.hud.toggle")
                 .withArguments(new TextArgument("type").replaceSuggestions(ArgumentSuggestions.strings(huds)))
                 .executes((sender, args) -> {

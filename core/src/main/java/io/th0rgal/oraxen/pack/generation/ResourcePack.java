@@ -4,16 +4,16 @@ import com.google.gson.*;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.api.events.OraxenPackGeneratedEvent;
-import io.th0rgal.oraxen.config.AppearanceMode;
-import io.th0rgal.oraxen.config.ResourcesManager;
-import io.th0rgal.oraxen.config.Settings;
-import io.th0rgal.oraxen.font.AnimatedGlyph;
-import io.th0rgal.oraxen.font.EffectFontProvider;
-import io.th0rgal.oraxen.font.Font;
-import io.th0rgal.oraxen.font.FontManager;
-import io.th0rgal.oraxen.font.Glyph;
-import io.th0rgal.oraxen.font.ShiftProvider;
-import io.th0rgal.oraxen.font.TextEffect;
+import io.th0rgal.oraxen.configs.AppearanceMode;
+import io.th0rgal.oraxen.configs.ResourcesManager;
+import io.th0rgal.oraxen.configs.Settings;
+import io.th0rgal.oraxen.glyphs.AnimatedGlyph;
+import io.th0rgal.oraxen.fonts.EffectFontProvider;
+import io.th0rgal.oraxen.fonts.Font;
+import io.th0rgal.oraxen.fonts.FontManager;
+import io.th0rgal.oraxen.glyphs.Glyph;
+import io.th0rgal.oraxen.glyphs.ShiftProvider;
+import io.th0rgal.oraxen.glyphs.TextEffect;
 import net.kyori.adventure.key.Key;
 import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.items.OraxenMeta;
@@ -59,6 +59,8 @@ public class ResourcePack {
     /** Resolved multi-version flag (may differ from Settings if fallback occurred). */
     private boolean multiVersionResolved = false;
     private final AtomicBoolean generationInProgress = new AtomicBoolean(false);
+    private volatile boolean shutdownRequested = false;
+    private volatile ExecutorService activePackWorker;
 
     public ResourcePack() {
         // we use maps to avoid duplicate
@@ -67,6 +69,7 @@ public class ResourcePack {
     }
 
     public void generate() {
+        shutdownRequested = false;
         if (!generationInProgress.compareAndSet(false, true)) {
             Logs.logWarning("Resource-pack generation is already in progress, skipping duplicate request");
             return;
@@ -101,12 +104,9 @@ public class ResourcePack {
 
                 // Unregister and clear single-pack manager if switching from single-pack mode.
                 // Clearing the reference prevents getPackURL()/getPackSHA1() from returning
-                // stale data from the old mode's manager.
-                UploadManager oldUploadManager = OraxenPlugin.get().getUploadManager();
-                if (oldUploadManager != null) {
-                    oldUploadManager.unregister();
-                    OraxenPlugin.get().setUploadManager(null);
-                }
+                // stale data from the old mode's manager. setUploadManager(null) unregisters
+                // the old manager, so a separate unregister() call is not needed.
+                OraxenPlugin.get().setUploadManager(null);
 
                 generateMultiVersion(switchingFromSinglePack);
                 finishGeneration();
@@ -138,11 +138,14 @@ public class ResourcePack {
             thread.setDaemon(true);
             return thread;
         });
+        activePackWorker = packWorker;
 
         try {
             packWorker.submit(() -> {
                 try {
+                    if (shutdownRequested) return;
                     generateAsyncSafeItemAssets();
+                    if (shutdownRequested) return;
                     SchedulerUtil.runTask(() -> continueSinglePackGenerationOnMain(packWorker));
                 } catch (Exception exception) {
                     handleGenerationFailure(packWorker, "async item asset generation", exception);
@@ -156,6 +159,10 @@ public class ResourcePack {
     }
 
     private void continueSinglePackGenerationOnMain(ExecutorService packWorker) {
+        if (shutdownRequested) {
+            finishGeneration();
+            return;
+        }
         try {
             generateMiscAssets();
             applyPackModifiers();
@@ -171,7 +178,9 @@ public class ResourcePack {
         try {
             packWorker.submit(() -> {
                 try {
+                    if (shutdownRequested) return;
                     collectPackFilesAsyncSafe(output);
+                    if (shutdownRequested) return;
                     SchedulerUtil.runTask(() -> continuePostCollectionOnMain(packWorker, output));
                 } catch (Exception exception) {
                     handleGenerationFailure(packWorker, "async pack collection", exception);
@@ -183,6 +192,10 @@ public class ResourcePack {
     }
 
     private void continuePostCollectionOnMain(ExecutorService packWorker, List<VirtualFile> output) {
+        if (shutdownRequested) {
+            finishGeneration();
+            return;
+        }
         try {
             handleCustomArmor(output);
             applyArmorStandModelOverrides(output);
@@ -197,7 +210,9 @@ public class ResourcePack {
         try {
             packWorker.submit(() -> {
                 try {
+                    if (shutdownRequested) return;
                     postProcessOutputAsyncSafe(output);
+                    if (shutdownRequested) return;
                     SchedulerUtil.runTask(() -> finishSinglePackOutputOnMain(packWorker, output));
                 } catch (Exception exception) {
                     handleGenerationFailure(packWorker, "async pack post-processing", exception);
@@ -209,6 +224,10 @@ public class ResourcePack {
     }
 
     private void finishSinglePackOutputOnMain(ExecutorService packWorker, List<VirtualFile> output) {
+        if (shutdownRequested) {
+            finishGeneration();
+            return;
+        }
         try {
             soundGenerator.generateSound(output);
 
@@ -226,7 +245,11 @@ public class ResourcePack {
         try {
             packWorker.submit(() -> {
                 try {
+                    if (shutdownRequested) return;
+                    filterGeneratedCoreShadersBelow1214(output, MinecraftVersion.getCurrentVersion());
+                    if (shutdownRequested) return;
                     ZipUtils.writeZipFile(pack, output);
+                    if (shutdownRequested) return;
                     SchedulerUtil.runTask(this::uploadGeneratedPackAndFinish);
                 } catch (Exception exception) {
                     handleGenerationFailure(packWorker, "async pack writing", exception);
@@ -241,7 +264,9 @@ public class ResourcePack {
 
     private void uploadGeneratedPackAndFinish() {
         try {
-            uploadGeneratedPack();
+            if (!shutdownRequested) {
+                uploadGeneratedPack();
+            }
         } finally {
             finishGeneration();
         }
@@ -260,6 +285,19 @@ public class ResourcePack {
 
     private void finishGeneration() {
         generationInProgress.set(false);
+        if (activePackWorker != null && activePackWorker.isShutdown()) {
+            activePackWorker = null;
+        }
+    }
+
+    public void shutdown() {
+        shutdownRequested = true;
+        ExecutorService packWorker = activePackWorker;
+        if (packWorker != null) {
+            packWorker.shutdownNow();
+            activePackWorker = null;
+        }
+        finishGeneration();
     }
 
     private void handleGenerationFailure(ExecutorService packWorker, String phase, Exception exception) {
@@ -309,7 +347,9 @@ public class ResourcePack {
             e.printStackTrace();
         }
 
-        extractInPackIfNotExists(new File(packFolder, "pack.mcmeta"));
+        if (!isMcmetaGenerationDisabled()) {
+            extractInPackIfNotExists(new File(packFolder, "pack.mcmeta"));
+        }
         extractInPackIfNotExists(new File(packFolder, "pack.png"));
         updatePackMcmeta();
 
@@ -573,8 +613,34 @@ public class ResourcePack {
         }
 
         // Use MultiVersionPackGenerator for multi-version zip and upload
-        MultiVersionPackGenerator multiVersionGenerator = new MultiVersionPackGenerator(packFolder);
+        MultiVersionPackGenerator multiVersionGenerator = new MultiVersionPackGenerator(packFolder,
+                textShaderGenerator.getGeneratedCoreShaderHashes());
         multiVersionGenerator.generateMultipleVersions(output, switchingFromSinglePack);
+    }
+
+    private void filterGeneratedCoreShadersBelow1214(List<VirtualFile> output, MinecraftVersion targetVersion) {
+        if (targetVersion.isAtLeast(new MinecraftVersion("1.21.4"))) {
+            return;
+        }
+
+        Map<String, String> generatedShaderHashes = textShaderGenerator.getGeneratedCoreShaderHashes();
+        if (generatedShaderHashes.isEmpty()) {
+            return;
+        }
+
+        output.removeIf(file -> generatedShaderHashes.containsKey(file.getPath())
+                && generatedShaderHashes.get(file.getPath()).equals(sha256(file)));
+    }
+
+    private String sha256(VirtualFile file) {
+        try {
+            byte[] content = file.getInputStream().readAllBytes();
+            file.setInputStream(new ByteArrayInputStream(content));
+            return HashUtils.sha256(content);
+        } catch (IOException | IllegalStateException e) {
+            Logs.logWarning("Failed to hash " + file.getPath() + " while filtering generated shaders: " + e.getMessage());
+            return "";
+        }
     }
 
     /**
@@ -594,6 +660,10 @@ public class ResourcePack {
      * </p>
      */
     private void updatePackMcmeta() {
+        if (isMcmetaGenerationDisabled()) {
+            return;
+        }
+
         Path mcmetaPath = packFolder.toPath().resolve("pack.mcmeta");
         if (!mcmetaPath.toFile().exists())
             return;
@@ -606,6 +676,10 @@ public class ResourcePack {
      * This must be called after {@link #generateFont()} to ensure overlay directories exist.
      */
     private void updatePackMcmetaOverlays() {
+        if (isMcmetaGenerationDisabled()) {
+            return;
+        }
+
         Path mcmetaPath = packFolder.toPath().resolve("pack.mcmeta");
         if (!mcmetaPath.toFile().exists()) {
             return;
@@ -769,6 +843,10 @@ public class ResourcePack {
         root.add("pack", pack);
     }
 
+    private boolean isMcmetaGenerationDisabled() {
+        return Boolean.TRUE.equals(Settings.DISABLE_MCMETA_GENERATION.getValue());
+    }
+
 
     private final boolean extractAssets = !new File(packFolder, "assets").exists();
     private final boolean extractModels = !new File(packFolder, "models").exists();
@@ -866,7 +944,12 @@ public class ResourcePack {
 
     @SafeVarargs
     public final void addModifiers(String groupName, final Consumer<File>... modifiers) {
-        packModifiers.put(groupName, Arrays.asList(modifiers));
+        packModifiers.compute(groupName, (key, existing) -> {
+            List<Consumer<File>> merged = new ArrayList<>();
+            if (existing != null) merged.addAll(existing);
+            merged.addAll(Arrays.asList(modifiers));
+            return merged;
+        });
     }
 
     public static void addOutputFiles(final VirtualFile... files) {
@@ -1024,8 +1107,9 @@ public class ResourcePack {
         final JsonObject output = new JsonObject();
         final JsonArray providers = new JsonArray();
         for (final Glyph glyph : fontManager.getGlyphs()) {
-            if (!glyph.hasBitmap())
-                providers.add(glyph.toJson());
+            if (glyph.hasBitmap()) continue;
+            JsonObject glyphJson = glyph.toJson();
+            if (glyphJson != null) providers.add(glyphJson);
         }
         for (FontManager.GlyphBitMap glyphBitMap : FontManager.glyphBitMaps.values()) {
             providers.add(glyphBitMap.toJson(fontManager));
@@ -1128,7 +1212,9 @@ public class ResourcePack {
         // BEFORE animated glyphs are created, ensuring clean codepoint allocation on
         // reload.
 
-        Logs.logInfo("Processing " + animatedGlyphs.size() + " animated glyphs...");
+        if (Settings.DEBUG.toBool()) {
+            Logs.logInfo("Processing " + animatedGlyphs.size() + " animated glyphs...");
+        }
 
         for (AnimatedGlyph animGlyph : animatedGlyphs) {
             processAnimatedGlyph(animGlyph);
@@ -1279,16 +1365,31 @@ public class ResourcePack {
         if (fontJson != null) {
             writeStringToVirtual("assets/oraxen/font/animations", animGlyph.getName() + ".json",
                     fontJson.toString());
-            Logs.logSuccess("Generated animation font for: " + animGlyph.getName() +
-                    " (" + animGlyph.getFrameCount() + " frames @ " + animGlyph.getFps() + " fps)");
+            if (Settings.DEBUG.toBool()) {
+                Logs.logSuccess("Generated animation font for: " + animGlyph.getName() +
+                        " (" + animGlyph.getFrameCount() + " frames @ " + animGlyph.getFps() + " fps)");
+            }
         }
     }
 
 
     public static void writeStringToVirtual(String folder, String name, String content) {
-        folder = !folder.endsWith("/") ? folder : folder.substring(0, folder.length() - 1);
         addOutputFiles(
-                new VirtualFile(folder, name, new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8))));
+                new VirtualFile(normalizeVirtualFolder(folder), name, new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8))));
+    }
+
+    public static String normalizeVirtualPath(String folder, String name) {
+        String normalizedFolder = normalizeVirtualFolder(folder);
+        String normalizedName = name == null ? "" : name.trim();
+        while (normalizedName.startsWith("/")) normalizedName = normalizedName.substring(1);
+        return normalizedFolder.isEmpty() ? normalizedName : normalizedFolder + "/" + normalizedName;
+    }
+
+    private static String normalizeVirtualFolder(String folder) {
+        String normalizedFolder = folder == null ? "" : folder.trim();
+        while (normalizedFolder.endsWith("/")) normalizedFolder = normalizedFolder.substring(0, normalizedFolder.length() - 1);
+        while (normalizedFolder.startsWith("/")) normalizedFolder = normalizedFolder.substring(1);
+        return normalizedFolder;
     }
 
     public static void deleteFileFromVirtualAndDisk(String folder, String name) {
@@ -1354,6 +1455,7 @@ public class ResourcePack {
     private void mergeUploadedPacks(List<VirtualFile> output) {
         PackMerger packMerger = new PackMerger(packFolder);
         List<VirtualFile> mergedFiles = packMerger.mergeUploadedPacks();
+        PackMcmetaUtils.mergeOverlayEntriesIntoOutput(output, packMerger.getMergedOverlayEntries());
 
         if (!mergedFiles.isEmpty()) {
             output.addAll(mergedFiles);

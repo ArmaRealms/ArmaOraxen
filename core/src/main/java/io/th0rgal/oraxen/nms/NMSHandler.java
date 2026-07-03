@@ -176,6 +176,10 @@ public interface NMSHandler {
      */
     ItemStack applyGenericComponents(ItemStack itemStack, Map<String, Object> components);
 
+    default @NotNull ItemStack paintingVariantComponent(@NotNull ItemStack itemStack, @NotNull String paintingVariant) {
+        return itemStack;
+    }
+
     class EmptyNMSHandler implements NMSHandler {
 
         @Override

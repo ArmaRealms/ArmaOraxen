@@ -5,10 +5,11 @@ import com.jeff_media.customblockdata.CustomBlockData;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenBlocks;
 import io.th0rgal.oraxen.api.OraxenFurniture;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.NoteBlockMechanic;
 import io.th0rgal.oraxen.nms.NMSHandlers;
+import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
 import org.apache.commons.lang3.Range;
 import org.bukkit.*;
 import org.bukkit.block.Sign;
@@ -83,10 +84,11 @@ public class BlockHelpers {
         if (sound == null || mechanics == null) return sound;
 
         sound = sound.replace("minecraft:", "");
-        if (sound.startsWith("block.wood") && mechanics.getBoolean("noteblock_and_block")) {
+        if (sound.startsWith("block.wood") && BlockSounds.isBlockSoundEnabled(mechanics)) {
             return sound.replace("block.wood", "required.wood");
-        } else if (sound.startsWith("block.stone") && mechanics.getBoolean("stringblock_and_furniture")) {
-                return sound.replace("block.stone", "required.stone");
+        } else if (sound.startsWith("block.stone") && (BlockSounds.isBlockSoundEnabled(mechanics) ||
+                BlockSounds.isFurnitureSoundEnabled(mechanics))) {
+            return sound.replace("block.stone", "required.stone");
         } else return sound;
     }
 

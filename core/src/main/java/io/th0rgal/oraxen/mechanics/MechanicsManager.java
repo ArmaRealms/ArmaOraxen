@@ -3,6 +3,8 @@ package io.th0rgal.oraxen.mechanics;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.events.OraxenNativeMechanicsRegisteredEvent;
 import io.th0rgal.oraxen.compatibilities.CompatibilitiesManager;
+import io.th0rgal.oraxen.configs.LegacyBlockMechanicMigration;
+import io.th0rgal.oraxen.configs.MigrationBackups;
 import io.th0rgal.oraxen.mechanics.provided.combat.knockbackstrike.KnockbackStrikeMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.combat.bleeding.BleedingMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.combat.lifeleech.LifeLeechMechanicFactory;
@@ -23,15 +25,11 @@ import io.th0rgal.oraxen.mechanics.provided.farming.harvesting.HarvestingMechani
 import io.th0rgal.oraxen.mechanics.provided.farming.smelting.SmeltingMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.farming.watering.WateringMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockMechanicFactory;
-import io.th0rgal.oraxen.mechanics.provided.gameplay.chorusblock.ChorusBlockMechanicFactory;
-import io.th0rgal.oraxen.mechanics.provided.gameplay.shaped.ShapedBlockMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.durability.DurabilityMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.efficiency.EfficiencyMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureFactory;
-import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.NoteBlockMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.repair.RepairMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.storage.StorageMechanic;
-import io.th0rgal.oraxen.mechanics.provided.gameplay.stringblock.StringBlockMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.togglelight.ToggleLightMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.misc.armor_effects.ArmorEffectsFactory;
 import io.th0rgal.oraxen.mechanics.provided.misc.backpack.BackpackMechanicFactory;
@@ -44,6 +42,7 @@ import io.th0rgal.oraxen.mechanics.provided.misc.itemtype.ItemTypeMechanicFactor
 import io.th0rgal.oraxen.mechanics.provided.misc.misc.MiscMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.misc.music_disc.MusicDiscMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.misc.soulbound.SoulBoundMechanicFactory;
+import io.th0rgal.oraxen.utils.OraxenYaml;
 import io.th0rgal.oraxen.utils.SchedulerUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
@@ -60,6 +59,7 @@ import java.util.Map.Entry;
 public class MechanicsManager {
 
     private static final Map<String, MechanicFactory> FACTORIES_BY_MECHANIC_ID = new HashMap<>();
+    private static final Map<String, MechanicFactory> FACTORIES_BY_LOWERCASE_MECHANIC_ID = new HashMap<>();
     private static final Map<String, List<SchedulerUtil.ScheduledTask>> MECHANIC_TASKS = new HashMap<>();
     private static final Map<String, List<Listener>> MECHANICS_LISTENERS = new HashMap<>();
     private static final Set<String> NATIVE_MECHANIC_IDS = Set.of(
@@ -100,10 +100,6 @@ public class MechanicsManager {
         registerFactory("durability", DurabilityMechanicFactory::new);
         registerFactory("efficiency", EfficiencyMechanicFactory::new);
         registerFactory("block", BlockMechanicFactory::new);
-        registerFactory("noteblock", NoteBlockMechanicFactory::new);
-        registerFactory("stringblock", StringBlockMechanicFactory::new);
-        registerFactory("chorusblock", ChorusBlockMechanicFactory::new);
-        registerFactory("shaped_block", ShapedBlockMechanicFactory::new);
         registerFactory("furniture", FurnitureFactory::new);
         registerFactory("toggle_light", ToggleLightMechanicFactory::new);
 
@@ -144,11 +140,15 @@ public class MechanicsManager {
      * @param enabled    if the mechanic should be enabled by default or not
      */
     public static void registerMechanicFactory(String mechanicId, MechanicFactory factory, boolean enabled) {
-        if (enabled) FACTORIES_BY_MECHANIC_ID.put(mechanicId, factory);
+        if (!enabled) return;
+        FACTORIES_BY_MECHANIC_ID.put(mechanicId, factory);
+        FACTORIES_BY_LOWERCASE_MECHANIC_ID.put(mechanicId.toLowerCase(Locale.ROOT), factory);
     }
 
     public static void unregisterMechanicFactory(String mechanicId) {
-        FACTORIES_BY_MECHANIC_ID.remove(mechanicId);
+        MechanicFactory factory = FACTORIES_BY_MECHANIC_ID.remove(mechanicId);
+        FACTORIES_BY_LOWERCASE_MECHANIC_ID.remove(mechanicId.toLowerCase(Locale.ROOT));
+        if (factory != null) factory.onUnregister();
         unloadListeners(mechanicId);
         unregisterTasks(mechanicId);
     }
@@ -165,16 +165,23 @@ public class MechanicsManager {
         registerFactory(mechanicId, constructor);
     }
 
+    private static boolean migrateLegacyBlockFactory(final String mechanicId, final YamlConfiguration mechanicsConfig) {
+        return "block".equals(mechanicId) && LegacyBlockMechanicMigration.migrate(mechanicsConfig);
+    }
+
     private static void registerFactory(final String mechanicId, final FactoryConstructor constructor) {
         final Entry<File, YamlConfiguration> mechanicsEntry = OraxenPlugin.get().getResourceManager().getMechanicsEntry();
         final YamlConfiguration mechanicsConfig = mechanicsEntry.getValue();
-        final boolean updated = false;
-        ConfigurationSection factorySection = mechanicsConfig.getConfigurationSection(mechanicId);
+        final boolean updated = migrateLegacyBlockFactory(mechanicId, mechanicsConfig);
+        ConfigurationSection factorySection = OraxenYaml.getConfigurationSection(mechanicsConfig, mechanicId);
         if (factorySection != null && factorySection.getBoolean("enabled"))
-            FACTORIES_BY_MECHANIC_ID.put(mechanicId, constructor.create(factorySection));
+            registerMechanicFactory(mechanicId, constructor.create(factorySection), true);
 
         try {
-            if (updated) mechanicsConfig.save(mechanicsEntry.getKey());
+            if (updated) {
+                MigrationBackups.moveToMigrated(OraxenPlugin.get().getDataFolder(), mechanicsEntry.getKey());
+                mechanicsConfig.save(mechanicsEntry.getKey());
+            }
         } catch (final IOException e) {
             e.printStackTrace();
         }
@@ -237,11 +244,18 @@ public class MechanicsManager {
     }
 
     public static boolean isMechanicEnabled(String mechanicId) {
-        return FACTORIES_BY_MECHANIC_ID.containsKey(mechanicId);
+        return getMechanicFactory(mechanicId) != null;
     }
 
     public static MechanicFactory getMechanicFactory(final String mechanicID) {
-        return FACTORIES_BY_MECHANIC_ID.get(mechanicID);
+        if (mechanicID == null)
+            return null;
+
+        MechanicFactory factory = FACTORIES_BY_MECHANIC_ID.get(mechanicID);
+        if (factory != null)
+            return factory;
+
+        return FACTORIES_BY_LOWERCASE_MECHANIC_ID.get(mechanicID.toLowerCase(Locale.ROOT));
     }
 
     /**

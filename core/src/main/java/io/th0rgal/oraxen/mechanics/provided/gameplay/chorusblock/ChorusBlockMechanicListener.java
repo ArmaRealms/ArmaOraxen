@@ -10,7 +10,7 @@ import io.th0rgal.oraxen.api.events.chorusblock.OraxenChorusBlockPlaceEvent;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.limitedplacing.LimitedPlacing;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.storage.StorageMechanic;
 import io.th0rgal.oraxen.utils.*;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.apache.commons.lang3.Range;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -56,7 +56,7 @@ public class ChorusBlockMechanicListener implements Listener {
             public boolean isTriggered(final Player player, final Block block, final ItemStack tool) {
                 if (block.getType() != Material.CHORUS_PLANT) return false;
                 final ChorusBlockMechanic mechanic = OraxenBlocks.getChorusMechanic(block);
-                return mechanic != null && mechanic.hasHardness();
+                return mechanic != null && mechanic.hasHardness(tool);
             }
 
             @Override
@@ -68,15 +68,9 @@ public class ChorusBlockMechanicListener implements Listener {
             public long getPeriod(final Player player, final Block block, final ItemStack tool) {
                 final ChorusBlockMechanic mechanic = OraxenBlocks.getChorusMechanic(block);
                 if (mechanic == null) return 0;
-                final double hardness = mechanic.getHardness();
-                double modifier = 1;
-                if (mechanic.getDrop().canDrop(tool)) {
-                    modifier *= 0.4;
-                    final int diff = mechanic.getDrop().getDiff(tool);
-                    if (diff >= 1) modifier *= Math.pow(0.9, diff);
-                }
-                long period = (long) (hardness * modifier);
-                return period == 0 && mechanic.hasHardness() ? 1 : period;
+                final double hardness = mechanic.getHardness(tool);
+                long period = Math.round(hardness * 0.4D / mechanic.getPacketSpeedMultiplier(tool, block.getType()));
+                return period == 0 && mechanic.hasHardness(tool) ? 1 : period;
             }
         };
     }
@@ -594,6 +588,8 @@ public class ChorusBlockMechanicListener implements Listener {
             target = placedAgainst.getRelative(face);
         if (!BlockHelpers.isReplaceable(target.getType()))
             return;
+        if (!mechanic.canPlaceOn(face, placedAgainst))
+            return;
 
         // Store oldData in case event(s) is cancelled, set the target blockData
         final BlockData oldData = target.getBlockData();
@@ -604,7 +600,7 @@ public class ChorusBlockMechanicListener implements Listener {
 
         Range<Integer> worldHeightRange = Range.between(target.getWorld().getMinHeight(),
                 target.getWorld().getMaxHeight() - 1);
-        if (!ProtectionLib.canBuild(player, target.getLocation()))
+        if (!AntiGriefLib.canBuild(player, target.getLocation()))
             blockPlaceEvent.setCancelled(true);
         if (!worldHeightRange.contains(target.getY()))
             blockPlaceEvent.setCancelled(true);

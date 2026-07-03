@@ -66,7 +66,7 @@ public class SelfHost implements HostingProvider {
         }
         byte[] hashBytes = digest.digest();
         this.sha1 = SHA1Utils.bytesToHex(hashBytes);
-        this.packUUID = UUID.nameUUIDFromBytes(sha1.getBytes());
+        this.packUUID = UUID.nameUUIDFromBytes(hashBytes);
     }
 
     private void startServer(File packFile) throws IOException {

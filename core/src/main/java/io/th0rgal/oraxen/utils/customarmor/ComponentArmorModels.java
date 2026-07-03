@@ -1,7 +1,7 @@
 package io.th0rgal.oraxen.utils.customarmor;
 
 import io.th0rgal.oraxen.api.OraxenItems;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.VirtualFile;

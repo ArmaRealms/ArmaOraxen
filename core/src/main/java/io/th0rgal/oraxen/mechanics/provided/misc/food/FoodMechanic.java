@@ -3,10 +3,11 @@ package io.th0rgal.oraxen.mechanics.provided.misc.food;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.compatibilities.provided.ecoitems.WrappedEcoItem;
 import io.th0rgal.oraxen.compatibilities.provided.mythiccrucible.WrappedCrucibleItem;
-import io.th0rgal.oraxen.config.Message;
+import io.th0rgal.oraxen.configs.Message;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.mechanics.Mechanic;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
+import io.th0rgal.oraxen.utils.OraxenYaml;
 import io.th0rgal.oraxen.utils.PotionUtils;
 import io.th0rgal.oraxen.utils.logs.Logs;
 
@@ -40,12 +41,12 @@ public class FoodMechanic extends Mechanic {
 
         // This must be initialized in OraxenItemsLoadedEvent due to OraxenItems not
         // being loaded yet
-        replacementItem = section.isConfigurationSection("replacement") ? new ItemStack(Material.AIR) : null;
+        replacementItem = OraxenYaml.isConfigurationSection(section, "replacement") ? new ItemStack(Material.AIR) : null;
 
-        ConfigurationSection effectsSection = section.getConfigurationSection("effects");
+        ConfigurationSection effectsSection = OraxenYaml.getConfigurationSection(section, "effects");
         if (effectsSection != null)
             for (String effect : effectsSection.getKeys(false)) {
-                ConfigurationSection effectSection = effectsSection.getConfigurationSection(effect);
+                ConfigurationSection effectSection = OraxenYaml.getConfigurationSection(effectsSection, effect);
                 if (effectSection != null)
                     registerEffects(effectSection);
             }
@@ -70,7 +71,7 @@ public class FoodMechanic extends Mechanic {
 
     public void registerReplacement(ConfigurationSection section) {
         if (section.isString("minecraft_type")) {
-            Material material = Material.getMaterial(Objects.requireNonNull(section.getString("minecraft_type")));
+            Material material = OraxenYaml.getMaterial(Objects.requireNonNull(section.getString("minecraft_type")));
             if (material == null) {
                 Message.INVALID_MATERIAL
                         .log(AdventureUtils.tagResolver("minecraft_type", section.getString("minecraft_type")));

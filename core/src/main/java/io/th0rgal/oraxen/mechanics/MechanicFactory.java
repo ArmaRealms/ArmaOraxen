@@ -42,6 +42,9 @@ public abstract class MechanicFactory {
 
     public abstract Mechanic parse(ConfigurationSection itemMechanicConfiguration);
 
+    public void onUnregister() {
+    }
+
     /**
      * Returns the configuration schema for this mechanic.
      * By default, scans for @ConfigProperty annotations on this class.

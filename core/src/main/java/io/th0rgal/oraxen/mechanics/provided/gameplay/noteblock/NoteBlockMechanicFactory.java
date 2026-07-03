@@ -13,6 +13,7 @@ import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.logstrip.LogStrip
 import io.th0rgal.oraxen.nms.NMSHandlers;
 import io.th0rgal.oraxen.utils.PaperConfigUpdater;
 import io.th0rgal.oraxen.utils.VersionUtil;
+import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.apache.commons.lang3.Range;
 import org.bukkit.Bukkit;
@@ -42,8 +43,14 @@ public class NoteBlockMechanicFactory extends MechanicFactory {
     public final int farmBlockCheckDelay;
     public final boolean customSounds;
     private final boolean removeMineableTag;
+    private final boolean registerListeners;
+    private boolean enabled;
 
     public NoteBlockMechanicFactory(ConfigurationSection section) {
+        this(section, true);
+    }
+
+    public NoteBlockMechanicFactory(ConfigurationSection section, boolean registerListeners) {
         super(section);
         instance = this;
         variants = new JsonObject();
@@ -53,30 +60,8 @@ public class NoteBlockMechanicFactory extends MechanicFactory {
         farmBlock = false;
         customSounds = areCustomSoundsEnabled();
         removeMineableTag = section.getBoolean("remove_mineable_tag", false);
-
-        // this modifier should be executed when all the items have been parsed, just
-        // before zipping the pack
-        OraxenPlugin.get().getResourcePack().addModifiers(getMechanicID(), packFolder ->
-                OraxenPlugin.get().getResourcePack().writeStringToVirtual(
-                        "assets/minecraft/blockstates", "note_block.json", getBlockstateContent())
-        );
-        MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(),
-                new NoteBlockMechanicListener(),
-                new LogStripListener()
-        );
-        if (customSounds) MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new NoteBlockSoundListener());
-
-        // Physics-related stuff
-        if (VersionUtil.isPaperServer())
-            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new NoteBlockMechanicListener.NoteBlockMechanicPaperListener());
-        boolean noteblockUpdatesDisabled = NMSHandlers.isNoteblockUpdatesDisabled();
-        if (!VersionUtil.isPaperServer() || !noteblockUpdatesDisabled)
-            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new NoteBlockMechanicListener.NoteBlockMechanicPhysicsListener());
-        // Warn if Paper config is not set (auto-update happens earlier in plugin enable)
-        if (VersionUtil.isPaperServer() && VersionUtil.atOrAbove("1.20.1") && !noteblockUpdatesDisabled
-                && PaperConfigUpdater.wasBlockUpdateSettingUpdated("disable-noteblock-updates")) {
-            Logs.logWarning("Paper block-updates.disable-noteblock-updates is not enabled, restart may be required");
-        }
+        this.registerListeners = registerListeners;
+        enabled = false;
     }
 
     public static String getInstrumentName(int id) {
@@ -155,17 +140,21 @@ public class NoteBlockMechanicFactory extends MechanicFactory {
     }
 
     public static boolean isEnabled() {
-        return instance != null && MechanicsManager.isMechanicEnabled("noteblock");
+        return instance != null && instance.enabled && MechanicsManager.isMechanicEnabled("block");
     }
 
     public static boolean areCustomSoundsEnabled() {
         ConfigurationSection customSoundsSection = OraxenPlugin.get().getConfigsManager().getMechanics()
                 .getConfigurationSection("custom_block_sounds");
-        return customSoundsSection == null || customSoundsSection.getBoolean("noteblock_and_block", true);
+        return BlockSounds.isBlockSoundEnabled(customSoundsSection);
     }
 
     public static NoteBlockMechanicFactory getInstance() {
         return instance;
+    }
+
+    public static void clearInstance(NoteBlockMechanicFactory factory) {
+        if (instance == factory) instance = null;
     }
 
     public boolean removeMineableTag() {
@@ -190,8 +179,40 @@ public class NoteBlockMechanicFactory extends MechanicFactory {
         return noteblock.toString();
     }
 
+    private void enable() {
+        if (enabled) return;
+        enabled = true;
+
+        // this modifier should be executed when all the items have been parsed, just
+        // before zipping the pack
+        OraxenPlugin.get().getResourcePack().addModifiers(getMechanicID(), packFolder ->
+                OraxenPlugin.get().getResourcePack().writeStringToVirtual(
+                        "assets/minecraft/blockstates", "note_block.json", getBlockstateContent())
+        );
+        if (!registerListeners) return;
+
+        MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(),
+                new NoteBlockMechanicListener(),
+                new LogStripListener()
+        );
+        if (customSounds) MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new NoteBlockSoundListener());
+
+        // Physics-related stuff
+        if (VersionUtil.isPaperServer())
+            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new NoteBlockMechanicListener.NoteBlockMechanicPaperListener());
+        boolean noteblockUpdatesDisabled = NMSHandlers.isNoteblockUpdatesDisabled();
+        if (!VersionUtil.isPaperServer() || !noteblockUpdatesDisabled)
+            MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new NoteBlockMechanicListener.NoteBlockMechanicPhysicsListener());
+        // Warn if Paper config is not set (auto-update happens earlier in plugin enable)
+        if (VersionUtil.isPaperServer() && VersionUtil.atOrAbove("1.20.1") && !noteblockUpdatesDisabled
+                && PaperConfigUpdater.wasBlockUpdateSettingUpdated("disable-noteblock-updates")) {
+            Logs.logWarning("Paper block-updates.disable-noteblock-updates is not enabled, restart may be required");
+        }
+    }
+
     @Override
     public Mechanic parse(ConfigurationSection itemMechanicConfiguration) {
+        enable();
         NoteBlockMechanic mechanic = new NoteBlockMechanic(this, itemMechanicConfiguration);
         if (!Range.between(0, 775).contains(mechanic.getCustomVariation())) {
             Logs.logError("The custom_variation of " + mechanic.getItemID() + " is " + mechanic.getCustomVariation() + ", but must be between 0 and 775!");

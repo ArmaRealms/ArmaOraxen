@@ -7,19 +7,22 @@ import io.th0rgal.oraxen.api.events.chorusblock.OraxenChorusBlockDamageEvent;
 import io.th0rgal.oraxen.api.events.furniture.OraxenFurnitureDamageEvent;
 import io.th0rgal.oraxen.api.events.noteblock.OraxenNoteBlockDamageEvent;
 import io.th0rgal.oraxen.api.events.stringblock.OraxenStringBlockDamageEvent;
-import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockMechanic;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockBreaking;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockDurability;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.chorusblock.ChorusBlockMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.NoteBlockMechanic;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.shaped.ShapedBlockMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.stringblock.StringBlockMechanic;
 import io.th0rgal.oraxen.utils.BlockHelpers;
 import io.th0rgal.oraxen.utils.EventUtils;
 import io.th0rgal.oraxen.utils.ItemUtils;
 import io.th0rgal.oraxen.utils.SchedulerUtil;
+import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
 import io.th0rgal.oraxen.utils.drops.Drop;
 import io.th0rgal.oraxen.utils.wrappers.EnchantmentWrapper;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -43,8 +46,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockMechanicFactory.getBlockMechanic;
-
 public abstract class BreakerSystem {
 
     public static final List<HardnessModifier> MODIFIERS = new ArrayList<>();
@@ -57,7 +58,7 @@ public abstract class BreakerSystem {
 
     protected abstract void sendBlockBreak(final Player player, final Location location, final int stage) ;
 
-    protected void handleEvent(Player player, Block block, Location location, BlockFace blockFace, World world, Runnable cancel, boolean startedDigging) {
+    protected void handleEvent(Player player, Block block, Location location, BlockFace blockFace, World world, Runnable cancel, boolean startedDigging, boolean finishedDigging) {
         if (player.getGameMode() == GameMode.CREATIVE) return;
 
         final ItemStack item = player.getInventory().getItemInMainHand();
@@ -75,23 +76,54 @@ public abstract class BreakerSystem {
 
         NoteBlockMechanic noteMechanic = OraxenBlocks.getNoteBlockMechanic(block);
         StringBlockMechanic stringMechanic = OraxenBlocks.getStringMechanic(block);
+        ChorusBlockMechanic chorusMechanic = OraxenBlocks.getChorusMechanic(block);
+        ShapedBlockMechanic shapedMechanic = OraxenBlocks.getShapedMechanic(block);
         FurnitureMechanic furnitureMechanic = OraxenFurniture.getFurnitureMechanic(block);
         if (block.getType() == Material.NOTE_BLOCK && noteMechanic == null) return;
         if (block.getType() == Material.TRIPWIRE && stringMechanic == null) return;
         if (block.getType() == Material.BARRIER && furnitureMechanic == null) return;
+
+        if (CustomBlockMiningListener.isSupported()
+                && (noteMechanic != null || stringMechanic != null || shapedMechanic != null
+                || chorusMechanic != null)) {
+            return;
+        }
+
+        if (finishedDigging && furnitureMechanic != null) {
+            cancel.run();
+            final List<Location> breakAnimationLocations = furnitureBarrierLocations(furnitureMechanic, block);
+            stopBlockBreaker(location);
+            stopBlockHitSound(location);
+            SchedulerUtil.runForEntity(player, () -> player.sendBlockChange(location, block.getBlockData()));
+            resetBlockBreakAnimations(world, breakAnimationLocations);
+            return;
+        }
 
         cancel.run();
 
         if (startedDigging) {
             // Get these when block is started being broken to minimize checks & allow for proper damage checks later
             final Drop drop;
-            if (furnitureMechanic != null)
+            final BlockBreaking.DurabilityAction durabilityAction;
+            if (furnitureMechanic != null) {
                 drop = furnitureMechanic.getDrop() != null ? furnitureMechanic.getDrop() : Drop.emptyDrop();
-            else if (noteMechanic != null)
-                drop = noteMechanic.getDrop() != null ? noteMechanic.getDrop() : Drop.emptyDrop();
-            else if (stringMechanic != null)
-                drop = stringMechanic.getDrop() != null ? stringMechanic.getDrop() : Drop.emptyDrop();
-            else drop = null;
+                durabilityAction = null;
+            } else if (noteMechanic != null) {
+                drop = noteMechanic.getDrop(item) != null ? noteMechanic.getDrop(item) : Drop.emptyDrop();
+                durabilityAction = noteMechanic.getDurabilityAction(item);
+            } else if (stringMechanic != null) {
+                drop = stringMechanic.getDrop(item) != null ? stringMechanic.getDrop(item) : Drop.emptyDrop();
+                durabilityAction = stringMechanic.getDurabilityAction(item);
+            } else if (chorusMechanic != null) {
+                drop = chorusMechanic.getDrop(item) != null ? chorusMechanic.getDrop(item) : Drop.emptyDrop();
+                durabilityAction = chorusMechanic.getDurabilityAction(item);
+            } else if (shapedMechanic != null) {
+                drop = shapedMechanic.getDrop(item) != null ? shapedMechanic.getDrop(item) : Drop.emptyDrop();
+                durabilityAction = shapedMechanic.getDurabilityAction(item);
+            } else {
+                drop = null;
+                durabilityAction = null;
+            }
 
             if (breakerLocations.contains(location)) {
                 SchedulerUtil.ScheduledTask existingTask = breakerTasks.remove(location);
@@ -130,37 +162,29 @@ public abstract class BreakerSystem {
                     if (item.getEnchantmentLevel(EnchantmentWrapper.EFFICIENCY) >= 5)
                         valueHolder[0] = 10;
 
-                    for (final Entity entity : world.getNearbyEntities(location, 16, 16, 16)) {
-                        if (entity instanceof Player viewer) {
-                            if (furnitureMechanic != null) for (Location barrierLoc : furnitureBarrierLocations)
-                                sendBlockBreak(viewer, barrierLoc, valueHolder[0]);
-                            else sendBlockBreak(viewer, location, valueHolder[0]);
-                        }
-                    }
+                    sendBlockBreakToViewers(world, location,
+                            furnitureMechanic != null ? furnitureBarrierLocations : Collections.singletonList(location),
+                            valueHolder[0]);
 
                     if (valueHolder[0]++ < 10) return;
-                    if (EventUtils.callEvent(new BlockBreakEvent(block, player)) && ProtectionLib.canBreak(player, location)) {
-                        // Damage item with properties identified earlier
-                        ItemUtils.damageItem(player, drop, item);
+                    BlockDurability.setSuppressVanillaDamageCancellation(true);
+                    boolean canBreak;
+                    try {
+                        canBreak = EventUtils.callEvent(new BlockBreakEvent(block, player)) && AntiGriefLib.canBreak(player, location);
+                    } finally {
+                        BlockDurability.setSuppressVanillaDamageCancellation(false);
+                    }
+                    if (canBreak) {
+                        // Damage item with properties identified earlier, unless the block mechanic configured durability itself.
+                        if (durabilityAction == null) ItemUtils.damageItem(player, drop, item);
                         modifier.breakBlock(player, block, item);
                     } else stopBlockHitSound(location);
 
                     stopBlockBreaker(location);
                     stopBlockHitSound(location);
-                    for (final Entity entity : world.getNearbyEntities(location, 16, 16, 16)) {
-                        if (entity instanceof Player viewer) {
-                            // Send block break animation to each viewer on their own thread
-                            SchedulerUtil.runForEntity(viewer, () -> {
-                                if (furnitureMechanic != null) {
-                                    for (Location barrierLoc : furnitureBarrierLocations) {
-                                        sendBlockBreak(viewer, barrierLoc, valueHolder[0]);
-                                    }
-                                } else {
-                                    sendBlockBreak(viewer, location, valueHolder[0]);
-                                }
-                            });
-                        }
-                    }
+                    sendBlockBreakToViewers(world, location,
+                            furnitureMechanic != null ? furnitureBarrierLocations : Collections.singletonList(location),
+                            valueHolder[0]);
                 });
                 breakerTasks.put(location, breakerTask);
             });
@@ -172,38 +196,64 @@ public abstract class BreakerSystem {
 
             // Use entity scheduler for player operations on Folia (player may move to different region)
             SchedulerUtil.runForEntity(player, () -> {
-                if (!ProtectionLib.canBreak(player, location))
+                if (!AntiGriefLib.canBreak(player, location))
                     player.sendBlockChange(location, block.getBlockData());
             });
 
-            SchedulerUtil.runAtLocation(location, () -> {
-                for (final Entity entity : world.getNearbyEntities(location, 16, 16, 16)) {
-                    if (entity instanceof Player viewer) {
-                        SchedulerUtil.runForEntity(viewer, () -> sendBlockBreak(viewer, location, 10));
-                    }
+            resetBlockBreakAnimations(world, Collections.singletonList(location));
+        }
+    }
+
+    private void resetBlockBreakAnimations(World world, List<Location> locations) {
+        if (locations.isEmpty()) return;
+
+        for (Location resetLocation : locations)
+            SchedulerUtil.runAtLocation(resetLocation, () ->
+                    sendBlockBreakToViewers(world, resetLocation, Collections.singletonList(resetLocation), 10));
+    }
+
+    private void sendBlockBreakToViewers(World world, Location origin, List<Location> breakLocations, int stage) {
+        if (breakLocations.isEmpty()) return;
+
+        if (!VersionUtil.isFoliaServer()) {
+            for (final Entity entity : world.getNearbyEntities(origin, 16, 16, 16)) {
+                if (entity instanceof Player viewer) {
+                    for (Location breakLocation : breakLocations)
+                        sendBlockBreak(viewer, breakLocation, stage);
                 }
-            });
+            }
+            return;
+        }
+
+        // Folia does not allow arbitrary nearby-entity scans from a region thread.
+        // Hop to each player's entity scheduler before reading their location/world.
+        for (final Player viewer : Bukkit.getOnlinePlayers()) {
+            SchedulerUtil.runForEntity(viewer, () -> {
+                if (!viewer.isOnline() || !viewer.getWorld().equals(world)) return;
+                if (viewer.getLocation().distanceSquared(origin) > 16 * 16) return;
+                for (Location breakLocation : breakLocations)
+                    sendBlockBreak(viewer, breakLocation, stage);
+            }, null);
         }
     }
 
     private List<Location> furnitureBarrierLocations(FurnitureMechanic furnitureMechanic, Block block) {
-        if (!breakerLocations.contains(block.getLocation())) return List.of(block.getLocation());
-
         // Get base entity directly - we're already on the correct thread context
         // (main thread for Bukkit, region thread for Folia) from block damage events.
         if (furnitureMechanic == null) return Collections.singletonList(block.getLocation());
-        
+
         Entity furnitureBaseEntity = furnitureMechanic.getBaseEntity(block);
         if (furnitureBaseEntity == null) return Collections.singletonList(block.getLocation());
-        
+
         return furnitureMechanic.getLocations(
                 FurnitureMechanic.getFurnitureYaw(furnitureBaseEntity),
-                furnitureBaseEntity.getLocation(), 
+                furnitureBaseEntity.getLocation(),
                 furnitureMechanic.getBarriers());
     }
 
     private boolean blockDamageEventCancelled(Block block, Player player) {
         if (!breakerLocations.contains(block.getLocation())) return false;
+        if (OraxenBlocks.getShapedMechanic(block) != null) return false;
 
         // Events must be dispatched synchronously to check cancellation status.
         // This is called from a scheduled task on the main/region thread.
@@ -276,29 +326,26 @@ public abstract class BreakerSystem {
             case NOTE_BLOCK -> {
                 NoteBlockMechanic mechanic = OraxenBlocks.getNoteBlockMechanic(block);
                 if (mechanic == null || !mechanic.hasBlockSounds()) return null;
-                if (!soundSection.getBoolean("noteblock_and_block")) return null;
-                else return mechanic.getBlockSounds();
-            }
-            case MUSHROOM_STEM -> {
-                BlockMechanic mechanic = getBlockMechanic(block);
-                if (mechanic == null || !mechanic.hasBlockSounds()) return null;
-                if (!soundSection.getBoolean("noteblock_and_block")) return null;
+                if (!BlockSounds.isBlockSoundEnabled(soundSection)) return null;
                 else return mechanic.getBlockSounds();
             }
             case TRIPWIRE -> {
                 StringBlockMechanic mechanic = OraxenBlocks.getStringMechanic(block);
                 if (mechanic == null || !mechanic.hasBlockSounds()) return null;
-                if (!soundSection.getBoolean("stringblock_and_furniture")) return null;
+                if (!BlockSounds.isStringBlockSoundEnabled(soundSection)) return null;
                 else return mechanic.getBlockSounds();
             }
             case BARRIER -> {
                 FurnitureMechanic mechanic = OraxenFurniture.getFurnitureMechanic(block);
                 if (mechanic == null || !mechanic.hasBlockSounds()) return null;
-                if (!soundSection.getBoolean("stringblock_and_furniture")) return null;
+                if (!BlockSounds.isFurnitureSoundEnabled(soundSection)) return null;
                 else return mechanic.getBlockSounds();
             }
             default -> {
-                return null;
+                ShapedBlockMechanic mechanic = OraxenBlocks.getShapedMechanic(block);
+                return mechanic != null && mechanic.hasBlockSounds() && BlockSounds.isBlockSoundEnabled(soundSection)
+                        ? mechanic.getBlockSounds()
+                        : null;
             }
         }
     }
@@ -309,10 +356,10 @@ public abstract class BreakerSystem {
         BlockSounds sounds = getBlockSounds(block);
         if (sounds == null) return null;
         return switch (block.getType()) {
-            case NOTE_BLOCK, MUSHROOM_STEM -> sounds.hasHitSound() ? sounds.getHitSound() : "required.wood.hit";
+            case NOTE_BLOCK -> sounds.hasHitSound() ? sounds.getHitSound() : "required.wood.hit";
             case TRIPWIRE -> sounds.hasHitSound() ? sounds.getHitSound() : "block.tripwire.detach";
             case BARRIER -> sounds.hasHitSound() ? sounds.getHitSound() : "required.stone.hit";
-            default -> block.getBlockData().getSoundGroup().getHitSound().getKey().toString();
+            default -> sounds.hasHitSound() ? sounds.getHitSound() : block.getBlockData().getSoundGroup().getHitSound().getKey().toString();
         };
     }
 }

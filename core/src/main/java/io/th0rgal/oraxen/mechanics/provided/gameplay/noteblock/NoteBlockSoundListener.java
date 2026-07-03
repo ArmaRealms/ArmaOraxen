@@ -7,7 +7,7 @@ import io.th0rgal.oraxen.api.events.noteblock.OraxenNoteBlockPlaceEvent;
 import io.th0rgal.oraxen.utils.BlockHelpers;
 import io.th0rgal.oraxen.utils.SchedulerUtil;
 import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
@@ -66,7 +66,7 @@ public class NoteBlockSoundListener implements Listener {
         if (block.getBlockData().getSoundGroup().getBreakSound() != Sound.BLOCK_WOOD_BREAK) return;
         if (OraxenBlocks.isOraxenNoteBlock(block) || block.getType() == Material.MUSHROOM_STEM) return;
 
-        if (!event.isCancelled() && ProtectionLib.canBreak(event.getPlayer(), location))
+        if (!event.isCancelled() && AntiGriefLib.canBreak(event.getPlayer(), location))
             BlockHelpers.playCustomBlockSound(location, VANILLA_WOOD_BREAK, VANILLA_BREAK_VOLUME, VANILLA_BREAK_PITCH);
     }
 
@@ -106,8 +106,10 @@ public class NoteBlockSoundListener implements Listener {
         if (!NoteBlockMechanicFactory.isEnabled() || !NoteBlockMechanicFactory.areCustomSoundsEnabled()) return;
         Entity entity = event.getEntity();
         if (!(entity instanceof LivingEntity)) return;
+        Location eventLoc = event.getLocation();
         Location entityLoc = entity.getLocation();
-        if (entityLoc == null || !isLoaded(entityLoc)) return;
+        if (eventLoc == null || entityLoc == null || eventLoc.getWorld() == null || entityLoc.getWorld() == null) return;
+        if (!eventLoc.getWorld().equals(entityLoc.getWorld()) || !isLoaded(eventLoc)) return;
 
         GameEvent gameEvent = event.getEvent();
         if (gameEvent == null) return;
@@ -138,7 +140,7 @@ public class NoteBlockSoundListener implements Listener {
             pitch = (check) ? mechanic.getBlockSounds().getFallPitch() : VANILLA_FALL_PITCH;
         } else return;
 
-        BlockHelpers.playCustomBlockSound(entity.getLocation(), sound, SoundCategory.PLAYERS, volume, pitch);
+        BlockHelpers.playCustomBlockSound(entityLoc, sound, SoundCategory.PLAYERS, volume, pitch);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

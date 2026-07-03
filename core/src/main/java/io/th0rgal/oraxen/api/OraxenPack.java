@@ -1,11 +1,11 @@
 package io.th0rgal.oraxen.api;
 
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.Message;
-import io.th0rgal.oraxen.font.FontManager;
+import io.th0rgal.oraxen.configs.Message;
+import io.th0rgal.oraxen.fonts.FontManager;
 import io.th0rgal.oraxen.pack.generation.ResourcePack;
 import io.th0rgal.oraxen.pack.upload.UploadManager;
-import io.th0rgal.oraxen.sound.SoundManager;
+import io.th0rgal.oraxen.sounds.SoundManager;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.VirtualFile;
 

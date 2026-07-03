@@ -36,7 +36,21 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build Oraxen
-        run: ./gradlew build --no-daemon
+        run: |
+          for attempt in 1 2 3; do
+            if [ "$attempt" -eq 1 ]; then
+              ./gradlew shadowJar --no-daemon && exit 0
+            else
+              ./gradlew shadowJar --no-daemon --refresh-dependencies && exit 0
+            fi
+
+            echo "Gradle shadowJar failed on attempt $attempt"
+            if [ "$attempt" -lt 3 ]; then
+              sleep $((attempt * 15))
+            fi
+          done
+
+          exit 1
 
       - name: Get version
         id: version

@@ -3,7 +3,6 @@ package io.th0rgal.oraxen.mechanics.provided.gameplay.limitedplacing;
 import io.th0rgal.oraxen.api.OraxenBlocks;
 import io.th0rgal.oraxen.api.OraxenFurniture;
 import io.th0rgal.oraxen.mechanics.Mechanic;
-import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureMechanic;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -135,12 +134,11 @@ public class LimitedPlacing {
                 if (furnitureMechanic != null) yield furnitureMechanic.getItemID();
                 else yield null;
             }
-            case MUSHROOM_STEM -> {
-                BlockMechanic blockMechanic = OraxenBlocks.getBlockMechanic(block);
-                if (blockMechanic != null) yield blockMechanic.getItemID();
-                else yield null;
+            default -> {
+                Mechanic mechanic = OraxenBlocks.getShapedMechanic(block);
+                if (mechanic == null) yield null;
+                else yield mechanic.getItemID();
             }
-            default -> null;
         };
     }
 

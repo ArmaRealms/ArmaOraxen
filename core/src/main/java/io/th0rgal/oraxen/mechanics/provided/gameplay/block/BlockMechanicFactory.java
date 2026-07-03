@@ -1,141 +1,192 @@
 package io.th0rgal.oraxen.mechanics.provided.gameplay.block;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.mechanics.ConfigProperty;
 import io.th0rgal.oraxen.mechanics.Mechanic;
+import io.th0rgal.oraxen.mechanics.MechanicConfigProperty;
+import io.th0rgal.oraxen.items.ItemUpdater;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
-import io.th0rgal.oraxen.mechanics.MechanicInfo;
 import io.th0rgal.oraxen.mechanics.MechanicsManager;
-import io.th0rgal.oraxen.mechanics.PropertyType;
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.block.Block;
-import org.bukkit.block.data.MultipleFacing;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.chorusblock.ChorusBlockMechanicFactory;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.NoteBlockMechanicFactory;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.shaped.ShapedBlockMechanicFactory;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.stringblock.StringBlockMechanicFactory;
+import io.th0rgal.oraxen.utils.logs.Logs;
 import org.bukkit.configuration.ConfigurationSection;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
-@MechanicInfo(
-        category = "gameplay",
-        description = "Creates custom blocks using mushroom stem states"
-)
 public class BlockMechanicFactory extends MechanicFactory {
 
-    @ConfigProperty(type = PropertyType.INTEGER, description = "Unique variation ID")
-    public static final String PROP_CUSTOM_VARIATION = "custom_variation";
+    private static BlockMechanicFactory instance;
 
-    @ConfigProperty(type = PropertyType.STRING, description = "Block model path")
-    public static final String PROP_MODEL = "model";
-
-    @ConfigProperty(type = PropertyType.DOUBLE, description = "Block break hardness", defaultValue = "1.0", min = 0.0)
-    public static final String PROP_HARDNESS = "hardness";
-
-    private static final List<JsonObject> MUSHROOM_STEM_BLOCKSTATE_OVERRIDES = new ArrayList<>();
-    private static final Map<Integer, BlockMechanic> BLOCK_PER_VARIATION = new HashMap<>();
+    private final NoteBlockMechanicFactory noteBlockFactory;
+    private final StringBlockMechanicFactory stringBlockFactory;
+    private final ChorusBlockMechanicFactory chorusBlockFactory;
+    private final ShapedBlockMechanicFactory shapedBlockFactory;
     public final List<String> toolTypes;
-    public final boolean customSounds;
 
     public BlockMechanicFactory(ConfigurationSection section) {
         super(section);
+        normalizeFactoryAliases(section);
         toolTypes = section.getStringList("tool_types");
-        customSounds = OraxenPlugin.get().getConfigsManager().getMechanics().getConfigurationSection("custom_block_sounds").getBoolean("noteblock_and_block", true);
 
-        // this modifier should be executed when all the items have been parsed, just
-        // before zipping the pack
-        OraxenPlugin.get().getResourcePack().addModifiers(getMechanicID(),
-                packFolder -> OraxenPlugin.get().getResourcePack()
-                        .writeStringToVirtual("assets/minecraft/blockstates",
-                                "mushroom_stem.json", getBlockstateContent()));
-        MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new BlockMechanicListener(this));
+        noteBlockFactory = new NoteBlockMechanicFactory(section, true);
+        stringBlockFactory = new StringBlockMechanicFactory(section, true);
+        chorusBlockFactory = new ChorusBlockMechanicFactory(section, true);
+        shapedBlockFactory = new ShapedBlockMechanicFactory(section, true);
+        MechanicsManager.registerListeners(OraxenPlugin.get(), getMechanicID(), new BlockMechanicListener());
+        instance = this;
     }
 
-    private String getBlockstateContent() {
-        JsonObject mushroomStem = new JsonObject();
-        JsonArray multipart = new JsonArray();
-        // adds default override
-        multipart.add(getBlockstateOverride("block/mushroom_stem", 15));
-        for (JsonObject override : MUSHROOM_STEM_BLOCKSTATE_OVERRIDES)
-            multipart.add(override);
-        mushroomStem.add("multipart", multipart);
-        return mushroomStem.toString();
+    public static BlockMechanicFactory getInstance() {
+        return instance;
     }
 
-    public static JsonObject getBlockstateOverride(String modelName, int when) {
-        JsonObject content = new JsonObject();
-        JsonObject model = new JsonObject();
-        model.addProperty("model", modelName);
-        content.add("apply", model);
-        content.add("when", BlockMechanic.getBlockstateWhenFields(when));
-        return content;
+    public static boolean isEnabled() {
+        return instance != null && MechanicsManager.isMechanicEnabled("block");
+    }
+
+    @Override
+    public void onUnregister() {
+        ItemUpdater.resetQueuedTasks();
+        if (instance == this) instance = null;
+        NoteBlockMechanicFactory.clearInstance(noteBlockFactory);
+        StringBlockMechanicFactory.clearInstance(stringBlockFactory);
+        ChorusBlockMechanicFactory.clearInstance(chorusBlockFactory);
+        ShapedBlockMechanicFactory.clearInstance(shapedBlockFactory);
     }
 
     @Override
     public Mechanic parse(ConfigurationSection itemMechanicConfiguration) {
-        BlockMechanic mechanic = new BlockMechanic(this, itemMechanicConfiguration);
-        MUSHROOM_STEM_BLOCKSTATE_OVERRIDES
-                .add(getBlockstateOverride(mechanic.getModel(itemMechanicConfiguration.getParent().getParent()),
-                        mechanic.getCustomVariation()));
-        BLOCK_PER_VARIATION.put(mechanic.getCustomVariation(), mechanic);
-        addToImplemented(mechanic);
+        normalizeAliases(itemMechanicConfiguration);
+
+        BlockType type = BlockType.fromConfig(itemMechanicConfiguration.getString("type"));
+        if (type == null) {
+            Logs.logError("The block mechanic of " + itemId(itemMechanicConfiguration)
+                    + " requires a valid type.");
+            Logs.logWarning("Valid block types are: FULL, STAIR, SLAB, DOOR, TRAPDOOR, GRATE, BULB, STRING, CHORUS");
+            return null;
+        }
+
+        Mechanic mechanic = switch (type) {
+            case FULL -> noteBlockFactory.parse(itemMechanicConfiguration);
+            case STRING -> stringBlockFactory.parse(itemMechanicConfiguration);
+            case CHORUS -> chorusBlockFactory.parse(itemMechanicConfiguration);
+            case STAIR, SLAB, DOOR, TRAPDOOR, GRATE, BULB -> shapedBlockFactory.parse(itemMechanicConfiguration);
+        };
+
+        // Delegate factories keep their own registries for legacy subsystem lookups;
+        // the unified block factory also registers the same mechanic for block API lookups.
+        if (mechanic != null) addToImplemented(mechanic);
+        else Logs.logWarning("Failed to parse block mechanic for " + itemId(itemMechanicConfiguration));
         return mechanic;
     }
 
-    public static BlockMechanic getBlockMechanic(int customVariation) {
-        if (!isEnabled()) return null;
-        return BLOCK_PER_VARIATION.get(customVariation);
+    private void normalizeAliases(ConfigurationSection section) {
+        copyIfPresent(section, "custom-variation", "custom_variation");
+        copyIfPresent(section, "block-sounds", "block_sounds");
+        copyIfPresent(section, "limited-placing", "limited_placing");
+        copyIfPresent(section, "can-ignite", "can_ignite");
+        copyIfPresent(section, "is-falling", "is_falling");
+        copyIfPresent(section, "blast-resistant", "blast_resistant");
+        copyIfPresent(section, "random-place", "random_place");
+        copyIfPresent(section, "is-tall", "is_tall");
+
+        ConfigurationSection appearance = section.getConfigurationSection("appearance");
+        if (appearance == null) return;
+
+        if (!section.contains("model") && appearance.contains("model"))
+            section.set("model", appearance.get("model"));
+        if (!section.contains("textures") && appearance.contains("textures"))
+            section.set("textures", appearance.get("textures"));
     }
 
-    public static BlockMechanic getBlockMechanic(Block block) {
-        if (!isEnabled()) return null;
-        return (block.getType() == Material.MUSHROOM_STEM)
-                ? BLOCK_PER_VARIATION.get(BlockMechanic.getCode(block)) : null;
+    private void normalizeFactoryAliases(ConfigurationSection section) {
+        copyIfPresent(section, "tool-types", "tool_types");
+        copyIfPresent(section, "farmblock-check-delay", "farmblock_check_delay");
+        copyIfPresent(section, "sapling-growth-check-delay", "sapling_growth_check_delay");
+        copyIfPresent(section, "disable-vanilla-strings", "disable_vanilla_strings");
+        copyIfPresent(section, "remove-mineable-tag", "remove_mineable_tag");
+        copyIfPresent(section, "convert-vanilla-waxed", "convert_vanilla_waxed");
+        copyIfPresent(section, "handle-world-generation", "handle_world_generation");
     }
 
-    public static boolean isEnabled() {
-        return MechanicsManager.isMechanicEnabled("block");
+    private void copyIfPresent(ConfigurationSection section, String from, String to) {
+        if (!section.contains(to) && section.contains(from)) section.set(to, section.get(from));
     }
 
-    /**
-     * Attempts to set the block directly to the model and texture of an Oraxen item.
-     *
-     * @param block  The block to update.
-     * @param itemId The Oraxen item ID.
-     */
-    public static void setBlockModel(Block block, String itemId) {
-        final MechanicFactory mechanicFactory = MechanicsManager.getMechanicFactory("block");
-        BlockMechanic blockMechanic = (BlockMechanic) mechanicFactory.getMechanic(itemId);
-        MultipleFacing newBlockData = (MultipleFacing) Bukkit.createBlockData(Material.MUSHROOM_STEM);
-        BlockMechanic.setBlockFacing(newBlockData, blockMechanic.getCustomVariation());
-        block.setBlockData(newBlockData, false);
+    private String itemId(ConfigurationSection section) {
+        ConfigurationSection itemSection = section.getParent() != null ? section.getParent().getParent() : null;
+        return itemSection != null ? itemSection.getName() : section.getCurrentPath();
     }
 
-    /**
-     * Attempts to set the block directly to the model and texture of an Oraxen item.
-     *
-     * @param block             The block to update.
-     * @param itemId            The Oraxen item ID.
-     * @param blockDataMaterial The material to utilize for block data (Default should be 'MUSHROOM_STEM').
-     * @return Whether the process was successful.
-     */
-    public static boolean setBlockModel(Block block, String itemId, String blockDataMaterial) {
-        if (block == null || itemId == null || itemId.isEmpty()) return false;
-
-        final MechanicFactory mechanicFactory = MechanicsManager.getMechanicFactory("block");
-        final BlockMechanic blockMechanic = (BlockMechanic) mechanicFactory.getMechanic(itemId);
-
-        Material material;
-        if (blockDataMaterial == null || blockDataMaterial.isEmpty()) material = Material.MUSHROOM_STEM;
-        else material = Material.getMaterial(blockDataMaterial.toUpperCase().replace(" ", "_").replace("-", "_"));
-
-        final MultipleFacing newBlockData = (MultipleFacing) Bukkit.createBlockData(material);
-        BlockMechanic.setBlockFacing(newBlockData, blockMechanic.getCustomVariation());
-        block.setBlockData(newBlockData, false);
-        return true;
+    public ShapedBlockMechanicFactory getShapedBlockFactory() {
+        return shapedBlockFactory;
     }
 
+    @Override
+    public @Nullable String getMechanicCategory() {
+        return "gameplay";
+    }
+
+    @Override
+    public @Nullable String getMechanicDescription() {
+        return "Creates custom blocks using the configured backing block type";
+    }
+
+    @Override
+    public @NotNull List<MechanicConfigProperty> getConfigSchema() {
+        return List.of(
+                MechanicConfigProperty.enumType("type", "Backing block type",
+                        List.of("FULL", "STAIR", "SLAB", "DOOR", "TRAPDOOR", "GRATE", "BULB", "STRING", "CHORUS")),
+                MechanicConfigProperty.object("appearance", "Placed block appearance", Map.of(
+                        "model", MechanicConfigProperty.string("model", "Placed block model path"),
+                        "textures", MechanicConfigProperty.list("textures", "Placed block textures")
+                )),
+                MechanicConfigProperty.integer("custom-variation", "Backing-state variation ID", 1),
+                MechanicConfigProperty.list("breaking", "Ordered block breaking rules"),
+                MechanicConfigProperty.list("events", "Click events with actions to run when the placed block is clicked"),
+                MechanicConfigProperty.integer("light", "Light level emitted by the placed block (0-15, 0 disables)", 0, 0, 15),
+                MechanicConfigProperty.object("placeable", "Placement face and block restrictions", Map.of(
+                        "roof", MechanicConfigProperty.bool("roof", "Allow placement on ceilings", true),
+                        "wall", MechanicConfigProperty.bool("wall", "Allow placement on walls", true),
+                        "floor", MechanicConfigProperty.bool("floor", "Allow placement on floors", true),
+                        "allow", MechanicConfigProperty.list("allow", "Vanilla block IDs this block may be placed against"),
+                        "disallow", MechanicConfigProperty.list("disallow", "Vanilla block IDs this block may not be placed against")
+                )),
+                MechanicConfigProperty.object("block-sounds", "Custom block sounds", Map.of(
+                        "place-sound", MechanicConfigProperty.string("place-sound", "Sound when placed"),
+                        "break-sound", MechanicConfigProperty.string("break-sound", "Sound when broken"),
+                        "step-sound", MechanicConfigProperty.string("step-sound", "Sound when stepped on"),
+                        "hit-sound", MechanicConfigProperty.string("hit-sound", "Sound when hit"),
+                        "fall-sound", MechanicConfigProperty.string("fall-sound", "Sound when fallen on")
+                ))
+        );
+    }
+
+    private enum BlockType {
+        FULL,
+        STAIR,
+        SLAB,
+        DOOR,
+        TRAPDOOR,
+        GRATE,
+        BULB,
+        STRING,
+        CHORUS;
+
+        @Nullable
+        private static BlockType fromConfig(String value) {
+            if (value == null || value.isBlank()) return null;
+            try {
+                return valueOf(value.toUpperCase(Locale.ROOT).replace('-', '_'));
+            } catch (IllegalArgumentException ignored) {
+                return null;
+            }
+        }
+    }
 }

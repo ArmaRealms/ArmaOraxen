@@ -9,7 +9,7 @@ import io.th0rgal.oraxen.utils.SchedulerUtil;
 import io.th0rgal.oraxen.utils.VectorUtils;
 import io.th0rgal.oraxen.utils.timers.Timer;
 import io.th0rgal.oraxen.utils.wrappers.ParticleWrapper;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -48,7 +48,7 @@ public class EnergyBlastMechanicManager implements Listener {
         if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         if (event.useItemInHand() == Event.Result.DENY) return;
         if (BlockHelpers.isInteractable(block) && event.useInteractedBlock() == Event.Result.ALLOW) return;
-        if (!ProtectionLib.canUse(player, location)) return;
+        if (!AntiGriefLib.canUse(player, location)) return;
         if (factory.isNotImplementedIn(itemID)) return;
         if (mechanic == null) return;
 

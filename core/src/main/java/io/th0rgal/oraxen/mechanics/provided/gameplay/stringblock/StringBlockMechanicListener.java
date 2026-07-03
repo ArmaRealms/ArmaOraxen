@@ -9,7 +9,7 @@ import io.th0rgal.oraxen.api.events.stringblock.OraxenStringBlockPlaceEvent;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.limitedplacing.LimitedPlacing;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.storage.StorageMechanic;
 import io.th0rgal.oraxen.utils.*;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.apache.commons.lang3.Range;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -56,7 +56,7 @@ public class StringBlockMechanicListener implements Listener {
             public boolean isTriggered(final Player player, final Block block, final ItemStack tool) {
                 if (block.getType() != Material.TRIPWIRE) return false;
                 final StringBlockMechanic mechanic = OraxenBlocks.getStringMechanic(block);
-                return mechanic != null && mechanic.hasHardness();
+                return mechanic != null && mechanic.hasHardness(tool);
             }
 
             @Override
@@ -68,15 +68,9 @@ public class StringBlockMechanicListener implements Listener {
             public long getPeriod(final Player player, final Block block, final ItemStack tool) {
                 final StringBlockMechanic mechanic = OraxenBlocks.getStringMechanic(block);
                 if (mechanic == null) return 0;
-                final double hardness = mechanic.getHardness();
-                double modifier = 1;
-                if (mechanic.getDrop().canDrop(tool)) {
-                    modifier *= 0.4;
-                    final int diff = mechanic.getDrop().getDiff(tool);
-                    if (diff >= 1) modifier *= Math.pow(0.9, diff);
-                }
-                long period = (long) (hardness * modifier);
-                return period == 0 && mechanic.hasHardness() ? 1 : period;
+                final double hardness = mechanic.getHardness(tool);
+                long period = Math.round(hardness * 0.4D / mechanic.getPacketSpeedMultiplier(tool, block.getType()));
+                return period == 0 && mechanic.hasHardness(tool) ? 1 : period;
             }
         };
     }
@@ -653,6 +647,8 @@ public class StringBlockMechanicListener implements Listener {
             return;
 
         StringBlockMechanic mechanic = OraxenBlocks.getStringMechanic(newData);
+        if (mechanic != null && !mechanic.canPlaceOn(face, placedAgainst)) return;
+
         // Store oldData incase event(s) is cancelled, set the target blockData
         Block blockAbove = target.getRelative(BlockFace.UP);
         final BlockData oldData = target.getBlockData();
@@ -671,7 +667,7 @@ public class StringBlockMechanicListener implements Listener {
             else
                 blockAbove.setType(Material.TRIPWIRE);
         }
-        if (!ProtectionLib.canBuild(player, target.getLocation()))
+        if (!AntiGriefLib.canBuild(player, target.getLocation()))
             blockPlaceEvent.setCancelled(true);
         // if (player.getGameMode() == GameMode.ADVENTURE)
         // blockPlaceEvent.setCancelled(true);

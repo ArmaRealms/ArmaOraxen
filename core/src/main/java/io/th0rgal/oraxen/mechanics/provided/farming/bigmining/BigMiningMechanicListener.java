@@ -3,7 +3,7 @@ package io.th0rgal.oraxen.mechanics.provided.farming.bigmining;
 import io.th0rgal.oraxen.utils.BlockHelpers;
 import io.th0rgal.oraxen.utils.EventUtils;
 import io.th0rgal.oraxen.utils.VersionUtil;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -64,7 +64,7 @@ public class BigMiningMechanicListener implements Listener {
     private void breakBlock(final Player player, final Block block, final ItemStack itemStack) {
         if (block.isLiquid()
                 || BlockHelpers.UNBREAKABLE_BLOCKS.contains(block.getType())
-                || !ProtectionLib.canBreak(player, block.getLocation()))
+                || !AntiGriefLib.canBreak(player, block.getLocation()))
             return;
         blocksToProcess += 1; // to avoid this method to call itself <- need other way to handle players using
         // the same tool at the same time

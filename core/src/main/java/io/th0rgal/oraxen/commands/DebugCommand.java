@@ -1,20 +1,19 @@
 package io.th0rgal.oraxen.commands;
 
-import dev.jorel.commandapi.CommandAPICommand;
-import dev.jorel.commandapi.arguments.StringArgument;
+import io.th0rgal.oraxen.commands.arguments.StringArgument;
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.ConfigsManager;
-import io.th0rgal.oraxen.config.Message;
+import io.th0rgal.oraxen.configs.ConfigsManager;
+import io.th0rgal.oraxen.configs.Message;
 import io.th0rgal.oraxen.utils.AdventureUtils;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.IOException;
 
 public class DebugCommand {
 
-    CommandAPICommand getDebugCommand() {
-        return new CommandAPICommand("debug")
+    OraxenCommand getDebugCommand() {
+        return new OraxenCommand("debug")
                 .withPermission("oraxen.command.debug")
                 .withOptionalArguments(new StringArgument("toggle"))
                 .executes((sender, args) -> {
@@ -25,7 +24,7 @@ public class DebugCommand {
                     try {
                         settings.save(configsManager.getSettingsFile());
                         String state = (debugState ? "enabled" : "disabled");
-                        ProtectionLib.setDebug(debugState);
+                        AntiGriefLib.setDebug(debugState);
                         Message.DEBUG_TOGGLE.send(sender, AdventureUtils.tagResolver("state", state));
                     } catch (IOException e) {
                         e.printStackTrace();

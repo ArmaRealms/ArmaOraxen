@@ -3,7 +3,7 @@ package io.th0rgal.oraxen.mechanics.provided.combat.bleeding;
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
 import io.th0rgal.oraxen.utils.SchedulerUtil;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.bukkit.Particle;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -32,7 +32,7 @@ public class BleedingMechanicListener implements Listener {
             return;
         if (!(event.getEntity() instanceof LivingEntity victim))
             return;
-        if (!ProtectionLib.canInteract(damager, event.getEntity().getLocation()))
+        if (!AntiGriefLib.canInteract(damager, event.getEntity().getLocation()))
             return;
 
         String itemID = OraxenItems.getIdByItem(damager.getInventory().getItemInMainHand());

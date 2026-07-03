@@ -9,7 +9,7 @@ import io.th0rgal.oraxen.mechanics.provided.gameplay.limitedplacing.LimitedPlaci
 import io.th0rgal.oraxen.mechanics.provided.gameplay.noteblock.directional.DirectionalBlock;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.storage.StorageMechanic;
 import io.th0rgal.oraxen.utils.*;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.apache.commons.lang3.Range;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -57,7 +57,7 @@ public class NoteBlockMechanicListener implements Listener {
                 if (mechanic == null) return false;
                 if (mechanic.isDirectional() && !mechanic.getDirectional().isParentBlock())
                     mechanic = mechanic.getDirectional().getParentMechanic();
-                return mechanic.hasHardness();
+                return mechanic.hasHardness(tool);
             }
 
             @Override
@@ -71,15 +71,9 @@ public class NoteBlockMechanicListener implements Listener {
                 if (mechanic == null) return 0;
                 if (mechanic.isDirectional() && !mechanic.getDirectional().isParentBlock())
                     mechanic = mechanic.getDirectional().getParentMechanic();
-                final double hardness = mechanic.getHardness();
-                double modifier = 1;
-                if (mechanic.getDrop().canDrop(tool)) {
-                    modifier *= 0.4;
-                    final int diff = mechanic.getDrop().getDiff(tool);
-                    if (diff >= 1) modifier *= Math.pow(0.9, diff);
-                }
-                long period = (long) (hardness * modifier);
-                return period == 0 && mechanic.hasHardness() ? 1 : period;
+                final double hardness = mechanic.getHardness(tool);
+                long period = Math.round(hardness * 0.4D / mechanic.getPacketSpeedMultiplier(tool, block.getType()));
+                return period == 0 && mechanic.hasHardness(tool) ? 1 : period;
             }
         };
     }
@@ -215,7 +209,7 @@ public class NoteBlockMechanicListener implements Listener {
         Player player = event.getPlayer();
         Block block = event.getBlock();
         NoteBlockMechanic mechanic = event.getMechanic();
-        if (!ProtectionLib.canInteract(player, block.getLocation())) return;
+        if (!AntiGriefLib.canInteract(player, block.getLocation())) return;
 
         if (!player.isSneaking()) {
             if (mechanic.hasClickActions()) {
@@ -293,6 +287,11 @@ public class NoteBlockMechanicListener implements Listener {
     // If block is not a custom block, play the correct sound according to the below block or default
     @EventHandler(priority = EventPriority.NORMAL)
     public void onNotePlayed(final NotePlayEvent event) {
+        if (OraxenBlocks.isOraxenNoteBlock(event.getBlock())) {
+            event.setCancelled(true);
+            return;
+        }
+
         if (event.getInstrument() != Instrument.PIANO) {
             event.setCancelled(true);
             return;
@@ -393,6 +392,15 @@ public class NoteBlockMechanicListener implements Listener {
         }
     }
 
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPlacingUnsupportedBlockAboveOraxenNoteBlock(final BlockPlaceEvent event) {
+        Block placed = event.getBlockPlaced();
+        if (!isUnsupportedBlockAboveNoteBlock(placed.getType())) return;
+        if (OraxenBlocks.getNoteBlockMechanic(placed.getRelative(BlockFace.DOWN)) == null) return;
+
+        event.setCancelled(true);
+    }
+
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onPlacingBlock(final BlockPlaceEvent event) {
         Block placed = event.getBlockPlaced();
@@ -461,6 +469,9 @@ public class NoteBlockMechanicListener implements Listener {
         else target = placedAgainst.getRelative(face);
         if (!BlockHelpers.isReplaceable(target.getType())) return;
 
+        NoteBlockMechanic targetOraxen = OraxenBlocks.getNoteBlockMechanic(newData);
+        if (targetOraxen != null && !targetOraxen.canPlaceOn(face, placedAgainst)) return;
+
         final NoteBlockMechanic againstMechanic = OraxenBlocks.getNoteBlockMechanic(placedAgainst);
         // Store oldData incase event(s) is cancelled, set the target blockData
         // newData might be null in some scenarios
@@ -470,9 +481,9 @@ public class NoteBlockMechanicListener implements Listener {
             final BlockPlaceEvent blockPlaceEvent = new BlockPlaceEvent(target, target.getState(), placedAgainst, item, player, true, hand);
             final Material material = newData.getMaterial();
 
-            if (againstMechanic != null && (againstMechanic.isStorage() || againstMechanic.hasClickActions()))
+            if (againstMechanic != null && (againstMechanic.isStorage() || againstMechanic.hasClickActions() || againstMechanic.hasBlockEvents()))
                 blockPlaceEvent.setCancelled(true);
-            if (BlockHelpers.isStandingInside(player, target) || !ProtectionLib.canBuild(player, target.getLocation()))
+            if (BlockHelpers.isStandingInside(player, target) || !AntiGriefLib.canBuild(player, target.getLocation()))
                 blockPlaceEvent.setCancelled(true);
             if (!Range.between(target.getWorld().getMinHeight(), target.getWorld().getMaxHeight() - 1).contains(target.getY()))
                 blockPlaceEvent.setCancelled(true);
@@ -489,7 +500,6 @@ public class NoteBlockMechanicListener implements Listener {
         }
 
         // This method is run for placing on custom blocks aswell, so this should not be called for vanilla blocks
-        NoteBlockMechanic targetOraxen = OraxenBlocks.getNoteBlockMechanic(newData);
         if (targetOraxen != null) {
 
             OraxenBlocks.place(targetOraxen.getItemID(), target.getLocation());
@@ -515,6 +525,11 @@ public class NoteBlockMechanicListener implements Listener {
             BlockHelpers.correctAllBlockStates(placedAgainst, player, hand, face, item, newData);
         }
         if (VersionUtil.isPaperServer()) target.getWorld().sendGameEvent(player, GameEvent.BLOCK_PLACE, target.getLocation().toVector());
+    }
+
+    private boolean isUnsupportedBlockAboveNoteBlock(Material material) {
+        return material == Material.PISTON || material == Material.STICKY_PISTON
+                || material == Material.SHULKER_BOX || material.name().endsWith("_SHULKER_BOX");
     }
 
     // Used to determine what instrument to use when playing a note depending on below block

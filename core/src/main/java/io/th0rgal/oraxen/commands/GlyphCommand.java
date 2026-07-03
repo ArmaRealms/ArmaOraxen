@@ -1,10 +1,9 @@
 package io.th0rgal.oraxen.commands;
 
-import dev.jorel.commandapi.CommandAPICommand;
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.Message;
-import io.th0rgal.oraxen.config.Settings;
-import io.th0rgal.oraxen.font.Glyph;
+import io.th0rgal.oraxen.configs.Message;
+import io.th0rgal.oraxen.configs.Settings;
+import io.th0rgal.oraxen.glyphs.Glyph;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import net.kyori.adventure.inventory.Book;
 import net.kyori.adventure.text.Component;
@@ -18,8 +17,8 @@ import java.util.List;
 
 public class GlyphCommand {
 
-    public CommandAPICommand getGlyphCommand() {
-        return new CommandAPICommand("emojis")
+    public OraxenCommand getGlyphCommand() {
+        return new OraxenCommand("emojis")
                 .withPermission("oraxen.command.emojis").withPermission("oraxen.command.emoji")
                 .executes((sender, args) -> {
                     List<Glyph> emojiList = OraxenPlugin.get().getFontManager().getEmojis().stream().toList();
@@ -54,18 +53,18 @@ public class GlyphCommand {
 
                                 if (!onlyShowPermissable) {
                                     permissionMessage += emoji.hasPermission(player) ?
-                                            ("\n" + ChatColor.GREEN + "Permitted") : ("\n" + ChatColor.RED + "No Permission");
+                                            ("\n" + ChatColor.GREEN + "Permitted.") : ("\n" + ChatColor.RED + "No Permission.");
                                 }
                             }
 
                             pages = pages.append(AdventureUtils.MINI_MESSAGE.deserialize("<glyph:" + emoji.getName() + ">")
-                                    .clickEvent(ClickEvent.clickEvent(ClickEvent.Action.SUGGEST_COMMAND, String.valueOf(emoji.getCharacter())))
+                                    .clickEvent(ClickEvent.clickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, emoji.getCharacters()))
                                     .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT, Component.text(finalString + permissionMessage))));
                         }
                     }
 
                     Book book = Book.book(Component.text("Glyph Book"), Component.text("Oraxen"), pages);
-                    OraxenPlugin.get().getAudience().player(player).openBook(book);
+                    AdventureUtils.openBook(player, book);
                 });
     }
 }

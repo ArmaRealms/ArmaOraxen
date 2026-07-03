@@ -1,14 +1,13 @@
 package io.th0rgal.oraxen.commands;
 
-import dev.jorel.commandapi.CommandAPICommand;
 import io.th0rgal.oraxen.OraxenPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 
 public class ReportCommand {
 
-    CommandAPICommand getReportCommand() {
-        return new CommandAPICommand("report")
+    OraxenCommand getReportCommand() {
+        return new OraxenCommand("report")
             .withPermission("oraxen.command.report")
             .executes((sender, args) -> {
                 // Get Oraxen version

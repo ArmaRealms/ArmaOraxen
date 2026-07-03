@@ -13,6 +13,7 @@ import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.jukebox.JukeboxLi
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.text.FurnitureTextEntry;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.text.FurnitureTextPacketBridge;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.text.FurnitureTextRegistry;
+import io.th0rgal.oraxen.utils.blocksounds.BlockSounds;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Entity;
@@ -82,7 +83,7 @@ public class FurnitureFactory extends MechanicFactory {
     public static boolean areCustomSoundsEnabled() {
         ConfigurationSection customSoundsSection = OraxenPlugin.get().getConfigsManager().getMechanics()
                 .getConfigurationSection("custom_block_sounds");
-        return customSoundsSection == null || customSoundsSection.getBoolean("stringblock_and_furniture", true);
+        return BlockSounds.isFurnitureSoundEnabled(customSoundsSection);
     }
 
     public static FurnitureFactory getInstance() {
@@ -180,6 +181,7 @@ public class FurnitureFactory extends MechanicFactory {
                 MechanicConfigProperty.bool("farmland_required", "Whether farmland is required for placement", false),
                 MechanicConfigProperty.bool("farmblock_required", "Whether farmblock is required for placement", false),
                 MechanicConfigProperty.integer("light", "Light level emitted (0-15)", 0, 0, 15),
+                MechanicConfigProperty.list("lights", "List of light entries formatted '<x>,<y>,<z> <level>'"),
                 MechanicConfigProperty.enumType("restricted_rotation", "Rotation restriction mode",
                         List.of("NONE", "STRICT", "VERY_STRICT")),
                 MechanicConfigProperty.bool("rotatable", "Whether furniture can be rotated after placement", true),
@@ -192,6 +194,7 @@ public class FurnitureFactory extends MechanicFactory {
                         "height", MechanicConfigProperty.decimal("height", "Seat height offset", 0.0),
                         "yaw", MechanicConfigProperty.decimal("yaw", "Seat rotation", 0.0)
                 )),
+                MechanicConfigProperty.list("seats", "List of seat offsets relative to the furniture center formatted '<x>,<y>,<z>' or '<x>,<y>,<z> <yaw>'"),
                 MechanicConfigProperty.list("barriers", "List of barrier block positions relative to furniture"),
                 MechanicConfigProperty.object("display_entity_properties", "Display entity configuration", Map.of(
                         "display_transform", MechanicConfigProperty.enumType("display_transform", "Display transform mode",

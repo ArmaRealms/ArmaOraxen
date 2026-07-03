@@ -7,7 +7,7 @@ import io.th0rgal.oraxen.compatibilities.provided.mythicmobs.MythicMobsCompatibi
 import io.th0rgal.oraxen.compatibilities.provided.placeholderapi.PlaceholderAPICompatibility;
 import io.th0rgal.oraxen.compatibilities.provided.skript.SkriptCompatibility;
 import io.th0rgal.oraxen.compatibilities.provided.worldedit.WrappedWorldEdit;
-import io.th0rgal.oraxen.config.Message;
+import io.th0rgal.oraxen.configs.Message;
 import io.th0rgal.oraxen.utils.AdventureUtils;
 import io.th0rgal.oraxen.utils.PluginUtils;
 import io.th0rgal.oraxen.utils.logs.Logs;

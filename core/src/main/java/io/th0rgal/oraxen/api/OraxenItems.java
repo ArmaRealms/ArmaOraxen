@@ -3,8 +3,8 @@ package io.th0rgal.oraxen.api;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.compatibilities.provided.ecoitems.WrappedEcoItem;
 import io.th0rgal.oraxen.compatibilities.provided.mythiccrucible.WrappedCrucibleItem;
-import io.th0rgal.oraxen.config.Message;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Message;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.items.ItemParser;
 import io.th0rgal.oraxen.items.ModelData;
@@ -51,8 +51,8 @@ public class OraxenItems {
             // Test the environment for common compatibility issues before proceeding
             if (Settings.DEBUG.toBool()) {
                 Logs.logInfo("Testing server compatibility before loading items...");
-                Logs.logInfo("  Running on Paper: " + VersionUtil.isPaperServer());
-                Logs.logInfo("  Minecraft version: " + Bukkit.getBukkitVersion());
+                Logs.logInfo("  Running on Paper " + VersionUtil.isPaperServer());
+                Logs.logInfo("  Minecraft version " + Bukkit.getBukkitVersion());
 
                 // Check if JukeboxPlayableComponent is available
                 try {
@@ -60,20 +60,20 @@ public class OraxenItems {
                         JukeboxPlayableComponent component = new ItemStack(Material.MUSIC_DISC_CREATOR).getItemMeta()
                                 .getJukeboxPlayable();
                         component.setShowInTooltip(true); // This will throw on incompatible servers
-                        Logs.logInfo("  JukeboxPlayableComponent: Available");
+                        Logs.logInfo("  JukeboxPlayableComponent is available.");
                     } else {
-                        Logs.logInfo("  JukeboxPlayableComponent: Not available (MC < 1.21)");
+                        Logs.logInfo("  JukeboxPlayableComponent is not available (MC < 1.21).");
                     }
                 } catch (NoSuchMethodError | NoClassDefFoundError e) {
-                    Logs.logWarning("  JukeboxPlayableComponent: Not available (Missing method or class)");
-                    Logs.logWarning("  Some features will be disabled: " + e.getMessage());
+                    Logs.logWarning("  JukeboxPlayableComponent is not available (Missing method or class).");
+                    Logs.logWarning("  Some features will be disabled; " + e.getMessage());
                 }
 
                 // Check if NMS handler is available
                 if (NMSHandlers.getHandler() == null) {
-                    Logs.logWarning("  NMS handler: Not available - some features won't work");
+                    Logs.logWarning("  NMS handler is not available; Some features won't work.");
                 } else {
-                    Logs.logInfo("  NMS handler: Available (" + NMSHandlers.getVersion() + ")");
+                    Logs.logInfo("  NMS handler is available (" + NMSHandlers.getVersion() + ").");
                 }
             }
 
@@ -84,8 +84,8 @@ public class OraxenItems {
 
             ensureComponentDataHandled();
         } catch (Exception e) {
-            Logs.logError("Failed to load Oraxen items!");
-            Logs.logError("Error: " + e.getMessage());
+            Logs.logError("Failed to load Oraxen items.");
+            Logs.logError("Error; " + e.getMessage());
             if (Settings.DEBUG.toBool()) {
                 e.printStackTrace();
             }
@@ -109,8 +109,9 @@ public class OraxenItems {
                     if (foodComponent == null)
                         continue;
 
-                    ConfigurationSection section = OraxenYaml.loadConfiguration(entry.getKey())
-                            .getConfigurationSection(itemId + ".Components.food.replacement");
+                    ConfigurationSection section = OraxenYaml.getConfigurationSection(
+                            OraxenYaml.loadConfiguration(entry.getKey()),
+                            itemId + ".Components.food.replacement");
                     ItemStack replacementItem = parseFoodComponentReplacement(section);
                     // foodComponent.setUsingConvertsTo(replacementItem);
                     itemBuilder.setFoodComponent(foodComponent).regen();
@@ -125,7 +126,7 @@ public class OraxenItems {
 
         ItemStack replacementItem;
         if (section.isString("minecraft_type")) {
-            Material material = Material.getMaterial(Objects.requireNonNull(section.getString("minecraft_type")));
+            Material material = OraxenYaml.getMaterial(Objects.requireNonNull(section.getString("minecraft_type")));
             if (material == null) {
                 Message.INVALID_MATERIAL.log(AdventureUtils.tagResolver("item", section.getString("minecraft_type")));
                 replacementItem = null;

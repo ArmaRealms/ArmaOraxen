@@ -4,7 +4,7 @@ import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.mechanics.MechanicFactory;
 import io.th0rgal.oraxen.utils.EventUtils;
 import io.th0rgal.oraxen.utils.timers.Timer;
-import io.th0rgal.protectionlib.ProtectionLib;
+import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.SoundGroup;
@@ -70,8 +70,8 @@ public class HarvestingMechanicListener implements Listener {
         for (final Block block : nearbyBlocks) {
             if (block.getBlockData() instanceof Ageable ageable
                     && ageable.getAge() == ageable.getMaximumAge()
-                    && ProtectionLib.canBreak(player, block.getLocation())
-                    && ProtectionLib.canBuild(player, block.getLocation())) {
+                    && AntiGriefLib.canBreak(player, block.getLocation())
+                    && AntiGriefLib.canBuild(player, block.getLocation())) {
                 ageable.setAge(0);
                 block.setBlockData(ageable);
                 SoundGroup soundGroup = block.getBlockData().getSoundGroup();

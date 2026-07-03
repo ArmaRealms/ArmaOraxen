@@ -1,7 +1,7 @@
 package io.th0rgal.oraxen.pack.dispatch;
 
 import io.th0rgal.oraxen.OraxenPlugin;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.pack.generation.PackVersion;
 import io.th0rgal.oraxen.pack.generation.PackVersionManager;
 import io.th0rgal.oraxen.pack.generation.ProtocolVersion;
@@ -45,6 +45,8 @@ public class MultiVersionPackSender implements Listener {
      * @param player Player to send pack to
      */
     public void sendPack(Player player) {
+        if (!PackDispatchFilter.canSendPack(player)) return;
+
         // Detect player's client version
         Integer protocolVersion = PlayerVersionDetector.getPlayerProtocolVersion(player);
         PackVersion packVersion;

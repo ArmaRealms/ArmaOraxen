@@ -4,7 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.th0rgal.oraxen.api.OraxenItems;
-import io.th0rgal.oraxen.config.Settings;
+import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.utils.VirtualFile;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.apache.commons.lang3.StringUtils;
@@ -88,6 +88,11 @@ public class AtlasGenerator {
 
         for (Map.Entry<VirtualFile, TexturePath> entry : textureSubFolders.entrySet()) {
             TexturePath texturePath = entry.getValue();
+
+            // Legacy placeholder texture from older Oraxen versions. It is 1x1 and
+            // can crash Forge/newer clients when added to the block atlas with mipmaps.
+            if (texturePath.namespace.equals("minecraft") && texturePath.path.equals("required/null"))
+                continue;
 
             // If a texture is for a font, do not add it to atlas, unless an item uses it
             // Default example is required/exit_icon.png

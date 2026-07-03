@@ -2,6 +2,8 @@ package io.th0rgal.oraxen.pack.generation;
 
 import io.th0rgal.oraxen.utils.platform.BukkitWrapper;
 import io.th0rgal.oraxen.utils.VirtualFile;
+import io.th0rgal.oraxen.utils.VersionUtil;
+import io.th0rgal.oraxen.utils.logs.Logs;
 
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
@@ -13,20 +15,23 @@ import net.kyori.adventure.key.Key;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public abstract class OraxenDatapack {
     protected static final World defaultWorld = Bukkit.getWorlds().getFirst();
     protected final File datapackFolder;
+    private final File legacyDatapackFolder;
     protected final JsonObject datapackMeta = new JsonObject();
     protected final boolean isFirstInstall;
     protected final boolean datapackEnabled;
     protected final String name;
 
     protected OraxenDatapack(final String name, final String description, final int packFormat) {
-        this.datapackFolder = defaultWorld.getWorldFolder().toPath()
-                .resolve("datapacks/" + name).toFile();
+        Path worldFolder = defaultWorld.getWorldFolder().toPath();
+        this.datapackFolder = getDatapackRoot(worldFolder).resolve("datapacks/" + name).toFile();
+        this.legacyDatapackFolder = worldFolder.resolve("datapacks/" + name).toFile();
 
         final JsonObject data = new JsonObject();
         data.addProperty("description", description);
@@ -38,22 +43,45 @@ public abstract class OraxenDatapack {
         this.datapackEnabled = isDatapackEnabled();
     }
 
-    protected void writeMCMeta() {
+    protected boolean writeMCMeta() {
         try {
-            final File packMeta = datapackFolder.toPath().resolve("pack.mcmeta").toFile();
-            packMeta.createNewFile();
+            FileUtils.forceMkdir(datapackFolder);
+            File packMeta = datapackFolder.toPath().resolve("pack.mcmeta").toFile();
             FileUtils.writeStringToFile(packMeta, datapackMeta.toString(), StandardCharsets.UTF_8);
+            return true;
         } catch (final IOException e) {
-            e.printStackTrace();
+            Logs.logError("Failed to write datapack pack.mcmeta for " + name + ": " + e.getMessage());
+            Logs.debug(e);
+            return false;
         }
     }
 
     public void clearOldDataPack() {
         try {
             FileUtils.deleteDirectory(datapackFolder);
+            if (!datapackFolder.equals(legacyDatapackFolder)) {
+                FileUtils.deleteDirectory(legacyDatapackFolder);
+            }
         } catch (final IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private static Path getDatapackRoot(Path worldFolder) {
+        if (!VersionUtil.atOrAbove("26.1")) {
+            return worldFolder;
+        }
+
+        Path normalizedWorldFolder = worldFolder.normalize();
+        if (normalizedWorldFolder.endsWith(Path.of("dimensions", "minecraft", "overworld"))) {
+            Path minecraftFolder = normalizedWorldFolder.getParent();
+            if (minecraftFolder != null && minecraftFolder.getParent() != null
+                    && minecraftFolder.getParent().getParent() != null) {
+                return minecraftFolder.getParent().getParent();
+            }
+        }
+
+        return worldFolder;
     }
 
     protected abstract Key getDatapackKey();
