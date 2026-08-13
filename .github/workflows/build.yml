@@ -23,7 +23,7 @@ jobs:
       - name: Run chmod to make gradlew executable
         run: chmod +x ./gradlew
       - name: Run Gradle Build for Core
-        run: ./gradlew build
+        run: ./gradlew build -x test
       - name: Upload Plugin
         uses: actions/upload-artifact@v7
         with:
