@@ -233,9 +233,6 @@ tasks {
     }
 
     runServer {
-        downloadPlugins {
-            hangar("ProtocolLib", "5.4.0")
-        }
         minecraftVersion(runServerVersion)
         jvmArgs("-Dcom.mojang.eula.agree=true")
     }
@@ -326,7 +323,6 @@ paper {
     // classpath, since Paper plugins use isolated classloaders and can only access
     // classes of plugins declared here.
     val optionalHooks = listOf(
-        "ProtocolLib",
         "packetevents",
         "LightAPI", "PlaceholderAPI", "MythicMobs", "MMOItems", "MythicCrucible",
         "CrateReloaded", "ItemBridge", "WorldEdit", "FastAsyncWorldEdit", "WorldGuard", "Towny",
@@ -364,6 +360,10 @@ paper {
     }
     permissions.create("oraxen.introduction") {
         description = "Allows the player to receive Oraxen's first-run introduction guide"
+        default = net.minecrell.pluginyml.bukkit.BukkitPluginDescription.Permission.Default.OP
+    }
+    permissions.create("oraxen.update.notify") {
+        description = "Allows the player to receive Oraxen update notifications on join"
         default = net.minecrell.pluginyml.bukkit.BukkitPluginDescription.Permission.Default.OP
     }
     // Keep Oraxen's classes visible to legacy Bukkit plugins and other add-ons

@@ -140,18 +140,18 @@ public class ItemUpdater implements Listener {
         event.getItem().setItemStack(newItem);
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onItemEnchant(final PrepareItemEnchantEvent event) {
         final String id = OraxenItems.getIdByItem(event.getItem());
         final ItemBuilder builder = OraxenItems.getItemById(id);
         if (builder == null || !builder.hasOraxenMeta()) return;
 
-        if (builder.getOraxenMeta().isDisableEnchanting()) {
+        if (!builder.getOraxenMeta().isEnchantable()) {
             event.setCancelled(true);
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onItemEnchant(final PrepareAnvilEvent event) {
         final ItemStack item = event.getInventory().getItem(0);
         final ItemStack result = event.getResult();
@@ -159,7 +159,7 @@ public class ItemUpdater implements Listener {
         final ItemBuilder builder = OraxenItems.getItemById(id);
         if (builder == null || !builder.hasOraxenMeta()) return;
 
-        if (builder.getOraxenMeta().isDisableEnchanting()) {
+        if (!builder.getOraxenMeta().isEnchantable()) {
             if (result == null || item == null) return;
             if (!result.getEnchantments().equals(item.getEnchantments()))
                 event.setResult(null);
