@@ -37,6 +37,7 @@ import io.th0rgal.oraxen.recipes.builders.RecipeBuilder;
 import io.th0rgal.oraxen.recipes.RecipesManager;
 import io.th0rgal.oraxen.sounds.CustomJukeboxSongRegistry;
 import io.th0rgal.oraxen.sounds.SoundManager;
+import io.th0rgal.oraxen.studio.StudioSyncService;
 import io.th0rgal.oraxen.utils.*;
 import io.th0rgal.oraxen.utils.SchedulerUtil;
 import io.th0rgal.oraxen.utils.UpdateChecker;
@@ -75,6 +76,7 @@ public class OraxenPlugin extends JavaPlugin {
     private volatile ResourcePack resourcePack;
     private volatile ClickActionManager clickActionManager;
     private volatile PacketAdapter packetAdapter;
+    private volatile StudioSyncService studioSyncService;
     private UpdateChecker updateChecker;
 
     public OraxenPlugin() {
@@ -172,7 +174,9 @@ public class OraxenPlugin extends JavaPlugin {
         invManager = new InvManager();
         if (!VersionUtil.atOrAbove("1.21.2"))
             ArmorEquipEvent.registerListener(this);
+        studioSyncService = new StudioSyncService(this);
         new CommandsManager().loadCommands();
+        studioSyncService.start();
         postLoading();
         try {
             Message.PLUGIN_LOADED.log(AdventureUtils.tagResolver("os", SystemUtils.OS_NAME + " " + SystemUtils.OS_VERSION));
@@ -259,6 +263,9 @@ public class OraxenPlugin extends JavaPlugin {
         setUploadManager(null);
         setMultiVersionUploadManager(null);
         setHudManager(null);
+        if (studioSyncService != null) {
+            studioSyncService.stop();
+        }
         if (resourcePack != null) {
             resourcePack.shutdown();
         }
@@ -416,5 +423,9 @@ public class OraxenPlugin extends JavaPlugin {
 
     public PacketAdapter getPacketAdapter() {
         return packetAdapter;
+    }
+
+    public StudioSyncService getStudioSyncService() {
+        return studioSyncService;
     }
 }

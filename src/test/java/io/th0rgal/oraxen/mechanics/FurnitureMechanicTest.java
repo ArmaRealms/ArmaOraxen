@@ -4,7 +4,9 @@ import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.compatibilities.CompatibilitiesManager;
 import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.items.ItemUpdater;
-import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureFactory;
+import io.th0rgal.oraxen.items.ItemProperties;
+import io.th0rgal.oraxen.items.OraxenMeta;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.ArmorStandProperties;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureMechanic;
 import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.drops.Drop;
@@ -12,6 +14,8 @@ import io.th0rgal.oraxen.utils.drops.Loot;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
@@ -38,15 +42,65 @@ import static org.mockito.Mockito.when;
 
 class FurnitureMechanicTest extends MechanicTestSupport {
 
-    private FurnitureFactory furnitureFactory() {
-        FurnitureFactory factory = mock(FurnitureFactory.class);
-        when(factory.getToolTypes()).thenReturn(List.of());
-        return factory;
+    @Test
+    void readsUnifiedDisplayPropertiesAndIgnoresArmorStandOffset() {
+        ConfigurationSection section = mechanicSection("furniture", "type", "DISPLAY_ENTITY");
+        section.set("properties.display_transform", "FIXED");
+        section.set("properties.scale.y", 2.0);
+        section.set("properties.translation.x", 0.25);
+        section.set("properties.offset.y", 10.0);
+        FurnitureMechanic mechanic = new FurnitureMechanic(mechanicFactory(), section);
+
+        assertEquals(ItemDisplay.ItemDisplayTransform.FIXED, mechanic.getDisplayEntityProperties().getDisplayTransform());
+        assertEquals(2.0f, mechanic.getDisplayEntityProperties().getScale().y());
+        assertEquals(0.25f, mechanic.getDisplayEntityProperties().getTranslation().x());
+        assertEquals(0.0f, mechanic.getDisplayEntityProperties().getTranslation().y());
+    }
+
+    @Test
+    void readsUnifiedArmorStandPropertiesAndModelScaleWhileIgnoringDisplayProperties() throws Exception {
+        ConfigurationSection section = mechanicSection("furniture", "type", "ARMOR_STAND");
+        section.set("properties.scale.y", 0.5);
+        section.set("properties.translation.x", 0.25);
+        // These values would fail display property parsing if it ran for an armor stand.
+        section.set("properties.display_transform", "INVALID");
+        section.set("properties.brightness.block_light", 100);
+        FurnitureMechanic mechanic = new FurnitureMechanic(mechanicFactory(), section);
+
+        var armorStandField = FurnitureMechanic.class.getDeclaredField("armorStandProperties");
+        armorStandField.setAccessible(true);
+        ArmorStandProperties armorStandProperties = (ArmorStandProperties) armorStandField.get(mechanic);
+        assertEquals(0.25, armorStandProperties.getTranslation().getX());
+        assertEquals(0.5f, armorStandProperties.getScaleY());
+        var smallField = FurnitureMechanic.class.getDeclaredField("small");
+        smallField.setAccessible(true);
+        assertTrue(smallField.getBoolean(mechanic));
+
+        OraxenMeta meta = new OraxenMeta();
+        ItemProperties properties = new ItemProperties(section.getParent().getParent(), Material.PAPER, meta, Map.of());
+        var applyModelProperties = ItemProperties.class.getDeclaredMethod("applyArmorStandModelProperties", ConfigurationSection.class);
+        applyModelProperties.setAccessible(true);
+        applyModelProperties.invoke(properties, section.getParent().getParent());
+        assertEquals(0.5, meta.getArmorStandHeadScale().getY());
+        assertEquals(ItemDisplay.ItemDisplayTransform.NONE, mechanic.getDisplayEntityProperties().getDisplayTransform());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ITEM_FRAME", "GLOW_ITEM_FRAME"})
+    void ignoresDisplayPropertiesForItemFrames(String type) {
+        ConfigurationSection section = mechanicSection("furniture", "type", type);
+        section.set("properties.display_transform", "INVALID");
+        section.set("properties.brightness.block_light", 100);
+
+        FurnitureMechanic mechanic = new FurnitureMechanic(mechanicFactory(), section);
+
+        assertEquals(ItemDisplay.ItemDisplayTransform.NONE, mechanic.getDisplayEntityProperties().getDisplayTransform());
+        assertFalse(mechanic.getDisplayEntityProperties().hasBrightness());
     }
 
     @Test
     void runsConfiguredFurnitureEventsForMatchingClick() {
-        FurnitureMechanic mechanic = new FurnitureMechanic(furnitureFactory(), mechanicSection("furniture",
+        FurnitureMechanic mechanic = new FurnitureMechanic(mechanicFactory(), mechanicSection("furniture",
                 "events", List.of(Map.of("click", "right", "actions", List.of(
                         Map.of("command", "say <Player>", "executor", "PLAYER"))))));
         Player player = mock(Player.class);
@@ -61,7 +115,7 @@ class FurnitureMechanicTest extends MechanicTestSupport {
 
     @Test
     void readsBasicFurnitureSettings() {
-        FurnitureMechanic mechanic = new FurnitureMechanic(furnitureFactory(), mechanicSection("furniture",
+        FurnitureMechanic mechanic = new FurnitureMechanic(mechanicFactory(), mechanicSection("furniture",
                 "hardness", 4,
                 "item", "placed_item",
                 "type", "ITEM_FRAME",
@@ -85,9 +139,9 @@ class FurnitureMechanicTest extends MechanicTestSupport {
     void leftClickEventsMakeFurnitureUnbreakableByDefault(String click) {
         List<Map<String, Object>> events = List.of(Map.of("click", click,
                 "actions", List.of(Map.of("message", "clicked"))));
-        FurnitureMechanic mechanic = new FurnitureMechanic(furnitureFactory(),
+        FurnitureMechanic mechanic = new FurnitureMechanic(mechanicFactory(),
                 mechanicSection("furniture", "events", events));
-        FurnitureMechanic explicitlyBreakable = new FurnitureMechanic(furnitureFactory(),
+        FurnitureMechanic explicitlyBreakable = new FurnitureMechanic(mechanicFactory(),
                 mechanicSection("furniture", "events", events, "breakable", true));
 
         assertFalse(mechanic.isBreakable());
@@ -98,9 +152,9 @@ class FurnitureMechanicTest extends MechanicTestSupport {
     void rightClickEventsKeepFurnitureBreakableUnlessDisabled() {
         List<Map<String, Object>> events = List.of(Map.of("click", "right",
                 "actions", List.of(Map.of("message", "clicked"))));
-        FurnitureMechanic mechanic = new FurnitureMechanic(furnitureFactory(),
+        FurnitureMechanic mechanic = new FurnitureMechanic(mechanicFactory(),
                 mechanicSection("furniture", "events", events));
-        FurnitureMechanic explicitlyUnbreakable = new FurnitureMechanic(furnitureFactory(),
+        FurnitureMechanic explicitlyUnbreakable = new FurnitureMechanic(mechanicFactory(),
                 mechanicSection("furniture", "events", events, "breakable", false));
 
         assertTrue(mechanic.isBreakable());
@@ -109,7 +163,7 @@ class FurnitureMechanicTest extends MechanicTestSupport {
 
     @Test
     void eventWithoutClickFilterAlsoMakesFurnitureUnbreakable() {
-        FurnitureMechanic mechanic = new FurnitureMechanic(furnitureFactory(), mechanicSection("furniture",
+        FurnitureMechanic mechanic = new FurnitureMechanic(mechanicFactory(), mechanicSection("furniture",
                 "events", List.of(Map.of("actions", List.of(Map.of("message", "clicked"))))));
 
         assertFalse(mechanic.isBreakable());
