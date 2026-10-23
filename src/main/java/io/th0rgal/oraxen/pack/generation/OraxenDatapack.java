@@ -20,7 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public abstract class OraxenDatapack {
-    protected static final World defaultWorld = Bukkit.getWorlds().get(0);
+    protected static final World defaultWorld = Bukkit.getWorlds().getFirst();
     protected final File datapackFolder;
     private final File legacyDatapackFolder;
     protected final JsonObject datapackMeta = new JsonObject();
@@ -28,12 +28,12 @@ public abstract class OraxenDatapack {
     protected final boolean datapackEnabled;
     protected final String name;
 
-    protected OraxenDatapack(String name, String description, int packFormat) {
+    protected OraxenDatapack(final String name, final String description, final int packFormat) {
         Path worldFolder = defaultWorld.getWorldFolder().toPath();
         this.datapackFolder = getDatapackRoot(worldFolder).resolve("datapacks/" + name).toFile();
         this.legacyDatapackFolder = worldFolder.resolve("datapacks/" + name).toFile();
 
-        JsonObject data = new JsonObject();
+        final JsonObject data = new JsonObject();
         data.addProperty("description", description);
         data.addProperty("pack_format", packFormat);
         datapackMeta.add("pack", data);
@@ -49,7 +49,7 @@ public abstract class OraxenDatapack {
             File packMeta = datapackFolder.toPath().resolve("pack.mcmeta").toFile();
             FileUtils.writeStringToFile(packMeta, datapackMeta.toString(), StandardCharsets.UTF_8);
             return true;
-        } catch (IOException e) {
+        } catch (final IOException e) {
             Logs.logError("Failed to write datapack pack.mcmeta for " + name + ": " + e.getMessage());
             Logs.debug(e);
             return false;
@@ -62,7 +62,7 @@ public abstract class OraxenDatapack {
             if (!datapackFolder.equals(legacyDatapackFolder)) {
                 FileUtils.deleteDirectory(legacyDatapackFolder);
             }
-        } catch (IOException e) {
+        } catch (final IOException e) {
             e.printStackTrace();
         }
     }
@@ -96,7 +96,7 @@ public abstract class OraxenDatapack {
         return BukkitWrapper.get().isDatapackEnabled(getDatapackKey(), defaultWorld);
     }
 
-    protected void enableDatapack(boolean enabled) {
+    protected void enableDatapack(final boolean enabled) {
         BukkitWrapper.get().setDatapackEnabled(this.name, enabled);
     }
 

@@ -15,7 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class CompatibilitiesManager {
 
-    private CompatibilitiesManager() {}
+    private CompatibilitiesManager() {
+    }
 
     private static final ConcurrentHashMap<String, Class<? extends CompatibilityProvider<?>>> COMPATIBILITY_PROVIDERS = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, CompatibilityProvider<?>> ACTIVE_COMPATIBILITY_PROVIDERS = new ConcurrentHashMap<>();
@@ -46,7 +47,8 @@ public class CompatibilitiesManager {
                 Message.PLUGIN_HOOKS.log(AdventureUtils.tagResolver("plugin", pluginName));
                 return true;
             }
-        } catch (final InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+        } catch (final InstantiationException | IllegalAccessException | NoSuchMethodException |
+                       InvocationTargetException e) {
             Logs.logWarning("Failed to enable compatibility for " + pluginName + ": " + e.getMessage());
             Logs.debug(e);
             return false;
@@ -109,7 +111,7 @@ public class CompatibilitiesManager {
         return ACTIVE_COMPATIBILITY_PROVIDERS;
     }
 
-    public static boolean hasPlugin(String name) {
+    public static boolean hasPlugin(final String name) {
         return PluginUtils.isEnabled(name);
     }
 }

@@ -90,6 +90,10 @@ public class FurnitureFactory extends MechanicFactory {
         return instance;
     }
 
+    public List<String> getToolTypes() {
+        return toolTypes;
+    }
+
     private static void registerLoadedFurnitureText() {
         // OraxenItemsLoadedEvent fires on the global thread (startup) or a
         // command thread (reload). Enumerating the world entity list is a safe

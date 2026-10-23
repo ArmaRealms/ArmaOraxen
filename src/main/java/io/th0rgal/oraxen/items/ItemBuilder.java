@@ -15,10 +15,14 @@ import io.th0rgal.oraxen.compatibilities.provided.mythiccrucible.WrappedCrucible
 import io.th0rgal.oraxen.configs.Message;
 import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.nms.NMSHandlers;
-import io.th0rgal.oraxen.utils.*;
-import io.th0rgal.oraxen.utils.logs.Logs;
 import io.th0rgal.oraxen.utils.AdventureUtils;
+import io.th0rgal.oraxen.utils.CustomModelDataHelper;
+import io.th0rgal.oraxen.utils.ItemUtils;
+import io.th0rgal.oraxen.utils.OraxenYaml;
+import io.th0rgal.oraxen.utils.PotionUtils;
+import io.th0rgal.oraxen.utils.Utils;
 import io.th0rgal.oraxen.utils.VersionUtil;
+import io.th0rgal.oraxen.utils.logs.Logs;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -35,8 +39,21 @@ import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemRarity;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.*;
-import org.bukkit.inventory.meta.components.*;
+import org.bukkit.inventory.meta.ArmorMeta;
+import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.FireworkEffectMeta;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
+import org.bukkit.inventory.meta.MapMeta;
+import org.bukkit.inventory.meta.PotionMeta;
+import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.inventory.meta.TropicalFishBucketMeta;
+import org.bukkit.inventory.meta.components.CustomModelDataComponent;
+import org.bukkit.inventory.meta.components.EquippableComponent;
+import org.bukkit.inventory.meta.components.FoodComponent;
+import org.bukkit.inventory.meta.components.JukeboxPlayableComponent;
+import org.bukkit.inventory.meta.components.ToolComponent;
+import org.bukkit.inventory.meta.components.UseCooldownComponent;
 import org.bukkit.inventory.meta.trim.ArmorTrim;
 import org.bukkit.inventory.meta.trim.TrimMaterial;
 import org.bukkit.inventory.meta.trim.TrimPattern;
@@ -410,7 +427,7 @@ public class ItemBuilder {
      * Check if the ItemBuilder has color.
      *
      * @return true if the ItemBuilder has color that is not default
-     *         LeatherMetaColor
+     * LeatherMetaColor
      */
     public boolean hasColor() {
         return color != null && !color.equals(Bukkit.getItemFactory().getDefaultLeatherColor());
@@ -744,7 +761,7 @@ public class ItemBuilder {
     }
 
     public <T, Z> ItemBuilder setCustomTag(final NamespacedKey namespacedKey, final PersistentDataType<T, Z> dataType,
-            final Z data) {
+                                           final Z data) {
         persistentDataMap.put(new PersistentDataSpace(namespacedKey, dataType), data);
         return this;
     }
@@ -1003,8 +1020,17 @@ public class ItemBuilder {
     private void applyProperties_1_20_5(ItemMeta itemMeta) {
         if (itemMeta instanceof Damageable damageable)
             damageable.setMaxDamage(durability);
-        if (hasItemName())
-            itemMeta.itemName(AdventureUtils.MINI_MESSAGE.deserialize(itemName));
+if (hasItemName()) {
+    if (VersionUtil.isPaperServer()) {
+        Component display = AdventureUtils.MINI_MESSAGE.deserialize(this.itemName)
+                .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE);
+        itemMeta.itemName(display);
+        itemMeta.customName(display);
+    } else {
+        itemMeta.setItemName(itemName);
+        itemMeta.setDisplayName(itemName);
+    }
+}
         if (hasMaxStackSize())
             itemMeta.setMaxStackSize(maxStackSize);
         if (hasEnchantmentGlintOverride())

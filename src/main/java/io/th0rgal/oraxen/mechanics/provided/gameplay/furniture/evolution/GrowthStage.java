@@ -1,11 +1,11 @@
 package io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.evolution;
 
-import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureFactory;
 import io.th0rgal.oraxen.utils.drops.Drop;
 import org.bukkit.configuration.ConfigurationSection;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -38,7 +38,8 @@ public class GrowthStage {
      * @param defaultDrop The default drop from the parent mechanic (used if stage has no drop)
      * @param parentItemId The parent item ID (used as fallback source for drops)
      */
-    public GrowthStage(ConfigurationSection section, @Nullable Drop defaultDrop, String parentItemId) {
+    public GrowthStage(ConfigurationSection section, @Nullable Drop defaultDrop, String parentItemId,
+                       List<String> toolTypes) {
         this.modelKey = section.getString("model", "");
         this.light = section.getInt("light", -1);
         
@@ -46,7 +47,7 @@ public class GrowthStage {
         // Use parentItemId as sourceID for drop fallback (avoids NPE from empty string)
         ConfigurationSection dropSection = section.getConfigurationSection("drop");
         if (dropSection != null) {
-            this.drop = Drop.createDrop(FurnitureFactory.getInstance().toolTypes, dropSection, parentItemId);
+            this.drop = Drop.createDrop(toolTypes, dropSection, parentItemId);
         } else {
             this.drop = defaultDrop;
         }
@@ -208,4 +209,3 @@ public class GrowthStage {
         return random.nextDouble() < probability;
     }
 }
-

@@ -7,6 +7,7 @@ import io.th0rgal.oraxen.commands.arguments.IntegerArgument;
 import io.th0rgal.oraxen.commands.arguments.TextArgument;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
+import io.th0rgal.oraxen.compatibilities.provided.placeholderapi.PapiAliases;
 import io.th0rgal.oraxen.configs.Message;
 import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.items.ItemUpdater;
@@ -231,11 +232,15 @@ public class CommandsManager {
                     final int giveAmount = amount;
 
                     forEachTargetThenReport(targets, target -> {
-                        final Map<Integer, ItemStack> output = target.getInventory()
-                                .addItem(itemBuilder.buildArray(giveAmount));
-                        if (!output.isEmpty()) {
-                            for (final ItemStack stack : output.values())
-                                target.getWorld().dropItem(target.getLocation(), stack);
+                        final ItemStack[] items = itemBuilder.buildArray(giveAmount);
+                        for (final ItemStack item : items) {
+                            final Map<Integer, ItemStack> output = target.getInventory()
+                                    .addItem(PapiAliases.updateLore(target, item.clone()));
+                            if (!output.isEmpty()) {
+                                for (final ItemStack stack : output.values()) {
+                                    target.getWorld().dropItem(target.getLocation(), stack);
+                                }
+                            }
                         }
                     }, served -> sendGiveReport(sender, served, giveAmount, itemID));
                 });
@@ -259,7 +264,7 @@ public class CommandsManager {
 
                     forEachTargetThenReport(targets, target -> {
                         final Map<Integer, ItemStack> output = target.getInventory()
-                                .addItem(ItemUpdater.updateItem(itemBuilder.build()));
+                                .addItem(PapiAliases.updateLore(target, ItemUpdater.updateItem(itemBuilder.build()).clone()));
                         if (!output.isEmpty()) {
                             for (final ItemStack stack : output.values()) {
                                 target.getWorld().dropItem(target.getLocation(), stack);

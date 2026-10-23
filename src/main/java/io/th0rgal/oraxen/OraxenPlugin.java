@@ -13,6 +13,7 @@ import io.th0rgal.oraxen.configs.SettingsUpdater;
 import io.th0rgal.oraxen.fonts.FontManager;
 import io.th0rgal.oraxen.hopper.OraxenHopper;
 import io.th0rgal.oraxen.introduction.IntroductionGuide;
+import io.th0rgal.oraxen.mechanics.provided.cosmetic.backpack.BackpackCosmeticManager;
 import io.th0rgal.oraxen.packets.NativePacketAdapter;
 import io.th0rgal.oraxen.packets.PacketAdapter;
 import io.th0rgal.oraxen.packets.PacketEventsAdapter;
@@ -47,6 +48,7 @@ import io.th0rgal.oraxen.utils.breaker.CustomBlockMiningListener;
 import io.th0rgal.oraxen.utils.customarmor.CustomArmorListener;
 import io.th0rgal.oraxen.utils.inventories.InvManager;
 import io.th0rgal.oraxen.utils.logs.Logs;
+import io.th0rgal.oraxen.utils.schema.SchemaGenerator;
 import io.th0rgal.oraxen.protection.AntiGriefLib;
 import org.apache.commons.lang3.SystemUtils;
 import org.bukkit.Bukkit;
@@ -140,7 +142,7 @@ public class OraxenPlugin extends JavaPlugin {
             reloadCustomPaintings();
 
         // Auto-update Paper config for block updates (noteblock, tripwire, chorus)
-        var updatedSettings = PaperConfigUpdater.ensureAllBlockUpdatesDisabled();
+        final var updatedSettings = PaperConfigUpdater.ensureAllBlockUpdatesDisabled();
         if (!updatedSettings.isEmpty()) {
             Logs.logSuccess("Auto-updated paper-global.yml: enabled " + String.join(", ", updatedSettings) + " (restart required)");
         }
@@ -154,6 +156,7 @@ public class OraxenPlugin extends JavaPlugin {
         // Earlier supported versions inject the songs into the live NMS registry at startup.
         if (!VersionUtil.atOrAbove("1.21.6"))
             CustomJukeboxSongRegistry.reload(soundManager.getJukeboxSounds());
+        CompatibilitiesManager.enableNativeCompatibilities();
         OraxenItems.loadItems();
         fontManager.registerEvents();
         fontManager.verifyRequired(); // Verify the required glyph is there
@@ -179,7 +182,6 @@ public class OraxenPlugin extends JavaPlugin {
             Message.PLUGIN_LOADED.log(AdventureUtils.tagResolver("os", SystemUtils.OS_NAME + " " + SystemUtils.OS_VERSION));
         } catch (Exception ignore) {
         }
-        CompatibilitiesManager.enableNativeCompatibilities();
         if (VersionUtil.isCompiled())
             NoticeUtils.compileNotice();
 
@@ -227,9 +229,8 @@ public class OraxenPlugin extends JavaPlugin {
 
         // Auto-generate schema in debug mode (useful for CI/CD)
         if (Settings.DEBUG.toBool()) {
-            SchedulerUtil.runTaskLater(this, 20L, () -> {
-                io.th0rgal.oraxen.utils.schema.SchemaGenerator.generateAndSave();
-            }); // Small delay to ensure everything is loaded
+            // Small delay to ensure everything is loaded
+            SchedulerUtil.runTaskLater(this, 20L, SchemaGenerator::generateAndSave);
         }
     }
 
@@ -250,7 +251,7 @@ public class OraxenPlugin extends JavaPlugin {
         RecipeBuilder.clearAll();
 
         // Clean up backpack cosmetic entities to prevent ghost armor stands
-        io.th0rgal.oraxen.mechanics.provided.cosmetic.backpack.BackpackCosmeticManager.getInstance().cleanup();
+        BackpackCosmeticManager.getInstance().cleanup();
 
         CompatibilitiesManager.disableCompatibilities();
         OraxenCommand.unregisterAll();

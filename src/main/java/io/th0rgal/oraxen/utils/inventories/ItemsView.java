@@ -5,6 +5,7 @@ import dev.triumphteam.gui.guis.GuiItem;
 import dev.triumphteam.gui.guis.PaginatedGui;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenItems;
+import io.th0rgal.oraxen.compatibilities.provided.placeholderapi.PapiAliases;
 import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.items.ItemBuilder;
 import io.th0rgal.oraxen.items.ItemUpdater;
@@ -13,6 +14,7 @@ import io.th0rgal.oraxen.utils.ItemUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 
@@ -32,27 +34,27 @@ public class ItemsView {
             if (!unexcludedItems.isEmpty())
                 files.put(file, createSubGUI(file.getName(), unexcludedItems));
         }
-        int rows = (int) Settings.ORAXEN_INV_ROWS.getValue();
+        final int rows = (int) Settings.ORAXEN_INV_ROWS.getValue();
 
         //Get max between the highest slot and the number of files
-        int highestUsedSlot = files.keySet().stream()
+        final int highestUsedSlot = files.keySet().stream()
                 .map(this::getGuiItemSlot)
                 .map(GuiItemSlot::slot)
                 .max(Comparator.naturalOrder())
-                .map(slot -> Math.max(slot, files.keySet().size() - 1))
-                .orElse(files.keySet().size() - 1);
-        GuiItem emptyGuiItem = new GuiItem(Material.AIR);
-        List<GuiItem> guiItems = new ArrayList<>(Collections.nCopies(highestUsedSlot + 1, emptyGuiItem));
+                .map(slot -> Math.max(slot, files.size() - 1))
+                .orElse(files.size() - 1);
+        final GuiItem emptyGuiItem = new GuiItem(Material.AIR);
+        final List<GuiItem> guiItems = new ArrayList<>(Collections.nCopies(highestUsedSlot + 1, emptyGuiItem));
 
-        for (Map.Entry<File, PaginatedGui> entry : files.entrySet()) {
-            int slot = getGuiItemSlot(entry.getKey()).slot();
+        for (final Map.Entry<File, PaginatedGui> entry : files.entrySet()) {
+            final int slot = getGuiItemSlot(entry.getKey()).slot;
             if (slot == -1) continue;
             guiItems.set(slot, new GuiItem(getGuiItemSlot(entry.getKey()).itemStack, e -> entry.getValue().open(e.getWhoClicked())));
         }
 
         // Add all items without a specified slot to the earliest available slot
-        for (Map.Entry<File, PaginatedGui> entry : files.entrySet()) {
-            GuiItemSlot guiItemSlot = getGuiItemSlot(entry.getKey());
+        for (final Map.Entry<File, PaginatedGui> entry : files.entrySet()) {
+            final GuiItemSlot guiItemSlot = getGuiItemSlot(entry.getKey());
             if (guiItemSlot.slot != -1) continue;
             guiItems.set(guiItems.indexOf(emptyGuiItem), new GuiItem(guiItemSlot.itemStack(), e -> entry.getValue().open(e.getWhoClicked())));
         }
@@ -87,12 +89,16 @@ public class ItemsView {
                 .replace("<main_menu_title>", Settings.ORAXEN_INV_TITLE.toString()))).create();
         gui.disableAllInteractions();
 
-        for (ItemBuilder builder : items) {
+        for (final ItemBuilder builder : items) {
             if (builder == null) continue;
-            ItemStack itemStack = builder.build();
+            final ItemStack itemStack = builder.build();
             if (ItemUtils.isEmpty(itemStack)) continue;
-
-            gui.addItem(new GuiItem(itemStack, e -> e.getWhoClicked().getInventory().addItem(ItemUpdater.updateItem(e.getCurrentItem().clone()))));
+            final GuiItem guiItem = new GuiItem(itemStack);
+            guiItem.setAction(e -> {
+                final Player player = (Player) e.getWhoClicked();
+                player.getInventory().addItem(PapiAliases.updateLore(player, ItemUpdater.updateItem(guiItem.getItemStack().clone())));
+            });
+            gui.addItem(guiItem);
         }
 
         ItemStack nextPage = InventoryIcons.resolve(Settings.ORAXEN_INV_NEXT_ICON, "arrow_next_icon", Material.ARROW)

@@ -1,4 +1,4 @@
-rootProject.name = "oraxen"
+rootProject.name = "Oraxen"
 
 pluginManagement {
     repositories {
