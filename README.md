@@ -222,3 +222,18 @@ See https://docs.oraxen.com/developers/contributing.
 Read the full license in [`LICENSE.md`](LICENSE.md).
 
 Oraxen is a paid plugin. You must purchase a license from [SpigotMC](https://www.spigotmc.org/resources/oraxen.72448/) or [BuiltByBit](https://builtbybit.com/resources/oraxen-custom-items-blocks-more.16594/) to use it. Public forks are permitted for contributing pull requests, provided that you comply with the license. Do not redistribute compiled builds or source code, whether modified or unmodified, except as permitted by the license.
+
+## Atualização e proteção de encantamentos
+
+Ao atualizar um item existente, os níveis de `Enchantments` da configuração sempre
+prevalecem, inclusive quando o item está sem encantamentos. A lista fica idêntica
+à configuração: encantamentos extras são removidos e uma configuração sem
+encantamentos deixa o item sem nenhum. `no_auto_update: true` continua
+impedindo essa atualização.
+
+Itens Oraxen bloqueiam encantamento e desencantamento por padrão. Defina
+`enchantable: true` no item ou no template para permitir essas alterações na mesa
+de encantamentos, bigorna e pedra de amolar. Resultados que mantêm os mesmos
+encantamentos continuam permitidos. A proteção também vale para as receitas
+personalizadas de bigorna e pedra de amolar do Oraxen. Isso não impede alterações
+feitas por outros plugins ou comandos.

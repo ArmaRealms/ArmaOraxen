@@ -6,6 +6,8 @@ import io.th0rgal.oraxen.mechanics.MechanicConfigProperty;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -14,6 +16,17 @@ import static org.junit.jupiter.api.Assertions.*;
 class SchemaReconcilerTest {
     private static JsonObject parse(String json) {
         return JsonParser.parseString(json).getAsJsonObject();
+    }
+
+    @Test
+    void publishedEnchantmentPolicyMatchesTheGeneratedDefault() throws Exception {
+        var method = SchemaGenerator.class.getDeclaredMethod("generateItemProperties");
+        method.setAccessible(true);
+        JsonObject generated = (JsonObject) method.invoke(null);
+        JsonObject published = parse(Files.readString(Path.of("schemas/oraxen-schema.json")));
+        JsonObject enchantable = generated.getAsJsonObject("enchantable");
+        assertFalse(enchantable.get("default").getAsBoolean());
+        assertEquals(enchantable, published.getAsJsonObject("itemProperties").getAsJsonObject("enchantable"));
     }
 
     @Test

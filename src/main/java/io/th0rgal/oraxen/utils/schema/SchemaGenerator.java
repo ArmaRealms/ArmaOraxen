@@ -522,7 +522,8 @@ public class SchemaGenerator {
         addProperty(properties, "excludeFromCommands", "boolean", "Exclude from /oraxen give autocomplete", false, null,
                 null);
         addProperty(properties, "no_auto_update", "boolean", "Disable automatic item updates", false, null, null);
-        addProperty(properties, "enchantable", "boolean", "Allow enchanting this item", false, null, null);
+        addProperty(properties, "enchantable", "boolean", "Allow enchanting and disenchanting this item", false, null, null);
+        properties.getAsJsonObject("enchantable").addProperty("default", false);
 
         // ItemFlags
         JsonObject itemFlags = new JsonObject();

@@ -39,7 +39,7 @@ public class OraxenMeta {
     private boolean excludedFromInventory = false;
     private boolean excludedFromCommands = false;
     private boolean noUpdate = false;
-    private boolean enchantable = true;
+    private boolean enchantable = false;
     private NamedTextColor glowing;
     private boolean oversizedInGui = false;
     private boolean handAnimationOnSwap = true;

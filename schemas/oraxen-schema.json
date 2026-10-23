@@ -7854,7 +7854,8 @@
     },
     "enchantable": {
       "type": "boolean",
-      "description": "Allow enchanting this item"
+      "description": "Allow enchanting and disenchanting this item",
+      "default": false
     },
     "ItemFlags": {
       "type": "array",

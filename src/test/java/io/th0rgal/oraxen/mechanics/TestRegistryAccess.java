@@ -9,6 +9,8 @@ import org.bukkit.Registry;
 import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
+import org.bukkit.enchantments.Enchantment;
+
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionEffectTypeCategory;
@@ -22,6 +24,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.RETURNS_DEFAULTS;
+
 public class TestRegistryAccess implements RegistryAccess {
 
     @Override
@@ -32,6 +37,9 @@ public class TestRegistryAccess implements RegistryAccess {
     @Override
     @SuppressWarnings({"unchecked", "removal"})
     public <T extends Keyed> Registry<T> getRegistry(RegistryKey<T> key) {
+        if (key == RegistryKey.ENCHANTMENT) {
+            return new TestRegistry<>((Class<T>) Enchantment.class);
+        }
         if (key == RegistryKey.SOUND_EVENT) {
             return new TestRegistry<>((Class<T>) Sound.class);
         }
@@ -54,6 +62,10 @@ public class TestRegistryAccess implements RegistryAccess {
         @Override
         @SuppressWarnings("unchecked")
         public T get(NamespacedKey key) {
+            if (type == Enchantment.class) {
+                return (T) mock(Enchantment.class, call -> call.getMethod().getName().equals("getKey")
+                        ? key : RETURNS_DEFAULTS.answer(call));
+            }
             if (type != null && PotionEffectType.class.isAssignableFrom(type)) {
                 return (T) new TestPotionEffectType(key);
             }
