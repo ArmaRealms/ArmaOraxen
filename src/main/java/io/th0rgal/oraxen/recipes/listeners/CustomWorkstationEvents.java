@@ -1,5 +1,6 @@
 package io.th0rgal.oraxen.recipes.listeners;
 
+import io.th0rgal.oraxen.items.ItemUpdater;
 import io.th0rgal.oraxen.recipes.CustomWorkstationRecipe;
 import io.th0rgal.oraxen.recipes.CustomWorkstationRegistry;
 import io.th0rgal.oraxen.recipes.builders.AnvilBuilder;
@@ -46,7 +47,8 @@ public class CustomWorkstationEvents implements Listener {
             event.setResult(null);
             return;
         }
-        event.setResult(recipe.createResult());
+        ItemStack result = recipe.createResult();
+        event.setResult(protectedEnchantmentsChanged(event.getInventory(), result) ? null : result);
         event.getInventory().setRepairCost(recipe.value());
     }
 
@@ -60,7 +62,14 @@ public class CustomWorkstationEvents implements Listener {
         Player player = InventoryUtils.playerFromView(event);
         Match match = grindstoneRecipe(event.getInventory().getItem(0), event.getInventory().getItem(1));
         if (match == null) return;
-        event.setResult(permitted(match.recipe(), player) ? match.recipe().createResult() : null);
+        ItemStack result = match.recipe().createResult();
+        event.setResult(permitted(match.recipe(), player)
+                && !protectedEnchantmentsChanged(event.getInventory(), result) ? result : null);
+    }
+
+    private static boolean protectedEnchantmentsChanged(Inventory inventory, ItemStack result) {
+        return ItemUpdater.isEnchantmentChangeBlocked(inventory.getItem(0), result)
+                || ItemUpdater.isEnchantmentChangeBlocked(inventory.getItem(1), result);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -89,6 +98,7 @@ public class CustomWorkstationEvents implements Listener {
         if (!permitted(recipe, player) || !supportedAction(event.getAction())) return;
         ItemStack resultSlot = event.getCurrentItem();
         ItemStack expected = recipe.createResult();
+        if (protectedEnchantmentsChanged(inventory, expected)) return;
         if (resultSlot == null || resultSlot.isEmpty() || !resultSlot.isSimilar(expected)
                 || resultSlot.getAmount() != expected.getAmount()) return;
         if (!grindstone && player.getGameMode() != GameMode.CREATIVE && player.getLevel() < recipe.value()) return;
@@ -131,6 +141,7 @@ public class CustomWorkstationEvents implements Listener {
         CustomWorkstationRecipe recipe = match.recipe();
         if (!permitted(recipe, player)) return;
         ItemStack expected = recipe.createResult();
+        if (protectedEnchantmentsChanged(inventory, expected)) return;
         if (!resultSlot.isSimilar(expected) || resultSlot.getAmount() != expected.getAmount()) return;
         if (!grindstone && player.getGameMode() != GameMode.CREATIVE && player.getLevel() < recipe.value()) return;
         // No partial takes: the whole result must fit on the cursor, mirroring the pickup path.

@@ -1,6 +1,7 @@
 package io.th0rgal.oraxen.items;
 
 import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
+import com.destroystokyo.paper.event.inventory.PrepareGrindstoneEvent;
 import com.jeff_media.morepersistentdatatypes.DataType;
 import com.jeff_media.persistentdataserializer.PersistentDataSerializer;
 import io.th0rgal.oraxen.OraxenPlugin;
@@ -48,6 +49,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ArmorMeta;
 import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.inventory.meta.MapMeta;
@@ -150,18 +152,36 @@ public class ItemUpdater implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
-    public void onItemEnchant(PrepareAnvilEvent event) {
-        ItemStack item = event.getInventory().getItem(0);
-        ItemStack result = event.getResult();
-        String id = OraxenItems.getIdByItem(item);
-        ItemBuilder builder = OraxenItems.getItemById(id);
-        if (builder == null || !builder.hasOraxenMeta()) return;
-
-        if (!builder.getOraxenMeta().isEnchantable()) {
-            if (result == null || item == null) return;
-            if (!result.getEnchantments().equals(item.getEnchantments()))
+    public void onItemEnchant(final PrepareAnvilEvent event) {
+        for (int slot = 0; slot < 2; slot++) {
+            if (isEnchantmentChangeBlocked(event.getInventory().getItem(slot), event.getResult())) {
                 event.setResult(null);
+                return;
+            }
         }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onItemDisenchant(final PrepareGrindstoneEvent event) {
+        for (int slot = 0; slot < 2; slot++) {
+            if (isEnchantmentChangeBlocked(event.getInventory().getItem(slot), event.getResult())) {
+                event.setResult(null);
+                return;
+            }
+        }
+    }
+
+    /** Checks whether a workstation result changes the enchantments of a protected item. */
+    public static boolean isEnchantmentChangeBlocked(ItemStack item, ItemStack result) {
+        if (item == null || result == null) return false;
+        ItemBuilder builder = OraxenItems.getBuilderByItem(item);
+        if (builder == null || !builder.hasOraxenMeta() || builder.getOraxenMeta().isEnchantable()) return false;
+        return !item.getEnchantments().equals(result.getEnchantments())
+                || !storedEnchantments(item).equals(storedEnchantments(result));
+    }
+
+    private static Map<Enchantment, Integer> storedEnchantments(ItemStack item) {
+        return item.getItemMeta() instanceof EnchantmentStorageMeta storage ? storage.getStoredEnchants() : Map.of();
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -552,19 +572,7 @@ public class ItemUpdater implements Listener {
             List<Map<?, ?>> oldPdcMap = PersistentDataSerializer.toMapList(oldPdc);
             PersistentDataSerializer.fromMapList(oldPdcMap, itemPdc);
 
-            // If oldItem had all enchantments removed, don't restore configured enchantments
-            if (oldMeta.getEnchants().isEmpty() && !newMeta.getEnchants().isEmpty()) {
-                // Remove all configured enchantments since user intentionally unenchanted the item
-                for (Enchantment enchantment : newMeta.getEnchants().keySet())
-                    itemMeta.removeEnchant(enchantment);
-            } else {
-                // Add all enchantments from oldItem and add all from newItem as long as it is not the same Enchantments
-                for (Map.Entry<Enchantment, Integer> entry : oldMeta.getEnchants().entrySet())
-                    itemMeta.addEnchant(entry.getKey(), entry.getValue(), true);
-                for (Map.Entry<Enchantment, Integer> entry : newMeta.getEnchants().entrySet().stream().filter(e -> !oldMeta.getEnchants().containsKey(e.getKey())).toList())
-                    itemMeta.addEnchant(entry.getKey(), entry.getValue(), true);
-            }
-
+            // Keep the template's complete enchantment list, including an empty list.
             Integer cmd = CustomModelDataHelper.getCustomModelData(newMeta);
             if (cmd == null)
                 cmd = CustomModelDataHelper.getCustomModelData(oldMeta);
