@@ -188,6 +188,34 @@ class ItemUpdaterTest {
     }
 
     @Test
+    void unenchantedAnvilAdditionMayRepairAnItemWithoutChangingItsEnchantments() {
+        ItemStack target = item(Map.of(efficiency, 5));
+        ItemStack addition = item(Map.of());
+        ItemStack result = item(Map.of(efficiency, 5));
+        items.when(() -> OraxenItems.getBuilderByItem(target)).thenReturn(builder);
+        items.when(() -> OraxenItems.getBuilderByItem(addition)).thenReturn(builder);
+        AnvilInventory inventory = mock(AnvilInventory.class);
+        when(inventory.getItem(0)).thenReturn(target);
+        when(inventory.getItem(1)).thenReturn(addition);
+        PrepareAnvilEvent event = mock(PrepareAnvilEvent.class);
+        when(event.getInventory()).thenReturn(inventory);
+        when(event.getResult()).thenReturn(result);
+        new ItemUpdater().onItemEnchant(event);
+        verify(event, never()).setResult(null);
+
+        CustomWorkstationRecipe recipe = mock(CustomWorkstationRecipe.class);
+        when(recipe.createResult()).thenReturn(result);
+        try (var registry = mockStatic(CustomWorkstationRegistry.class);
+             var builders = mockStatic(RecipesBuilderEvents.class);
+             var inventoryUtils = mockStatic(InventoryUtils.class)) {
+            registry.when(() -> CustomWorkstationRegistry.match(CustomWorkstationRecipe.Type.ANVIL, target, addition))
+                    .thenReturn(recipe);
+            new CustomWorkstationEvents().prepareAnvil(event);
+            verify(event).setResult(result);
+        }
+    }
+
+    @Test
     void grindstoneProtectsEitherInputAndAllowsExplicitOptIn() {
         ItemUpdater updater = new ItemUpdater();
         for (int slot = 0; slot < 2; slot++) {

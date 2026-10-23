@@ -41,6 +41,7 @@ import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
@@ -153,22 +154,24 @@ public class ItemUpdater implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onItemEnchant(final PrepareAnvilEvent event) {
-        for (int slot = 0; slot < 2; slot++) {
-            if (isEnchantmentChangeBlocked(event.getInventory().getItem(slot), event.getResult())) {
-                event.setResult(null);
-                return;
-            }
-        }
+        if (isEnchantmentChangeBlocked(event.getInventory(), event.getResult())) event.setResult(null);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onItemDisenchant(final PrepareGrindstoneEvent event) {
+        if (isEnchantmentChangeBlocked(event.getInventory(), event.getResult())) event.setResult(null);
+    }
+
+    /** Checks both workstation inputs while allowing an unenchanted anvil repair material. */
+    public static boolean isEnchantmentChangeBlocked(Inventory inventory, ItemStack result) {
         for (int slot = 0; slot < 2; slot++) {
-            if (isEnchantmentChangeBlocked(event.getInventory().getItem(slot), event.getResult())) {
-                event.setResult(null);
-                return;
-            }
+            ItemStack item = inventory.getItem(slot);
+            // An unenchanted anvil addition only repairs; it cannot transfer enchantments.
+            if (slot == 1 && inventory instanceof AnvilInventory && item != null
+                    && item.getEnchantments().isEmpty() && storedEnchantments(item).isEmpty()) continue;
+            if (isEnchantmentChangeBlocked(item, result)) return true;
         }
+        return false;
     }
 
     /** Checks whether a workstation result changes the enchantments of a protected item. */

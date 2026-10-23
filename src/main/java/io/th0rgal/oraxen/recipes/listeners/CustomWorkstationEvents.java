@@ -48,7 +48,7 @@ public class CustomWorkstationEvents implements Listener {
             return;
         }
         ItemStack result = recipe.createResult();
-        event.setResult(protectedEnchantmentsChanged(event.getInventory(), result) ? null : result);
+        event.setResult(ItemUpdater.isEnchantmentChangeBlocked(event.getInventory(), result) ? null : result);
         event.getInventory().setRepairCost(recipe.value());
     }
 
@@ -64,12 +64,7 @@ public class CustomWorkstationEvents implements Listener {
         if (match == null) return;
         ItemStack result = match.recipe().createResult();
         event.setResult(permitted(match.recipe(), player)
-                && !protectedEnchantmentsChanged(event.getInventory(), result) ? result : null);
-    }
-
-    private static boolean protectedEnchantmentsChanged(Inventory inventory, ItemStack result) {
-        return ItemUpdater.isEnchantmentChangeBlocked(inventory.getItem(0), result)
-                || ItemUpdater.isEnchantmentChangeBlocked(inventory.getItem(1), result);
+                && !ItemUpdater.isEnchantmentChangeBlocked(event.getInventory(), result) ? result : null);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -98,7 +93,7 @@ public class CustomWorkstationEvents implements Listener {
         if (!permitted(recipe, player) || !supportedAction(event.getAction())) return;
         ItemStack resultSlot = event.getCurrentItem();
         ItemStack expected = recipe.createResult();
-        if (protectedEnchantmentsChanged(inventory, expected)) return;
+        if (ItemUpdater.isEnchantmentChangeBlocked(inventory, expected)) return;
         if (resultSlot == null || resultSlot.isEmpty() || !resultSlot.isSimilar(expected)
                 || resultSlot.getAmount() != expected.getAmount()) return;
         if (!grindstone && player.getGameMode() != GameMode.CREATIVE && player.getLevel() < recipe.value()) return;
@@ -141,7 +136,7 @@ public class CustomWorkstationEvents implements Listener {
         CustomWorkstationRecipe recipe = match.recipe();
         if (!permitted(recipe, player)) return;
         ItemStack expected = recipe.createResult();
-        if (protectedEnchantmentsChanged(inventory, expected)) return;
+        if (ItemUpdater.isEnchantmentChangeBlocked(inventory, expected)) return;
         if (!resultSlot.isSimilar(expected) || resultSlot.getAmount() != expected.getAmount()) return;
         if (!grindstone && player.getGameMode() != GameMode.CREATIVE && player.getLevel() < recipe.value()) return;
         // No partial takes: the whole result must fit on the cursor, mirroring the pickup path.
