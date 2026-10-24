@@ -13,6 +13,7 @@ import com.sk89q.worldedit.world.block.BlockTypes;
 import io.th0rgal.oraxen.OraxenPlugin;
 import io.th0rgal.oraxen.api.OraxenFurniture;
 import io.th0rgal.oraxen.compatibilities.provided.worldedit.WorldEditFurniture;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.limitedplacing.LimitedPlacing;
 import io.th0rgal.oraxen.utils.BlockHelpers;
@@ -346,7 +347,7 @@ class WorldEditFurnitureTest extends MechanicTestSupport {
     void furnitureRemovalSchedulesOffsetChildrenBeforeReadingTheirState() throws Exception {
         org.bukkit.configuration.ConfigurationSection section = mechanicSection("furniture", "type", "DISPLAY_ENTITY");
         section.set("seats", List.of("32,0,0"));
-        FurnitureMechanic mechanic = new FurnitureMechanic(mechanicFactory(), section);
+        FurnitureMechanic mechanic = new FurnitureMechanic(mock(FurnitureFactory.class), section);
         org.bukkit.entity.Entity base = mock(org.bukkit.entity.Entity.class);
         org.bukkit.entity.ArmorStand seat = mock(org.bukkit.entity.ArmorStand.class);
         org.bukkit.entity.Interaction interaction = mock(org.bukkit.entity.Interaction.class);

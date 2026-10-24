@@ -7,6 +7,7 @@ import io.th0rgal.oraxen.items.ItemUpdater;
 import io.th0rgal.oraxen.items.ItemProperties;
 import io.th0rgal.oraxen.items.OraxenMeta;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.ArmorStandProperties;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.furniture.FurnitureMechanic;
 import io.th0rgal.oraxen.utils.VersionUtil;
 import io.th0rgal.oraxen.utils.drops.Drop;
@@ -49,7 +50,7 @@ class FurnitureMechanicTest extends MechanicTestSupport {
         section.set("properties.scale.y", 2.0);
         section.set("properties.translation.x", 0.25);
         section.set("properties.offset.y", 10.0);
-        FurnitureMechanic mechanic = new FurnitureMechanic(mechanicFactory(), section);
+        FurnitureMechanic mechanic = new FurnitureMechanic(mock(FurnitureFactory.class), section);
 
         assertEquals(ItemDisplay.ItemDisplayTransform.FIXED, mechanic.getDisplayEntityProperties().getDisplayTransform());
         assertEquals(2.0f, mechanic.getDisplayEntityProperties().getScale().y());
@@ -65,7 +66,7 @@ class FurnitureMechanicTest extends MechanicTestSupport {
         // These values would fail display property parsing if it ran for an armor stand.
         section.set("properties.display_transform", "INVALID");
         section.set("properties.brightness.block_light", 100);
-        FurnitureMechanic mechanic = new FurnitureMechanic(mechanicFactory(), section);
+        FurnitureMechanic mechanic = new FurnitureMechanic(mock(FurnitureFactory.class), section);
 
         var armorStandField = FurnitureMechanic.class.getDeclaredField("armorStandProperties");
         armorStandField.setAccessible(true);
@@ -92,7 +93,7 @@ class FurnitureMechanicTest extends MechanicTestSupport {
         section.set("properties.display_transform", "INVALID");
         section.set("properties.brightness.block_light", 100);
 
-        FurnitureMechanic mechanic = new FurnitureMechanic(mechanicFactory(), section);
+        FurnitureMechanic mechanic = new FurnitureMechanic(mock(FurnitureFactory.class), section);
 
         assertEquals(ItemDisplay.ItemDisplayTransform.NONE, mechanic.getDisplayEntityProperties().getDisplayTransform());
         assertFalse(mechanic.getDisplayEntityProperties().hasBrightness());
@@ -100,7 +101,7 @@ class FurnitureMechanicTest extends MechanicTestSupport {
 
     @Test
     void runsConfiguredFurnitureEventsForMatchingClick() {
-        FurnitureMechanic mechanic = new FurnitureMechanic(mechanicFactory(), mechanicSection("furniture",
+        FurnitureMechanic mechanic = new FurnitureMechanic(mock(FurnitureFactory.class), mechanicSection("furniture",
                 "events", List.of(Map.of("click", "right", "actions", List.of(
                         Map.of("command", "say <Player>", "executor", "PLAYER"))))));
         Player player = mock(Player.class);
@@ -115,7 +116,7 @@ class FurnitureMechanicTest extends MechanicTestSupport {
 
     @Test
     void readsBasicFurnitureSettings() {
-        FurnitureMechanic mechanic = new FurnitureMechanic(mechanicFactory(), mechanicSection("furniture",
+        FurnitureMechanic mechanic = new FurnitureMechanic(mock(FurnitureFactory.class), mechanicSection("furniture",
                 "hardness", 4,
                 "item", "placed_item",
                 "type", "ITEM_FRAME",
@@ -139,9 +140,9 @@ class FurnitureMechanicTest extends MechanicTestSupport {
     void leftClickEventsMakeFurnitureUnbreakableByDefault(String click) {
         List<Map<String, Object>> events = List.of(Map.of("click", click,
                 "actions", List.of(Map.of("message", "clicked"))));
-        FurnitureMechanic mechanic = new FurnitureMechanic(mechanicFactory(),
+        FurnitureMechanic mechanic = new FurnitureMechanic(mock(FurnitureFactory.class),
                 mechanicSection("furniture", "events", events));
-        FurnitureMechanic explicitlyBreakable = new FurnitureMechanic(mechanicFactory(),
+        FurnitureMechanic explicitlyBreakable = new FurnitureMechanic(mock(FurnitureFactory.class),
                 mechanicSection("furniture", "events", events, "breakable", true));
 
         assertFalse(mechanic.isBreakable());
@@ -152,9 +153,9 @@ class FurnitureMechanicTest extends MechanicTestSupport {
     void rightClickEventsKeepFurnitureBreakableUnlessDisabled() {
         List<Map<String, Object>> events = List.of(Map.of("click", "right",
                 "actions", List.of(Map.of("message", "clicked"))));
-        FurnitureMechanic mechanic = new FurnitureMechanic(mechanicFactory(),
+        FurnitureMechanic mechanic = new FurnitureMechanic(mock(FurnitureFactory.class),
                 mechanicSection("furniture", "events", events));
-        FurnitureMechanic explicitlyUnbreakable = new FurnitureMechanic(mechanicFactory(),
+        FurnitureMechanic explicitlyUnbreakable = new FurnitureMechanic(mock(FurnitureFactory.class),
                 mechanicSection("furniture", "events", events, "breakable", false));
 
         assertTrue(mechanic.isBreakable());
@@ -163,7 +164,7 @@ class FurnitureMechanicTest extends MechanicTestSupport {
 
     @Test
     void eventWithoutClickFilterAlsoMakesFurnitureUnbreakable() {
-        FurnitureMechanic mechanic = new FurnitureMechanic(mechanicFactory(), mechanicSection("furniture",
+        FurnitureMechanic mechanic = new FurnitureMechanic(mock(FurnitureFactory.class), mechanicSection("furniture",
                 "events", List.of(Map.of("actions", List.of(Map.of("message", "clicked"))))));
 
         assertFalse(mechanic.isBreakable());
