@@ -4,6 +4,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.th0rgal.oraxen.utils.VirtualFile;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
@@ -559,6 +561,94 @@ class PackObfuscatorTest {
 
         assertEquals("single", source.get("type").getAsString());
         assertTrue(source.get("resource").getAsString().startsWith("oraxen:t/"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"FULL,equipment", "SIMPLE,equipment", "FULL,models/equipment", "SIMPLE,models/equipment"})
+    void equipmentLayerTexturesResolveAfterObfuscation(String mode, String directory) throws Exception {
+        List<VirtualFile> files = new ArrayList<>();
+        String equipmentPath = "assets/oraxen/" + directory + "/armor.json";
+        files.add(file(equipmentPath, """
+                {
+                  "layers": {
+                    "humanoid": [{"texture": "oraxen:armor", "dyeable": {"color_when_undyed": 16777215}}],
+                    "humanoid_leggings": [{"texture": "oraxen:armor"}],
+                    "wings": [{"texture": "oraxen:armor", "use_player_texture": true}, {"texture": "missing:armor"}]
+                  }
+                }
+                """));
+        for (String layer : List.of("humanoid", "humanoid_leggings", "wings")) {
+            files.add(file("assets/oraxen/textures/entity/equipment/" + layer + "/armor.png", layer));
+        }
+        files.add(file("assets/oraxen/textures/entity/equipment/humanoid/armor.png.mcmeta", "{}"));
+        files.add(file("assets/oraxen/textures/armor.png", "unrelated item texture"));
+        files.add(file("assets/oraxen/models/armor_preview.json", """
+                {"textures": {"layer0": "oraxen:entity/equipment/humanoid/armor"}}
+                """));
+
+        PackObfuscator.obfuscate(files, mode, false);
+
+        VirtualFile equipmentFile = files.stream()
+                .filter(file -> file.getPath().equals(equipmentPath))
+                .findFirst().orElseThrow();
+        JsonObject layers = JsonParser.parseString(new String(equipmentFile.getInputStream().readAllBytes(),
+                StandardCharsets.UTF_8)).getAsJsonObject().getAsJsonObject("layers");
+        String humanoidPath = null;
+        for (String layer : List.of("humanoid", "humanoid_leggings", "wings")) {
+            String texture = layers.getAsJsonArray(layer).get(0).getAsJsonObject().get("texture").getAsString();
+            assertNotEquals("oraxen:armor", texture);
+            String[] key = texture.split(":", 2);
+            assertEquals(mode.equals("FULL"), !key[0].equals("oraxen"));
+            String path = "assets/" + key[0] + "/textures/entity/equipment/" + layer + "/" + key[1] + ".png";
+            VirtualFile image = files.stream().filter(file -> file.getPath().equals(path)).findFirst().orElseThrow();
+            assertEquals(layer, new String(image.getInputStream().readAllBytes(), StandardCharsets.UTF_8));
+            if (layer.equals("humanoid")) humanoidPath = path;
+        }
+        String expectedMetadataPath = humanoidPath + ".mcmeta";
+        assertTrue(files.stream().anyMatch(file -> file.getPath().equals(expectedMetadataPath)));
+        assertEquals(16777215, layers.getAsJsonArray("humanoid").get(0).getAsJsonObject()
+                .getAsJsonObject("dyeable").get("color_when_undyed").getAsInt());
+        assertTrue(layers.getAsJsonArray("wings").get(0).getAsJsonObject().get("use_player_texture").getAsBoolean());
+        assertEquals("missing:armor", layers.getAsJsonArray("wings").get(1).getAsJsonObject()
+                .get("texture").getAsString());
+
+        VirtualFile previewFile = files.stream()
+                .filter(file -> file != equipmentFile && file.getPath().contains("/models/"))
+                .findFirst().orElseThrow();
+        String previewTexture = JsonParser.parseString(new String(previewFile.getInputStream().readAllBytes(),
+                StandardCharsets.UTF_8)).getAsJsonObject().getAsJsonObject("textures").get("layer0").getAsString();
+        String[] previewKey = previewTexture.split(":", 2);
+        assertEquals(humanoidPath, "assets/" + previewKey[0] + "/textures/" + previewKey[1] + ".png");
+    }
+
+    @ParameterizedTest
+    @CsvSource({"FULL,diamond", "FULL,minecraft:diamond", "SIMPLE,diamond", "SIMPLE,minecraft:diamond"})
+    void equipmentTexturesResolveVanillaNamespaceAndKeepUnreferencedOverrides(String mode, String texture)
+            throws Exception {
+        List<VirtualFile> files = new ArrayList<>();
+        String equipmentPath = "assets/oraxen/equipment/armor.json";
+        files.add(file(equipmentPath, """
+                {"layers": {"humanoid": [{"texture": "%s"}]}}
+                """.formatted(texture)));
+        files.add(file("assets/minecraft/textures/entity/equipment/humanoid/diamond.png", "vanilla armor"));
+        files.add(file("assets/minecraft/textures/entity/equipment/humanoid/netherite.png", "unreferenced override"));
+        files.add(file("assets/oraxen/textures/entity/equipment/humanoid/diamond.png", "different namespace"));
+        files.add(file("assets/oraxen/textures/diamond.png", "unrelated item texture"));
+
+        PackObfuscator.obfuscate(files, mode, false);
+
+        VirtualFile equipmentFile = files.stream().filter(file -> file.getPath().equals(equipmentPath))
+                .findFirst().orElseThrow();
+        String rewritten = JsonParser.parseString(new String(equipmentFile.getInputStream().readAllBytes(),
+                StandardCharsets.UTF_8)).getAsJsonObject().getAsJsonObject("layers").getAsJsonArray("humanoid")
+                .get(0).getAsJsonObject().get("texture").getAsString();
+        assertNotEquals(texture, rewritten);
+        String[] key = rewritten.split(":", 2);
+        String path = "assets/" + key[0] + "/textures/entity/equipment/humanoid/" + key[1] + ".png";
+        VirtualFile image = files.stream().filter(file -> file.getPath().equals(path)).findFirst().orElseThrow();
+        assertEquals("vanilla armor", new String(image.getInputStream().readAllBytes(), StandardCharsets.UTF_8));
+        assertTrue(files.stream().anyMatch(file -> file.getPath()
+                .equals("assets/minecraft/textures/entity/equipment/humanoid/netherite.png")));
     }
 
     private static VirtualFile file(String path, String content) {

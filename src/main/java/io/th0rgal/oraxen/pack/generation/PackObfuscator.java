@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 public final class PackObfuscator {
 
@@ -177,7 +178,12 @@ public final class PackObfuscator {
                 } catch (Exception ignored) {
                     continue;
                 }
-                collectReferencedTextureKeys(parsed, null, namespaceFromPath(file.path), keys);
+                if (isEquipment(file.path)) {
+                    forEachEquipmentTexture(parsed, (prefix, layer) ->
+                            keys.add(equipmentTextureKey(prefix, layer.get("texture").getAsString())));
+                } else {
+                    collectReferencedTextureKeys(parsed, null, namespaceFromPath(file.path), keys);
+                }
                 if (isAtlas(file.path)) collectAtlasTextureKeys(parsed, namespaceFromPath(file.path), files, keys);
             }
             return keys;
@@ -322,11 +328,50 @@ public final class PackObfuscator {
 
             String namespace = namespaceFromPath(file.path);
             boolean soundsJson = isSoundsJson(file.path);
-            JsonElement rewritten = rewriteElement(parsed, null, namespace, soundsJson);
+            JsonElement rewritten;
+            if (isEquipment(file.path)) {
+                forEachEquipmentTexture(parsed, (prefix, layer) -> {
+                    String key = equipmentTextureKey(prefix, layer.get("texture").getAsString());
+                    String replacement = textureKeys.get(key);
+                    if (replacement == null) return;
+                    int split = replacement.indexOf(':');
+                    String path = replacement.substring(split + 1);
+                    if (path.startsWith(prefix)) {
+                        layer.addProperty("texture", replacement.substring(0, split + 1) + path.substring(prefix.length()));
+                    }
+                });
+                rewritten = parsed;
+            } else {
+                rewritten = rewriteElement(parsed, null, namespace, soundsJson);
+            }
             if (isAtlas(file.path) && rewritten.isJsonObject()) {
                 addAtlasSingles(rewritten.getAsJsonObject(), parsed, namespace, isBlocksAtlas(file.path));
             }
             file.content = GSON.toJson(rewritten).getBytes(StandardCharsets.UTF_8);
+        }
+
+        private static void forEachEquipmentTexture(JsonElement equipment, BiConsumer<String, JsonObject> action) {
+            if (!equipment.isJsonObject()) return;
+            JsonElement layers = equipment.getAsJsonObject().get("layers");
+            if (layers == null || !layers.isJsonObject()) return;
+            for (Map.Entry<String, JsonElement> entry : layers.getAsJsonObject().entrySet()) {
+                if (!entry.getValue().isJsonArray()) continue;
+                String prefix = "entity/equipment/" + entry.getKey() + "/";
+                for (JsonElement element : entry.getValue().getAsJsonArray()) {
+                    if (!element.isJsonObject()) continue;
+                    JsonObject layer = element.getAsJsonObject();
+                    JsonElement texture = layer.get("texture");
+                    if (texture == null || !texture.isJsonPrimitive() || !texture.getAsJsonPrimitive().isString()) continue;
+                    action.accept(prefix, layer);
+                }
+            }
+        }
+
+        private static String equipmentTextureKey(String prefix, String value) {
+            int split = value.indexOf(':');
+            String namespace = split < 0 ? "minecraft" : value.substring(0, split);
+            String path = split < 0 ? value : value.substring(split + 1);
+            return namespace + ":" + prefix + path;
         }
 
         private JsonElement rewriteElement(JsonElement element, String property, String namespace, boolean soundsJson) {
@@ -546,7 +591,13 @@ public final class PackObfuscator {
             String targetNamespace = type == Type.FULL
                     ? namespaceMap.computeIfAbsent(namespace, ignored -> "o" + hash("ns:" + namespace, 10))
                     : namespace;
-            return targetNamespace + ":" + prefix + "/" + hash(namespace + ":" + path, 24);
+            String obfuscatedPath = prefix + "/" + hash(namespace + ":" + path, 24);
+            // Equipment layers resolve textures relative to their layer directory.
+            if (prefix.equals("t") && path.startsWith("entity/equipment/")) {
+                int layerEnd = path.indexOf('/', "entity/equipment/".length());
+                if (layerEnd >= 0) obfuscatedPath = path.substring(0, layerEnd + 1) + obfuscatedPath;
+            }
+            return targetNamespace + ":" + obfuscatedPath;
         }
 
         private String hash(String value, int chars) {
@@ -677,7 +728,12 @@ public final class PackObfuscator {
             return path.startsWith("assets/") && path.endsWith("/sounds.json");
         }
 
+        private static boolean isEquipment(String path) {
+            return path.matches("assets/[^/]+/(models/)?equipment/.+\\.json");
+        }
+
         private static boolean isStableModelRoot(String path) {
+            if (isEquipment(path)) return true;
             if (!path.startsWith("assets/minecraft/models/")) return false;
             String modelPath = path.substring("assets/minecraft/models/".length());
             return modelPath.matches("(item|block|entity|builtin)/[^/]+\\.json");
