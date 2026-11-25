@@ -10,6 +10,8 @@ import io.th0rgal.oraxen.mechanics.MechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockBreaking;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockDurability;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockMechanicFactory;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.block.BlockStateCodec;
+import io.th0rgal.oraxen.mechanics.provided.gameplay.block.CustomBlockService;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.chorusblock.ChorusBlockMechanic;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.chorusblock.ChorusBlockMechanicFactory;
 import io.th0rgal.oraxen.mechanics.provided.gameplay.chorusblock.ChorusBlockMechanicListener;
@@ -418,7 +420,15 @@ public class OraxenBlocks {
         block.setType(Material.AIR);
         BlockHelpers.removePDC(block);
         if (postRemove != null) postRemove.run();
+        if (player != null) runBreakEvents(mechanic, player);
         return true;
+    }
+
+    private static void runBreakEvents(Mechanic mechanic, Player player) {
+        if (mechanic instanceof NoteBlockMechanic noteBlock) noteBlock.runBreakEvents(player);
+        else if (mechanic instanceof StringBlockMechanic stringBlock) stringBlock.runBreakEvents(player);
+        else if (mechanic instanceof ChorusBlockMechanic chorusBlock) chorusBlock.runBreakEvents(player);
+        else if (mechanic instanceof ShapedBlockMechanic shapedBlock) shapedBlock.runBreakEvents(player);
     }
 
     @Nullable
@@ -572,6 +582,7 @@ public class OraxenBlocks {
         clearShapedBlockData(block);
         clearShapedDoorHalf(block, mechanic);
         block.setType(Material.AIR);
+        if (player != null) mechanic.runBreakEvents(player);
         return true;
     }
 
@@ -614,39 +625,24 @@ public class OraxenBlocks {
      * Keep in mind that this method returns the base Mechanic, not the type. Therefore, you will need to cast this to the type you need
      */
     public static Mechanic getOraxenBlock(Location location) {
-        return !isOraxenBlock(location.getBlock()) ? null :
-                switch (location.getBlock().getType()) {
-                    case NOTE_BLOCK -> getNoteBlockMechanic(location.getBlock());
-                    case TRIPWIRE -> getStringMechanic(location.getBlock());
-                    case CHORUS_PLANT -> getChorusMechanic(location.getBlock());
-                    default -> getShapedMechanic(location.getBlock());
-                };
+        return CustomBlockService.getCustomBlockMechanic(location.getBlock());
     }
 
     public static Mechanic getOraxenBlock(BlockData blockData) {
-        return switch (blockData.getMaterial()) {
-            case NOTE_BLOCK -> getNoteBlockMechanic(blockData);
-            case TRIPWIRE -> getStringMechanic(blockData);
-            case CHORUS_PLANT -> getChorusMechanic(blockData);
-            default -> null;
-        };
+        return CustomBlockService.getCustomBlockMechanic(blockData);
     }
 
     public static NoteBlockMechanic getNoteBlockMechanic(BlockData data) {
         if (!NoteBlockMechanicFactory.isEnabled()) return null;
         if (!(data instanceof NoteBlock noteBlock)) return null;
-        return NoteBlockMechanicFactory
-                .getBlockMechanic((noteBlock.getInstrument().getType()) * 25
-                        + noteBlock.getNote().getId() + (noteBlock.isPowered() ? 400 : 0) - 26);
+        return NoteBlockMechanicFactory.getBlockMechanic(BlockStateCodec.decodeNoteBlockVariation(noteBlock));
     }
 
     public static NoteBlockMechanic getNoteBlockMechanic(Block block) {
         if (!NoteBlockMechanicFactory.isEnabled()) return null;
         if (block.getType() != Material.NOTE_BLOCK) return null;
         final NoteBlock noteblock = (NoteBlock) block.getBlockData();
-        return NoteBlockMechanicFactory
-                .getBlockMechanic((noteblock.getInstrument().getType()) * 25
-                        + noteblock.getNote().getId() + (noteblock.isPowered() ? 400 : 0) - 26);
+        return NoteBlockMechanicFactory.getBlockMechanic(BlockStateCodec.decodeNoteBlockVariation(noteblock));
     }
 
     @org.jetbrains.annotations.Nullable
@@ -660,7 +656,7 @@ public class OraxenBlocks {
     public static StringBlockMechanic getStringMechanic(BlockData blockData) {
         if (!StringBlockMechanicFactory.isEnabled()) return null;
         if (!(blockData instanceof Tripwire tripwire)) return null;
-        return StringBlockMechanicFactory.getBlockMechanic(StringBlockMechanicFactory.getCode(tripwire));
+        return StringBlockMechanicFactory.getBlockMechanic(BlockStateCodec.decodeTripwireVariation(tripwire));
     }
 
     @org.jetbrains.annotations.Nullable
@@ -668,7 +664,7 @@ public class OraxenBlocks {
         if (!StringBlockMechanicFactory.isEnabled()) return null;
         if (block.getType() == Material.TRIPWIRE) {
             final Tripwire tripwire = (Tripwire) block.getBlockData();
-            return StringBlockMechanicFactory.getBlockMechanic(StringBlockMechanicFactory.getCode(tripwire));
+            return StringBlockMechanicFactory.getBlockMechanic(BlockStateCodec.decodeTripwireVariation(tripwire));
         } else return null;
     }
 
@@ -683,7 +679,7 @@ public class OraxenBlocks {
         if (!ChorusBlockMechanicFactory.isEnabled()) return null;
         if (!(blockData instanceof MultipleFacing multipleFacing)) return null;
         if (blockData.getMaterial() != Material.CHORUS_PLANT) return null;
-        return ChorusBlockMechanicFactory.getBlockMechanic(ChorusBlockMechanicFactory.getCode(multipleFacing));
+        return ChorusBlockMechanicFactory.getBlockMechanic(BlockStateCodec.decodeChorusVariation(multipleFacing));
     }
 
     @org.jetbrains.annotations.Nullable
@@ -691,7 +687,7 @@ public class OraxenBlocks {
         if (!ChorusBlockMechanicFactory.isEnabled()) return null;
         if (block.getType() == Material.CHORUS_PLANT) {
             final MultipleFacing multipleFacing = (MultipleFacing) block.getBlockData();
-            return ChorusBlockMechanicFactory.getBlockMechanic(ChorusBlockMechanicFactory.getCode(multipleFacing));
+            return ChorusBlockMechanicFactory.getBlockMechanic(BlockStateCodec.decodeChorusVariation(multipleFacing));
         } else return null;
     }
 

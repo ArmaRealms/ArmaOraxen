@@ -78,8 +78,8 @@ class ItemUpdaterTest {
         doReturn("oraxen").when(plugin).namespace();
         ConfigsManager configs = mock(ConfigsManager.class);
         YamlConfiguration settings = new YamlConfiguration();
-        settings.set("ItemUpdater.update_items", false);
-        settings.set("ItemUpdater.override_item_lore", false);
+        settings.set(Settings.UPDATE_ITEMS.getPath(), false);
+        settings.set(Settings.OVERRIDE_ITEM_LORE.getPath(), false);
         when(configs.getSettings()).thenReturn(settings);
         doReturn(configs).when(plugin).getConfigsManager();
         pluginField = OraxenPlugin.class.getDeclaredField("oraxen");

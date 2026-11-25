@@ -98,6 +98,8 @@ public class OraxenPlugin extends JavaPlugin {
         }
     }
 
+    private volatile PackLoadingManager packLoadingManager;
+
     @Override
     public void onLoad() {
         // Download dependencies registered with Hopper
@@ -167,8 +169,11 @@ public class OraxenPlugin extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new GlowingItemListener(this), this);
         Bukkit.getPluginManager().registerEvents(new InvulnerableItemListener(), this);
         Bukkit.getPluginManager().registerEvents(new CustomPaintingListener(), this);
-        Bukkit.getPluginManager().registerEvents(new PackLoadingManager(), this);
+        packLoadingManager = new PackLoadingManager();
+        Bukkit.getPluginManager().registerEvents(packLoadingManager, this);
         io.th0rgal.oraxen.pack.generation.MultiVersionPackValidator.validateAndLogWarnings();
+        CompatibilitiesManager.addCompatibility("ModelEngine",
+                io.th0rgal.oraxen.compatibilities.provided.modelengine.ModelEngineCompatibility.class, true);
         resourcePack.generate();
         RecipesManager.load(this);
         invManager = new InvManager();
@@ -236,6 +241,8 @@ public class OraxenPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        io.th0rgal.oraxen.recipes.RecipeBrewing.clear();
+        if (packLoadingManager != null) packLoadingManager.shutdown();
         if (updateChecker != null) updateChecker.stop();
         if (configsManager == null) {
             HandlerList.unregisterAll(this);
@@ -264,7 +271,7 @@ public class OraxenPlugin extends JavaPlugin {
         setMultiVersionUploadManager(null);
         setHudManager(null);
         if (studioSyncService != null) {
-            studioSyncService.stop();
+            studioSyncService.shutdown();
         }
         if (resourcePack != null) {
             resourcePack.shutdown();

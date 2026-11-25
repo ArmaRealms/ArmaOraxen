@@ -45,7 +45,7 @@ public class LogDumpCommand {
                         } catch (Exception e) {
                             report(sender, Message.MISSING_LOGS);
                             if (Settings.DEBUG.toBool())
-                                e.printStackTrace();
+                                Logs.debug(e);
                             return;
                         }
 
@@ -55,14 +55,14 @@ public class LogDumpCommand {
                         } catch (IOException e) {
                             report(sender, Message.LOGFILE_MCLOG_ERROR);
                             if (Settings.DEBUG.toBool())
-                                e.printStackTrace();
+                                Logs.debug(e);
                             try {
                                 report(sender, Message.LOGFILE_DUMPED,
                                         AdventureUtils.tagResolver("uri", postToPasteBin(logfile)));
                             } catch (IOException ex) {
                                 report(sender, Message.LOGFILE_PASTEBIN_ERROR);
                                 if (Settings.DEBUG.toBool())
-                                    ex.printStackTrace();
+                                    Logs.debug(ex);
                             }
                         }
                     });
@@ -73,7 +73,7 @@ public class LogDumpCommand {
     static String redactSensitiveLogContent(String logContent, String studioSecret) {
         if (logContent == null) return "";
         String redacted = logContent
-                .replaceAll("http://atlas\\.oraxen\\.com:8080/.*", "*redacted pack url*")
+                .replaceAll("https?://atlas\\.oraxen\\.com(?::8080)?/.*", "*redacted pack url*")
                 .replaceAll("oxn_studio_[A-Za-z0-9._-]+", "*redacted studio secret*");
         if (studioSecret != null && !studioSecret.isBlank()) {
             redacted = redacted.replace(studioSecret, "*redacted studio secret*");
@@ -118,7 +118,7 @@ public class LogDumpCommand {
         } catch (IOException e) {
             Logs.logWarning("Failed to read hastebin result.");
             if (Settings.DEBUG.toBool())
-                e.printStackTrace();
+                Logs.debug(e);
         } finally {
             if (inputReader != null)
                 inputReader.close();

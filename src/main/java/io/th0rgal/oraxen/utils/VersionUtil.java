@@ -3,8 +3,12 @@ package io.th0rgal.oraxen.utils;
 import io.th0rgal.oraxen.utils.logs.Logs;
 import org.bukkit.Bukkit;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.jar.Attributes;
 
 public class VersionUtil {
     private static final boolean isPaper;
@@ -24,21 +28,16 @@ public class VersionUtil {
         return isModernVersionNamespace(MinecraftVersion.getCurrentVersion());
     }
 
-    static boolean isModernVersionNamespace(MinecraftVersion version) {
-        // Mojang switched the release version namespace after 1.21.11 (e.g. "26.1.2").
-        // Also accept the "1.26.x" spelling some sources use for the same releases.
-        return version.getMajor() >= 26 || (version.getMajor() == 1 && version.getMinor() >= 26);
+    public static boolean isModernVersionNamespace(MinecraftVersion version) {
+        return PlatformCapabilities.isModernVersionNamespace(version);
     }
 
     public static boolean supportsNmsHandler() {
-        // The NMS handler requires APIs introduced in 1.21.2. Loading an incompatible
-        // handler on an unknown newer version fails safe via the LinkageError fallback
-        // in NMSHandlers#setup.
         return supportsNmsHandler(MinecraftVersion.getCurrentVersion());
     }
 
-    static boolean supportsNmsHandler(MinecraftVersion version) {
-        return version.isAtLeast(new MinecraftVersion("1.21.2"));
+    public static boolean supportsNmsHandler(MinecraftVersion version) {
+        return PlatformCapabilities.supportsNmsHandler(version);
     }
 
     /**
@@ -47,13 +46,11 @@ public class VersionUtil {
      * expose those accessors, so the check uses the numeric version only.
      */
     public static boolean uses263PacketAccessors(MinecraftVersion version) {
-        int major = version.getMajor();
-        int minor = version.getMinor();
-        if (major == 1 && minor >= 26) {
-            major = minor;
-            minor = version.getBuild();
-        }
-        return major > 26 || (major == 26 && minor >= 3);
+        return PlatformCapabilities.uses263PacketAccessors(version);
+    }
+
+    public static boolean uses263PacketAccessors() {
+        return uses263PacketAccessors(MinecraftVersion.getCurrentVersion());
     }
 
     public static String supportedVersions() {
@@ -66,22 +63,7 @@ public class VersionUtil {
     }
 
     /**
-     * Scoreboard/tablist background hiding tweaks are only supported from 1.21.6 through 1.21.7.
-     * Scoreboard number hiding is unaffected: it is handled per version by
-     * TextShaderGenerator#hideScoreboardNumbers.
-     */
-    public static boolean supportsScoreboardBackgroundHiding() {
-        return supportsScoreboardBackgroundHiding(MinecraftVersion.getCurrentVersion());
-    }
-
-    static boolean supportsScoreboardBackgroundHiding(MinecraftVersion version) {
-        return version.isAtLeast(new MinecraftVersion("1.21.6"))
-                && !version.isAtLeast(new MinecraftVersion("1.21.8"));
-    }
-
-    /**
      * @return true if the server is Paper or false of not
-     * @throws IllegalArgumentException if server is null
      */
     public static boolean isPaperServer() {
         return isPaper;
@@ -110,16 +92,24 @@ public class VersionUtil {
         return isFolia;
     }
 
-    private final static String manifest = JarReader.getManifestContent();
+    private static final Attributes manifest = JarReader.getManifestAttributes();
 
     public static boolean isCompiled() {
-        List<String> split = Arrays.stream(manifest.split(":|\n")).map(String::trim).toList();
-        return Boolean.parseBoolean(split.get(split.indexOf("Compiled") + 1)) && !isValidCompiler();
+        return isCompiled(manifest);
+    }
+
+    static boolean isCompiled(Attributes attributes) {
+        String compiled = attributes.getValue("Compiled");
+        return compiled != null && Boolean.parseBoolean(compiled.trim()) && !isValidCompiler(attributes);
     }
 
     public static boolean isValidCompiler() {
-        List<String> split = Arrays.stream(manifest.split(":|\n")).map(String::trim).toList();
-        return Set.of("sivert", "thomas").contains(split.get(split.indexOf("Built-By") + 1).toLowerCase(Locale.ROOT));
+        return isValidCompiler(manifest);
+    }
+
+    static boolean isValidCompiler(Attributes attributes) {
+        String builtBy = attributes.getValue("Built-By");
+        return builtBy != null && Set.of("sivert", "thomas").contains(builtBy.trim().toLowerCase(Locale.ROOT));
     }
 
     private static boolean hasClass(String className) {

@@ -1020,17 +1020,8 @@ public class ItemBuilder {
     private void applyProperties_1_20_5(ItemMeta itemMeta) {
         if (itemMeta instanceof Damageable damageable)
             damageable.setMaxDamage(durability);
-if (hasItemName()) {
-    if (VersionUtil.isPaperServer()) {
-        Component display = AdventureUtils.MINI_MESSAGE.deserialize(this.itemName)
-                .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE);
-        itemMeta.itemName(display);
-        itemMeta.customName(display);
-    } else {
-        itemMeta.setItemName(itemName);
-        itemMeta.setDisplayName(itemName);
-    }
-}
+        if (hasItemName())
+            itemMeta.itemName(AdventureUtils.MINI_MESSAGE.deserialize(itemName));
         if (hasMaxStackSize())
             itemMeta.setMaxStackSize(maxStackSize);
         if (hasEnchantmentGlintOverride())
@@ -1054,7 +1045,7 @@ if (hasItemName()) {
             } catch (NoSuchMethodError | UnsupportedOperationException e) {
                 if (Settings.DEBUG.toBool()) {
                     Logs.logWarning("Failed to set JukeboxPlayable - this feature requires Paper");
-                    e.printStackTrace();
+                    Logs.debug(e);
                 }
             }
         }
@@ -1085,13 +1076,11 @@ if (hasItemName()) {
         if (displayName == null && displayNameMessage == null)
             return;
 
-        if (!VersionUtil.atOrAbove("1.20.5"))
-            pdc.set(ORIGINAL_NAME_KEY, DataType.STRING,
-                    displayNameMessage != null ? displayNameMessage.toString() : displayName);
-
         Component nameComponent = buildDisplayNameComponent();
         nameComponent = nameComponent.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)
                 .colorIfAbsent(NamedTextColor.WHITE);
+        if (!VersionUtil.atOrAbove("1.20.5"))
+            pdc.set(ORIGINAL_NAME_KEY, DataType.STRING, AdventureUtils.MINI_MESSAGE.serialize(nameComponent));
         ItemUtils.setDisplayName(itemMeta, nameComponent);
     }
 
@@ -1277,7 +1266,8 @@ if (hasItemName()) {
                         yamlConfiguration.save(entry.getKey());
                     } catch (IOException e) {
                         if (Settings.DEBUG.toBool())
-                            e.printStackTrace();
+                            Logs.logError("Failed to save the generated item configuration.");
+                            Logs.debug(e);
                     }
                 });
     }

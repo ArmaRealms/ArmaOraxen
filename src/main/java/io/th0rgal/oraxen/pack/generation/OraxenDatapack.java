@@ -62,8 +62,9 @@ public abstract class OraxenDatapack {
             if (!datapackFolder.equals(legacyDatapackFolder)) {
                 FileUtils.deleteDirectory(legacyDatapackFolder);
             }
-        } catch (final IOException e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            Logs.logWarning("Could not delete the previous datapack output before regeneration.");
+            Logs.debug(e);
         }
     }
 

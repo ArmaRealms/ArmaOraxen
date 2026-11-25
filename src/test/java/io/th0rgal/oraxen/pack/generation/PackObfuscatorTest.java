@@ -19,6 +19,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PackObfuscatorTest {
 
     @Test
+    void filtersRemainLastAndImplicitEquipmentTexturesKeepTheirPaths() {
+        List<VirtualFile> files = new ArrayList<>(List.of(
+                file("assets/test/atlases/blocks.json", """
+                        {"sources":[{"type":"directory","source":"item","prefix":"item/"},
+                        {"type":"filter","pattern":{"namespace":"test","path":"item/hidden"}}]}
+                        """),
+                file("assets/test/textures/item/hidden.png", "png"),
+                file("assets/test/equipment/armor.json", "{\"layers\":{\"humanoid\":[{\"texture\":\"test:armor\"}]}}"),
+                file("assets/test/textures/entity/equipment/humanoid/armor.png", "png")));
+
+        PackObfuscator.obfuscate(files, "FULL", false);
+
+        assertTrue(files.stream().anyMatch(file -> file.getPath().equals("assets/test/textures/entity/equipment/humanoid/armor.png")));
+        JsonObject atlas = files.getFirst().toJsonObject();
+        var sources = atlas.getAsJsonArray("sources");
+        assertEquals(2, sources.size());
+        assertEquals("filter", sources.get(1).getAsJsonObject().get("type").getAsString());
+        assertEquals("test:armor", files.get(2).toJsonObject().getAsJsonObject("layers")
+                .getAsJsonArray("humanoid").get(0).getAsJsonObject().get("texture").getAsString());
+    }
+
+    @Test
     void textureValuesPreferTextureKeysWhenModelAndTextureSharePath() throws Exception {
         List<VirtualFile> files = new ArrayList<>();
         files.add(file("assets/oraxen/models/default/sword.json", """
@@ -525,11 +547,9 @@ class PackObfuscatorTest {
         String content = new String(atlasFile.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
         JsonObject atlas = JsonParser.parseString(content).getAsJsonObject();
         JsonObject originalSource = atlas.getAsJsonArray("sources").get(0).getAsJsonObject();
-        JsonObject addedSource = atlas.getAsJsonArray("sources").get(1).getAsJsonObject();
-
         assertTrue(originalSource.get("resource").getAsString().startsWith("minecraft:t/"));
         assertEquals("painting/lookup_name", originalSource.get("sprite").getAsString());
-        assertEquals("minecraft:painting/lookup_name", addedSource.get("sprite").getAsString());
+        assertEquals(1, atlas.getAsJsonArray("sources").size());
         assertTrue(files.stream().anyMatch(file -> file.getPath().equals("assets/minecraft/textures/painting/lookup_name.png")));
     }
 
@@ -632,6 +652,9 @@ class PackObfuscatorTest {
                 """.formatted(texture)));
         files.add(file("assets/minecraft/textures/entity/equipment/humanoid/diamond.png", "vanilla armor"));
         files.add(file("assets/minecraft/textures/entity/equipment/humanoid/netherite.png", "unreferenced override"));
+        files.add(file("assets/oraxen/models/netherite_preview.json", """
+                {"textures":{"layer0":"minecraft:entity/equipment/humanoid/netherite"}}
+                """));
         files.add(file("assets/oraxen/textures/entity/equipment/humanoid/diamond.png", "different namespace"));
         files.add(file("assets/oraxen/textures/diamond.png", "unrelated item texture"));
 
@@ -649,6 +672,28 @@ class PackObfuscatorTest {
         assertEquals("vanilla armor", new String(image.getInputStream().readAllBytes(), StandardCharsets.UTF_8));
         assertTrue(files.stream().anyMatch(file -> file.getPath()
                 .equals("assets/minecraft/textures/entity/equipment/humanoid/netherite.png")));
+    }
+
+    @Test
+    void overlayTexturesAndReferencesUseTheSameNamesAsTheirBase() {
+        List<VirtualFile> files = new ArrayList<>();
+        String model = "{\"textures\":{\"layer0\":\"custom:example\"}}";
+        files.add(file("assets/custom/models/item/example.json", model));
+        files.add(file("assets/custom/textures/example.png", "base"));
+        files.add(file("version/assets/custom/models/item/example.json", model));
+        files.add(file("version/assets/custom/textures/example.png", "overlay"));
+
+        PackObfuscator.obfuscate(files, "FULL", false);
+
+        VirtualFile baseModel = files.stream().filter(f -> f.getPath().startsWith("assets/")
+                && f.getPath().endsWith(".json")).findFirst().orElseThrow();
+        VirtualFile overlayModel = files.stream().filter(f -> f.getPath().startsWith("version/")
+                && f.getPath().endsWith(".json")).findFirst().orElseThrow();
+        String baseTexture = baseModel.toJsonObject().getAsJsonObject("textures").get("layer0").getAsString();
+        assertEquals(baseTexture, overlayModel.toJsonObject().getAsJsonObject("textures").get("layer0").getAsString());
+        String texturePath = "assets/" + baseTexture.replace(":", "/textures/") + ".png";
+        assertTrue(files.stream().anyMatch(f -> f.getPath().equals(texturePath)));
+        assertTrue(files.stream().anyMatch(f -> f.getPath().equals("version/" + texturePath)));
     }
 
     private static VirtualFile file(String path, String content) {

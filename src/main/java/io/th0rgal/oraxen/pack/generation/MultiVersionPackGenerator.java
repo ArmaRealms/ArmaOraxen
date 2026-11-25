@@ -1,5 +1,6 @@
 package io.th0rgal.oraxen.pack.generation;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.th0rgal.oraxen.OraxenPlugin;
@@ -7,7 +8,9 @@ import io.th0rgal.oraxen.api.events.OraxenPackGeneratedEvent;
 import io.th0rgal.oraxen.configs.Settings;
 import io.th0rgal.oraxen.utils.MinecraftVersion;
 import io.th0rgal.oraxen.utils.HashUtils;
+import io.th0rgal.oraxen.utils.PlatformCapabilities;
 import io.th0rgal.oraxen.utils.SchedulerUtil;
+import io.th0rgal.oraxen.utils.SemanticServerVersion;
 import io.th0rgal.oraxen.utils.VirtualFile;
 import io.th0rgal.oraxen.utils.ZipUtils;
 import io.th0rgal.oraxen.utils.logs.Logs;
@@ -76,6 +79,8 @@ import java.util.Map;
 public class MultiVersionPackGenerator {
 
     private static final MinecraftVersion GENERATED_CORE_SHADER_MIN_VERSION = new MinecraftVersion("1.21.4");
+    private static final String BLOCKS_ATLAS_PATH = "assets/minecraft/atlases/blocks.json";
+    private static final String ITEMS_ATLAS_PATH = "assets/minecraft/atlases/items.json";
 
     private final File packFolder;
     private final PackVersionManager versionManager;
@@ -99,6 +104,10 @@ public class MultiVersionPackGenerator {
      * @param switchingFromSinglePack true if switching from single-pack mode (treat as reload)
      */
     public void generateMultipleVersions(List<VirtualFile> output, boolean switchingFromSinglePack) {
+        generateMultipleVersions(output, switchingFromSinglePack, new JsonArray());
+    }
+
+    public void generateMultipleVersions(List<VirtualFile> output, boolean switchingFromSinglePack, JsonArray generatedOverlayEntries) {
         Logs.logInfo("Generating multi-version resource packs...");
 
         // Fire event to allow modifications before generation
@@ -107,6 +116,7 @@ public class MultiVersionPackGenerator {
         output = event.getOutput();
         UnprotectedPackWriter.writeConfigured(output, packFolder);
         PackObfuscator.obfuscate(output);
+        PackPipeline.sparsifyGeneratedOverlays(output, generatedOverlayEntries);
 
         // Define which pack versions to generate
         versionManager.definePackVersions();
@@ -151,7 +161,7 @@ public class MultiVersionPackGenerator {
             } catch (Exception e) {
                 Logs.logError("Failed to generate pack for " + packVersion.getMinecraftVersion() + ": " + e.getMessage());
                 if (Settings.DEBUG.toBool()) {
-                    e.printStackTrace();
+                    Logs.debug(e);
                 }
             }
         }
@@ -170,6 +180,9 @@ public class MultiVersionPackGenerator {
         Logs.logInfo("Generating pack for Minecraft " + packVersion.getMinecraftVersion() + " (format " + packVersion.getPackFormat() + ")");
 
         MinecraftVersion minecraftVersion = new MinecraftVersion(packVersion.getMinecraftVersion());
+        boolean supportsSplitAtlas = PlatformCapabilities.supportsSplitItemAtlas(
+                SemanticServerVersion.parse(packVersion.getMinecraftVersion()));
+        byte[] itemsAtlasBytes = supportsSplitAtlas ? null : findMaterializedContent(materializedFiles, ITEMS_ATLAS_PATH);
 
         // Create fresh VirtualFiles for this pack version
         List<VirtualFile> versionOutput = new java.util.ArrayList<>();
@@ -177,11 +190,17 @@ public class MultiVersionPackGenerator {
             if (isPackMcmeta(mFile.path)) {
                 continue;
             }
+            if (!supportsSplitAtlas && ITEMS_ATLAS_PATH.equals(mFile.path)) {
+                continue;
+            }
             if (shouldExcludeGeneratedCoreShader(minecraftVersion, mFile.path, mFile.content)) {
                 continue;
             }
+            byte[] content = (!supportsSplitAtlas && BLOCKS_ATLAS_PATH.equals(mFile.path))
+                    ? AtlasGenerator.mergeSplitAtlasesForLegacyTarget(mFile.content, itemsAtlasBytes)
+                    : mFile.content;
             // Create fresh InputStream for this pack version
-            java.io.ByteArrayInputStream freshStream = new java.io.ByteArrayInputStream(mFile.content);
+            java.io.ByteArrayInputStream freshStream = new java.io.ByteArrayInputStream(content);
             String path = mFile.path;
             String parentFolder = path.contains("/") ? path.substring(0, path.lastIndexOf("/")) : "";
             String name = path.contains("/") ? path.substring(path.lastIndexOf("/") + 1) : path;
@@ -241,9 +260,17 @@ public class MultiVersionPackGenerator {
     private void writeLegacyPack(List<MaterializedFile> materializedFiles) {
         File legacyPack = new File(packFolder, packFolder.getName() + ".zip");
         try {
+            boolean supportsSplitAtlas = PlatformCapabilities.supportsSplitItemAtlas(PlatformCapabilities.currentVersion());
+            byte[] itemsAtlasBytes = supportsSplitAtlas ? null : findMaterializedContent(materializedFiles, ITEMS_ATLAS_PATH);
             List<VirtualFile> legacyOutput = new java.util.ArrayList<>(materializedFiles.size());
             for (MaterializedFile mFile : materializedFiles) {
-                java.io.ByteArrayInputStream stream = new java.io.ByteArrayInputStream(mFile.content);
+                if (!supportsSplitAtlas && ITEMS_ATLAS_PATH.equals(mFile.path)) {
+                    continue;
+                }
+                byte[] content = (!supportsSplitAtlas && BLOCKS_ATLAS_PATH.equals(mFile.path))
+                        ? AtlasGenerator.mergeSplitAtlasesForLegacyTarget(mFile.content, itemsAtlasBytes)
+                        : mFile.content;
+                java.io.ByteArrayInputStream stream = new java.io.ByteArrayInputStream(content);
                 String path = mFile.path;
                 String parentFolder = path.contains("/") ? path.substring(0, path.lastIndexOf("/")) : "";
                 String name = path.contains("/") ? path.substring(path.lastIndexOf("/") + 1) : path;
@@ -253,9 +280,18 @@ public class MultiVersionPackGenerator {
         } catch (Exception e) {
             Logs.logWarning("Failed to refresh legacy pack.zip in multi-version mode: " + e.getMessage());
             if (Settings.DEBUG.toBool()) {
-                e.printStackTrace();
+                Logs.debug(e);
             }
         }
+    }
+
+    private byte[] findMaterializedContent(List<MaterializedFile> materializedFiles, String targetPath) {
+        for (MaterializedFile mFile : materializedFiles) {
+            if (targetPath.equals(mFile.path)) {
+                return mFile.content;
+            }
+        }
+        return null;
     }
 
     private boolean isPackMcmeta(String path) {
@@ -276,7 +312,7 @@ public class MultiVersionPackGenerator {
     }
 
     private boolean isMcmetaGenerationDisabled() {
-        return Boolean.TRUE.equals(Settings.DISABLE_MCMETA_GENERATION.getValue());
+        return !Boolean.TRUE.equals(Settings.GENERATE_MCMETA.getValue());
     }
 
     private void uploadAndSendPacks(boolean switchingFromSinglePack) {
